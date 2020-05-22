@@ -1,0 +1,20 @@
+//
+// Created by michael on 22.05.20.
+//
+
+#ifndef LORAINE_RULESETS_H
+#define LORAINE_RULESETS_H
+
+#define INDIVIDUAL_CARD_LIMIT 3
+#define DECK_CARDS_LIMIT 40
+#define CHAMPIONS_LIMIT 6
+#define REGIONS_LIMIT 2
+
+#define HAND_CARDS_LIMIT 10
+#define BOARD_CARDS_LIMIT 6
+
+#define SPELL_STACK_LIMIT 10
+#define MAX_MANA 10
+#define MAX_SPELL_MANA 3
+
+#endif  // LORAINE_RULESETS_H
