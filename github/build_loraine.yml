@@ -17,6 +17,37 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Download CMake
+      id: cmake_install
+      run: |
+        cmake_version="3.17.2"
+        os="${{runner.os}}"
+        echo "Runner-OS: ${{runner.os}}"
+        echo "Using host CMake version: ${cmake_version}"
+
+        if ["${{runner.os}}" -eq "Windows"]
+        then
+          echo "WINDOWS"
+          cmake_suffix="win64-x64.zip"
+        elif ["${{runner.os}}" -eq "Linux"]
+        then
+          echo "LINUX"
+          cmake_suffix="Linux-x86_64.tar.gz"
+        elif ["${{runner.os}}" -eq "macOS"]
+        then
+          echo "MAC"
+          cmake_suffix="Darwin-x86_64.tar.gz"
+        fi
+        echo "Downloading CMake."
+        cmake_url="https://github.com/Kitware/CMake/releases/download/v${cmake_version}/cmake-${cmake_version}-${cmake_suffix}"
+        wget "${cmake_url}" . | tar xvf ./cmake
+
+        export PATH=$PATH:./cmake/bin
+
+        if ("${ { runner.os } }" != "Windows")
+            chmod +x ./cmake
+        fi()
+
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands

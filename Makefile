@@ -1,0 +1,2 @@
+act:
+	act -W ./github
