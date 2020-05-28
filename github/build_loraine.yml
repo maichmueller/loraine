@@ -8,28 +8,25 @@ env:
 
 jobs:
   build:
-     runs-on: self-hosted
-    #    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
-#    steps:
-#      - name: Checkout Repository
-#        uses: actions/checkout@v2
-#
-#      - name: Setup cmake
-#        uses: jwlawson/actions-setup-cmake@v1.0
-#        with:
-#          cmake-version: '3.17.x'
-#          github-api-token: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - uses: actions/checkout@v2
-#      - uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.x'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.0
+        with:
+          cmake-version: '3.17.x'
+          github-api-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
       - name: Use cmake
         run: cmake --version
