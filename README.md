@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/maichmueller/loraine/workflows/build_loraine/badge.svg)](https://github.com/maichmueller/loraine/actions)
+[![Actions Status](https://github.com/maichmueller/loraine/workflows/build/badge.svg)](https://github.com/maichmueller/loraine/actions)
 
 
 
