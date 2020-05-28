@@ -14,9 +14,9 @@ jobs:
 #      matrix:
 #        os: [ubuntu-latest, macos-latest]
 
-#    steps:
-#      - name: Checkout Repository
-#        uses: actions/checkout@v2
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 #
 #      - name: Setup cmake
 #        uses: jwlawson/actions-setup-cmake@v1.0
