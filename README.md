@@ -1,6 +1,6 @@
 
 
-[![Actions Status](https://xxx.execute-api.us-west-2.amazonaws.com/production/badge/maichmueller/loraine)](https://xxx.execute-api.us-west-2.amazonaws.com/production/results/maichmueller/loraine?branch={master})
+[![Actions Status](https://xxx.execute-api.us-west-2.amazonaws.com/production/badge/maichmueller/loraine)](https://xxx.execute-api.us-west-2.amazonaws.com/production/results/maichmueller/loraine?branch=master)
 
 
 
