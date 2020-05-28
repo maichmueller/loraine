@@ -1,6 +1,4 @@
-
-
-[![Actions Status](https://xxx.execute-api.us-west-2.amazonaws.com/production/badge/maichmueller/loraine)](https://xxx.execute-api.us-west-2.amazonaws.com/production/results/maichmueller/loraine?branch=master)
+[![Actions Status](https://github.com/maichmueller/loraine/workflows/build_loraine/badge.svg)](https://github.com/maichmueller/loraine/actions)
 
 
 
