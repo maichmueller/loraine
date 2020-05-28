@@ -1,4 +1,4 @@
-name: build_loraine
+name: build
 
 on: [push]
 
