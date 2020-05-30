@@ -1,7 +1,3 @@
-//
-// Created by michael on 22.05.20.
-//
-
 #ifndef LORAINE_RULESETS_H
 #define LORAINE_RULESETS_H
 
@@ -12,6 +8,8 @@
 
 #define HAND_CARDS_LIMIT 10
 #define BOARD_CARDS_LIMIT 6
+
+#define START_NEXUS_HEALTH 20
 
 #define SPELL_STACK_LIMIT 10
 #define MAX_MANA 10

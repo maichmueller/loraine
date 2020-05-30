@@ -2,13 +2,20 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/dummy.cpp
+        ${LORAINE_SRC_DIR}/deck.cpp
+
+        ${LORAINE_INCLUDE_DIR}/all.h
 
         ${LORAINE_INCLUDE_DIR}/types.h
-        )
+        ${LORAINE_INCLUDE_DIR}/card.h
+        ${LORAINE_INCLUDE_DIR}/agent.h
+        ${LORAINE_INCLUDE_DIR}/board.h
+        ${LORAINE_INCLUDE_DIR}/deck.h
+        ${LORAINE_INCLUDE_DIR}/event.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-
 add_library(loraine STATIC ${LIBRARY_SOURCES})
+
 target_include_directories(loraine
         PUBLIC
         ${LORAINE_INCLUDE_DIR}
@@ -27,3 +34,6 @@ target_compile_features(loraine PRIVATE cxx_std_17)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 # add_link_options(--verbose)
 
+add_executable(goloraine ${LORAINE_DIR}/app/exec.cpp)
+target_include_directories(goloraine PRIVATE ${LORAINE_INCLUDE_DIR})
+target_link_libraries(goloraine loraine)

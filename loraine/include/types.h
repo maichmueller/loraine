@@ -8,25 +8,31 @@
 #include <cinttypes>
 #include <memory>
 
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-using ID = uint64;
-
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
+// short ID
+using SID = u8;
+// long ID
+using LID = u64;
+// Card ID
+using CardID = u64;
+// short handles for most common pointer types
+template < typename T >
+using uptr = std::unique_ptr< T >;
+template < typename T >
+using sptr = std::shared_ptr< T >;
+template < typename T >
+using wptr = std::weak_ptr< T >;
+// a symmetric array to be used to store player symmetric concepts
 template <typename T>
-using uptr = std::unique_ptr<T>;
+using SymArray = std::array<T, 2>;
 
-template <typename T>
-using sptr = std::shared_ptr<T>;
-
-template <typename T>
-using wptr = std::weak_ptr<T>;
 
 #endif  // LORAINE_TYPES_H
