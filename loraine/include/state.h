@@ -14,13 +14,14 @@
 #include "deck.h"
 #include "types.h"
 
+template <typename N>
 class State {
    SymArray< SID > m_nexus_ids = {0, 1};
    SymArray< i32 > m_nexus_health = {START_NEXUS_HEALTH};
    SymArray< u16 > m_mana = {0};
    SymArray< u16 > m_spell_mana = {0};
 
-   SymArray< std::array< Card, HAND_CARDS_LIMIT > > m_cards_in_hand = {};
+   SymArray< std::array< Card<N>, HAND_CARDS_LIMIT > > m_cards_in_hand = {};
    SymArray< Deck > m_deck;
 
    SymArray< bool > m_is_attacker;

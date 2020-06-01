@@ -11,7 +11,8 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/agent.h
         ${LORAINE_INCLUDE_DIR}/board.h
         ${LORAINE_INCLUDE_DIR}/deck.h
-        ${LORAINE_INCLUDE_DIR}/event.h)
+        ${LORAINE_INCLUDE_DIR}/event.h
+        ${LORAINE_INCLUDE_DIR}/event_register.h cppsrc/event.cpp cppsrc/event_register.cpp include/keywords.h include/region.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 add_library(loraine STATIC ${LIBRARY_SOURCES})

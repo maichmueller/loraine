@@ -12,7 +12,7 @@ class Board {
    // the container holding battling units
    SymArray< std::vector< Card > > battlefield;
    // the container holding summoned, active units
-   SymArray< std::vector< Card > > camp;
+   SymArray< std::vector< Card > > backrow;
 
 };
 

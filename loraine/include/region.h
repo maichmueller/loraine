@@ -1,0 +1,15 @@
+
+#ifndef LORAINE_REGION_H
+#define LORAINE_REGION_H
+
+enum struct Region {
+   DEMACIA,
+   FRELJORD,
+   IONIA,
+   NOXUS,
+   PILTOVER_ZAUN,
+   SHADOW_ISLES,
+   BILGEWATER,
+};
+
+#endif  // LORAINE_REGION_H

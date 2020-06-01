@@ -1,0 +1,50 @@
+//
+// Created by michael on 31.05.20.
+//
+
+#ifndef LORAINE_KEYWORDS_H
+#define LORAINE_KEYWORDS_H
+
+enum struct Keyword {
+   ALLEGIANCE,
+   ATTUNE,
+   BARRIER,
+   BURST,
+   CANT_BLOCK,
+   CAPTURE,
+   CHALLENGER,
+   DEEP,
+   DOUBLE_ATTACK,
+   DRAIN,
+   ELUSIVE,
+   ENLIGHTENED,
+   EPHEMERAL,
+   FAST,
+   FEARSOME,
+   FLEETING,
+   FROSTBITE,
+   NEXUS_STRIKE,
+   OBLITERATE,
+   IMMOBILE,
+   LAST_BREATH,
+   LIFESTEAL,
+   OVERWHELM,
+   PLUNDER,
+   QUICK_ATTACK,
+   RECALL,
+   REGENERATION,
+   SCOUT,
+   SKILL,
+   SLOW,
+   STRIKE,
+   STRONGEST,
+   STUN,
+   SUPPORT,
+   TOSS,
+   TOUGH,
+   TRAP,
+   VULNERABLE,
+   WEAKEST
+};
+
+#endif  // LORAINE_KEYWORDS_H
