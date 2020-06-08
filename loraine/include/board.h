@@ -1,6 +1,3 @@
-//
-// Created by michael on 30.05.20.
-//
 
 #ifndef LORAINE_BOARD_H
 #define LORAINE_BOARD_H
