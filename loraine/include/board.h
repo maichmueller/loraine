@@ -5,7 +5,7 @@
 #ifndef LORAINE_BOARD_H
 #define LORAINE_BOARD_H
 
-#include "card.h"
+#include "cards/card.h"
 #include "types.h"
 
 class Board {

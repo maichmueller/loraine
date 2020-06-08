@@ -9,13 +9,13 @@
 #include <map>
 #include <vector>
 
-#include "card.h"
+#include "cards/card.h"
 #include "types.h"
 
 /*
  * Deck requirements:
  * - Pop efficiently at end
- * - draw any category of card individually (spell, champion, follower,...)
+ * - draw any category of cards individually (spell, champion, follower,...)
  * -
  */
 
@@ -31,13 +31,13 @@ class Deck {
     * Method to filter out a specific (type of) spell
     * as decided by the filter
     */
-   std::vector< u16 > find_indices(
+   std::vector< u32 > find_indices(
       const std::function< bool(sptr< Card >) >& filter);
    /*
     * Method to filter out a specific (type of) spell
     * as decided by the filter
     */
-   std::vector< sptr< Spell > > find_spell(
+   std::vector< sptr< Card > > find_spell(
       const std::function< bool(sptr< Card >) >& filter);
 };
 

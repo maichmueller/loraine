@@ -81,6 +81,7 @@ endif()
 
 include(cmake/Conan.cmake)
 run_conan()
+include(${PROJECT_BINARY_DIR}/conanbuildinfo.cmake)
 
 if(ENABLE_TESTING)
     enable_testing()
