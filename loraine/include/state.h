@@ -2,6 +2,7 @@
 #ifndef LORAINE_STATE_H
 #define LORAINE_STATE_H
 
+
 #include <array>
 #include <stack>
 #include <vector>
@@ -9,8 +10,8 @@
 #include "board.h"
 #include "cards/card.h"
 #include "deck.h"
+#include "rulesets.h"
 #include "types.h"
-
 
 class State {
    SymArray< SID > m_nexus_ids = {0, 1};

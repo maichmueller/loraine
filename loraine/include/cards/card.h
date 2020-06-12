@@ -8,12 +8,14 @@
 #include <utility>
 #include <vector>
 
+#include "effect.h"
 #include "event.h"
 #include "keywords.h"
 #include "region.h"
 #include "types.h"
 #include "uuid_gen.h"
 
+// forward-declaration of state
 class State;
 
 enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
@@ -34,36 +36,12 @@ enum struct CardType { SPELL, UNIT };
 
 enum struct UnitType { NONE, FOLLOWER, CHAMPION };
 
-class Wonder {
-  public:
-   auto get_effect() { return m_effect; }
-   void set_effect(
-      const std::function< void(State&, const events::VariantEvent&) >& effect)
-   {
-      m_effect = effect;
-   }
-   void operator()(State& state, const events::VariantEvent& event)
-   {
-      m_effect(state, event);
-   }
-
-   Wonder() : m_effect([](State& state, const events::VariantEvent& event) {})
-   {
-   }  // empty wonder
-   explicit Wonder(
-      std::function< void(State&, const events::VariantEvent&) > effect)
-       : m_effect(std::move(effect))
-   {
-   }
-
-  private:
-   std::function< void(State&, const events::VariantEvent&) > m_effect;
-};
-
 /*
  * Abstract base class (abc) for LOR cards.
  */
 class Card {
+   friend Effect;
+
   protected:
    // fixed attributes of the cards
 
@@ -84,7 +62,10 @@ class Card {
    // whether the cards is a spell or a unit
    const CardType m_cardtype;
 
+   // the short ID, a running uint counting its card position in the total
+   // card gallery
    const SID m_id;
+   // the unique id used to identify this specific instance of a card
    UUID m_uuid;
 
    // variable attributes of the cards
@@ -103,32 +84,10 @@ class Card {
 
   private:
    // all possible effects
-   [[maybe_unused]] Wonder m_on_battle = Wonder();
-   [[maybe_unused]] Wonder m_on_cast = Wonder();
-   [[maybe_unused]] Wonder m_on_decl_attack = Wonder();
-   [[maybe_unused]] Wonder m_on_decl_block = Wonder();
-   [[maybe_unused]] Wonder m_on_die = Wonder();
-   [[maybe_unused]] Wonder m_on_draw_card = Wonder();
-   [[maybe_unused]] Wonder m_on_end_round = Wonder();
-   [[maybe_unused]] Wonder m_on_enlightenment = Wonder();
-   [[maybe_unused]] Wonder m_on_gain_mana = Wonder();
-   [[maybe_unused]] Wonder m_on_game_end = Wonder();
-   [[maybe_unused]] Wonder m_on_get_card = Wonder();
-   [[maybe_unused]] Wonder m_on_level_up = Wonder();
-   [[maybe_unused]] Wonder m_on_nexus_damage = Wonder();
-   [[maybe_unused]] Wonder m_on_nexus_strike = Wonder();
-   [[maybe_unused]] Wonder m_on_play_unit = Wonder();
-   [[maybe_unused]] Wonder m_on_play_spell = Wonder();
-   [[maybe_unused]] Wonder m_on_recall = Wonder();
-   [[maybe_unused]] Wonder m_on_start_round = Wonder();
-   [[maybe_unused]] Wonder m_on_strike = Wonder();
-   [[maybe_unused]] Wonder m_on_stun = Wonder();
-   [[maybe_unused]] Wonder m_on_summon = Wonder();
-   [[maybe_unused]] Wonder m_on_target = Wonder();
-   [[maybe_unused]] Wonder m_on_unit_take_damage = Wonder();
-   [[maybe_unused]] Wonder m_on_use_mana = Wonder();
+   std::map< events::EventType, Effect > m_effects;
 
   public:
+   virtual ~Card() = default;
    // the general constructor for initializing the members
    Card(
       SID id,
@@ -161,6 +120,20 @@ class Card {
    {
    }
 
+   void operator()(
+      State& state,
+      const events::VariantEvent& event,
+      events::EventType event_type)
+   {
+      m_effects[event_type](state, event);
+   }
+   // convenience operator of the above
+   void operator()(State& state, const events::VariantEvent& event)
+   {
+      events::EventType eve_type = std::visit(events::VisitorEventType{}, event);
+      (*this)(state, event, eve_type);
+   }
+
    [[nodiscard]] auto get_name() const { return m_name; }
    [[nodiscard]] auto get_effect_desc() const { return m_effect_desc; }
    [[nodiscard]] auto get_lore() const { return m_lore; }
@@ -173,110 +146,7 @@ class Card {
    [[nodiscard]] auto get_damage() const { return m_damage; }
    [[nodiscard]] auto get_health() const { return m_health; }
    [[nodiscard]] auto get_keywords() const { return m_keywords; }
-
-   [[nodiscard]] auto get_on_battle() const { return m_on_battle; }
-   [[nodiscard]] auto get_on_cast() const { return m_on_cast; }
-   [[nodiscard]] auto get_on_decl_attack() const { return m_on_decl_attack; }
-   [[nodiscard]] auto get_on_decl_block() const { return m_on_decl_block; }
-   [[nodiscard]] auto get_on_die() const { return m_on_die; }
-   [[nodiscard]] auto get_on_draw_card() const { return m_on_draw_card; }
-   [[nodiscard]] auto get_on_end_round() const { return m_on_end_round; }
-   [[nodiscard]] auto get_on_enlightenment() const
-   {
-      return m_on_enlightenment;
-   }
-   [[nodiscard]] auto get_on_gain_mana() const { return m_on_gain_mana; }
-   [[nodiscard]] auto get_on_game_end() const { return m_on_game_end; }
-   [[nodiscard]] auto get_on_get_card() const { return m_on_get_card; }
-   [[nodiscard]] auto get_on_level_up() const { return m_on_level_up; }
-   [[nodiscard]] auto get_on_nexus_damage() const { return m_on_nexus_damage; }
-   [[nodiscard]] auto get_on_nexus_strike() const { return m_on_nexus_strike; }
-   [[nodiscard]] auto get_on_play_unit() const { return m_on_play_unit; }
-   [[nodiscard]] auto get_on_play_spell() const { return m_on_play_spell; }
-   [[nodiscard]] auto get_on_recall() const { return m_on_recall; }
-   [[nodiscard]] auto get_on_start_round() const { return m_on_start_round; }
-   [[nodiscard]] auto get_on_strike() const { return m_on_strike; }
-   [[nodiscard]] auto get_on_stun() const { return m_on_stun; }
-   [[nodiscard]] auto get_on_summon() const { return m_on_summon; }
-   [[nodiscard]] auto get_on_target() const { return m_on_target; }
-   [[nodiscard]] auto get_on_unit_take_damage() const
-   {
-      return m_on_unit_take_damage;
-   }
-   [[nodiscard]] auto get_on_use_mana() const { return m_on_use_mana; }
-
-   auto set_on_battle(Wonder on_battle) { m_on_battle = std::move(on_battle); }
-   auto set_on_cast(Wonder on_cast) { m_on_cast = std::move(on_cast); }
-   auto set_on_attack(Wonder on_decl_attack)
-   {
-      m_on_decl_attack = std::move(on_decl_attack);
-   }
-   auto set_on_decl_block(Wonder on_decl_block)
-   {
-      m_on_decl_block = std::move(on_decl_block);
-   }
-   auto set_on_die(Wonder on_die) { m_on_die = std::move(on_die); }
-   auto set_on_draw_card(Wonder on_draw_card)
-   {
-      m_on_draw_card = std::move(on_draw_card);
-   }
-   auto set_on_end_round(Wonder on_end_round)
-   {
-      m_on_end_round = std::move(on_end_round);
-   }
-   auto set_on_enlightenment(Wonder on_enlightenment)
-   {
-      m_on_enlightenment = std::move(on_enlightenment);
-   }
-   auto set_on_gain_mana(Wonder on_gain_mana)
-   {
-      m_on_gain_mana = std::move(on_gain_mana);
-   }
-   auto set_on_game_end(Wonder on_game_end)
-   {
-      m_on_game_end = std::move(on_game_end);
-   }
-   auto set_on_get_card(Wonder on_get_card)
-   {
-      m_on_get_card = std::move(on_get_card);
-   }
-   auto set_on_level_up(Wonder on_level_up)
-   {
-      m_on_level_up = std::move(on_level_up);
-   }
-   auto set_on_nexus_damage(Wonder on_nexus_damage)
-   {
-      m_on_nexus_damage = std::move(on_nexus_damage);
-   }
-   auto set_on_nexus_strike(Wonder on_nexus_strike)
-   {
-      m_on_nexus_strike = std::move(on_nexus_strike);
-   }
-   auto set_on_play_unit(Wonder on_play_unit)
-   {
-      m_on_play_unit = std::move(on_play_unit);
-   }
-   auto set_on_play_spell(Wonder on_play_spell)
-   {
-      m_on_play_spell = std::move(on_play_spell);
-   }
-   auto set_on_recall(Wonder on_recall) { m_on_recall = std::move(on_recall); }
-   auto set_on_start_round(Wonder on_start_round)
-   {
-      m_on_start_round = std::move(on_start_round);
-   }
-   auto set_on_strike(Wonder on_strike) { m_on_strike = std::move(on_strike); }
-   auto set_on_stun(Wonder on_stun) { m_on_stun = std::move(on_stun); }
-   auto set_on_summon(Wonder on_summon) { m_on_summon = std::move(on_summon); }
-   auto set_on_target(Wonder on_target) { m_on_target = std::move(on_target); }
-   auto set_on_unit_take_damage(Wonder on_unit_take_damage)
-   {
-      m_on_unit_take_damage = std::move(on_unit_take_damage);
-   }
-   auto set_on_use_mana(Wonder on_use_mana)
-   {
-      m_on_use_mana = std::move(on_use_mana);
-   }
+   [[nodiscard]] auto get_effects() const { return m_effects; }
 
    void set_mana_cost(u64 mana_cost) { m_mana_cost = mana_cost; }
    void set_damage(u64 damage) { m_damage = damage; }
@@ -284,6 +154,12 @@ class Card {
    void set_keywords(std::vector< Keyword > kwords)
    {
       m_keywords = std::move(kwords);
+   }
+   void set_effect(
+      events::EventType e_type,
+      std::function< void(State&, const events::VariantEvent&) > effect)
+   {
+      m_effects[e_type] = Effect(std::move(effect), m_uuid);
    }
 };
 

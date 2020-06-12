@@ -18,7 +18,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/keywords.h
         ${LORAINE_INCLUDE_DIR}/region.h
         ${LORAINE_INCLUDE_DIR}/uuid_gen.h
-        )
+        include/cards/effect.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 add_library(loraine STATIC ${LIBRARY_SOURCES})

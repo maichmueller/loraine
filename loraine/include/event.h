@@ -38,280 +38,320 @@ enum class EventType {
    UNIT_TAKE_DAMAGE,  // any unit on the field takes damage
    USE_MANA,  // using mana (play units, cast spells etc.)
 };
-class AnyEvent {
-   static const EventType event_type;
-};
-class BattleEvent: public AnyEvent {
+
+struct BattleEvent {
    static const EventType event_type = EventType::BATTLE;
-   explicit BattleEvent() : AnyEvent() {}
+   BattleEvent() = default;
 };
-class CastEvent: public AnyEvent {
-   static const EventType event_type = EventType::CAST;
+class CastEvent {
    SID m_player_id;
    UUID m_spell_id;
    bool m_is_spell;
+
+  public:
+   static const EventType event_type = EventType::CAST;
    CastEvent(SID player_id, UUID spell_id, bool is_spell)
-       : AnyEvent(),
-         m_player_id(player_id),
-         m_spell_id(spell_id),
-         m_is_spell(is_spell)
+       : m_player_id(player_id), m_spell_id(spell_id), m_is_spell(is_spell)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_spell_id() const {return m_spell_id;}
-   [[nodiscard]] auto is_spell() const {return m_is_spell;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_spell_id() const { return m_spell_id; }
+   [[nodiscard]] auto is_spell() const { return m_is_spell; }
 };
-class DeclAttackEvent: public AnyEvent {
-   static const EventType event_type = EventType::DECL_ATTACK;
+class DeclAttackEvent {
    SID m_player_id;
    UUID m_attacker_id;
    u8 m_position;
+
+  public:
+   static const EventType event_type = EventType::DECL_ATTACK;
    DeclAttackEvent(SID player_id, UUID attacker_id, u8 position)
-       : AnyEvent(),
-         m_player_id(player_id),
+       : m_player_id(player_id),
          m_attacker_id(attacker_id),
          m_position(position)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_attacker_id() const {return m_attacker_id;}
-   [[nodiscard]] auto get_position() const {return m_position;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_attacker_id() const { return m_attacker_id; }
+   [[nodiscard]] auto get_position() const { return m_position; }
 };
-class DeclBlockEvent: public AnyEvent {
-   static const EventType event_type = EventType::DECL_BLOCK;
+class DeclBlockEvent {
    SID m_player_id;
    UUID m_attacker_id;
    i8 m_position;
+
+  public:
+   static const EventType event_type = EventType::DECL_BLOCK;
    DeclBlockEvent(SID player_id, UUID attacker_id, i8 position)
-       : AnyEvent(),
-         m_player_id(player_id),
+       : m_player_id(player_id),
          m_attacker_id(attacker_id),
          m_position(position)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_attacker_id() const {return m_attacker_id;}
-   [[nodiscard]] auto is_spell() const {return m_position;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_attacker_id() const { return m_attacker_id; }
+   [[nodiscard]] auto is_spell() const { return m_position; }
 };
-class DieEvent: public AnyEvent {
-   static const EventType event_type = EventType::DIE;
+class DieEvent {
    SID m_player_id;
    CardID m_dead_card_id;
+
+  public:
+   static const EventType event_type = EventType::DIE;
    DieEvent(SID player_id, CardID dead_card_id)
-       : AnyEvent(), m_player_id(player_id), m_dead_card_id(dead_card_id)
+       : m_player_id(player_id), m_dead_card_id(dead_card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_dead_card_id() const {return m_dead_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_dead_card_id() const { return m_dead_card_id; }
 };
-class DrawCardEvent: public AnyEvent {
-   static const EventType event_type = EventType::DRAW_CARD;
+class DrawCardEvent {
    SID m_player_id;
    CardID m_card_id;
+
+  public:
+   static const EventType event_type = EventType::DRAW_CARD;
    DrawCardEvent(SID player_id, CardID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class EndRoundEvent: public AnyEvent {
+struct EndRoundEvent {
    static const EventType event_type = EventType::END_ROUND;
 };
-class EnlightenmentEvent: public AnyEvent {
+struct EnlightenmentEvent {
    static const EventType event_type = EventType::ENLIGHTENMENT;
 };
-class GainManaEvent: public AnyEvent {
+class GainManaEvent {
+   SID m_player_id;
+   u8 m_amount;
+
+  public:
    static const EventType event_type = EventType::GAIN_MANA;
-   SID m_player_id;
-   u8 m_amount;
    GainManaEvent(SID player_id, u8 amount)
-       : AnyEvent(), m_player_id(player_id), m_amount(amount)
+       : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_amount() const {return m_amount;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_amount() const { return m_amount; }
 };
-class GameEndEvent: public AnyEvent {
-   static const EventType event_type = EventType::GAME_END;
+class GameEndEvent {
    SID m_player_id;
    u8 m_amount;
+
+  public:
+   static const EventType event_type = EventType::GAME_END;
    explicit GameEndEvent(SID player_id, u8 amount)
-       : AnyEvent(), m_player_id(player_id), m_amount(amount)
+       : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_amount() const {return m_amount;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_amount() const { return m_amount; }
 };
-class GetCardEvent: public AnyEvent {
-   static const EventType event_type = EventType::GET_CARD;
+class GetCardEvent {
    SID m_player_id;
    CardID m_card_id;
+
+  public:
+   static const EventType event_type = EventType::GET_CARD;
    GetCardEvent(SID player_id, CardID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class LevelUpEvent: public AnyEvent {
+class LevelUpEvent {
+   SID m_player_id;
+   UUID m_card_id;
+
+  public:
    static const EventType event_type = EventType::LEVEL_UP;
-   SID m_player_id;
-   UUID m_card_id;
    LevelUpEvent(SID player_id, UUID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class NexusStrikeEvent: public AnyEvent {
+class NexusStrikeEvent {
+   SID m_attacking_player;
+   SID m_attacked_nexus_id;
+   i64 m_damage;
+
+  public:
    static const EventType event_type = EventType::NEXUS_STRIKE;
-   SID m_attacking_player;
-   SID m_attacked_nexus_id;
-   i64 m_damage;
    NexusStrikeEvent(SID attacking_player, SID attacked_nexus_id, i64 damage)
-       : AnyEvent(),
-         m_attacking_player(attacking_player),
+       : m_attacking_player(attacking_player),
          m_attacked_nexus_id(attacked_nexus_id),
          m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_attacking_player() const {return m_attacking_player;}
-   [[nodiscard]] auto get_attacked_nexus_id() const {return m_attacked_nexus_id;}
-   [[nodiscard]] auto get_damage() const {return m_damage;}
+   [[nodiscard]] auto get_attacking_player() const
+   {
+      return m_attacking_player;
+   }
+   [[nodiscard]] auto get_attacked_nexus_id() const
+   {
+      return m_attacked_nexus_id;
+   }
+   [[nodiscard]] auto get_damage() const { return m_damage; }
 };
-class NexusTakeDamageEvent: public AnyEvent {
-   static const EventType event_type = EventType::NEXUS_DAMAGE;
+class NexusTakeDamageEvent {
    SID m_attacking_player;
    SID m_attacked_nexus_id;
    i64 m_damage;
+
+  public:
+   static const EventType event_type = EventType::NEXUS_DAMAGE;
    NexusTakeDamageEvent(SID attacking_player, SID attacked_nexus_id, i64 damage)
-       : AnyEvent(),
-         m_attacking_player(attacking_player),
+       : m_attacking_player(attacking_player),
          m_attacked_nexus_id(attacked_nexus_id),
          m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_attacking_player() const {return m_attacking_player;}
-   [[nodiscard]] auto get_attacked_nexus_id() const {return m_attacked_nexus_id;}
-   [[nodiscard]] auto get_damage() const {return m_damage;}
+   [[nodiscard]] auto get_attacking_player() const
+   {
+      return m_attacking_player;
+   }
+   [[nodiscard]] auto get_attacked_nexus_id() const
+   {
+      return m_attacked_nexus_id;
+   }
+   [[nodiscard]] auto get_damage() const { return m_damage; }
 };
-class PlayEvent: public AnyEvent {
-   static const EventType event_type = EventType::PLAY_UNIT;
+class PlayEvent {
    SID m_player_id;
    UUID m_card_id;
+
+  public:
+   static const EventType event_type = EventType::PLAY_UNIT;
    PlayEvent(SID player_id, UUID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class PlaySpell: public AnyEvent {
-   static const EventType event_type = EventType::PLAY_SPELL;
+class PlaySpell {
    SID m_player_id;
    UUID m_spell_id;
    bool m_is_spell;
+
+  public:
+   static const EventType event_type = EventType::PLAY_SPELL;
    PlaySpell(SID player_id, UUID card_id, bool is_skill)
-       : AnyEvent(), m_player_id(player_id), m_spell_id(card_id), m_is_spell(is_skill)
+       : m_player_id(player_id), m_spell_id(card_id), m_is_spell(is_skill)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_spell_id() const {return m_spell_id;}
-   [[nodiscard]] auto is_spell() const {return m_is_spell;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_spell_id() const { return m_spell_id; }
+   [[nodiscard]] auto is_spell() const { return m_is_spell; }
 };
-class RecallEvent: public AnyEvent {
-   static const EventType event_type = EventType::RECALL;
+class RecallEvent {
    SID m_player_id;
    UUID m_card_id;
+
+  public:
+   static const EventType event_type = EventType::RECALL;
    RecallEvent(SID player_id, UUID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class StartRoundEvent: public AnyEvent {
-   static const EventType event_type = EventType::START_ROUND;
+class StartRoundEvent {
    u16 round;
-   explicit StartRoundEvent(u16 round) : AnyEvent(), round(round) {}
+  public:
+   static const EventType event_type = EventType::START_ROUND;
+   explicit StartRoundEvent(u16 round) : round(round) {}
 };
-class StrikeEvent: public AnyEvent {
-   static const EventType event_type = EventType::STRIKE;
+class StrikeEvent {
    SID m_player_id;
    UUID m_striker_id;
+
+  public:
+   static const EventType event_type = EventType::STRIKE;
    StrikeEvent(SID player_id, UUID striker_id)
-       : AnyEvent(), m_player_id(player_id), m_striker_id(striker_id)
+       : m_player_id(player_id), m_striker_id(striker_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_striker_id() const {return m_striker_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_striker_id() const { return m_striker_id; }
 };
-class SummonEvent: public AnyEvent {
+class SummonEvent {
+   SID m_player_id;
+   UUID m_card_id;
+
+  public:
    static const EventType event_type = EventType::SUMMON;
-   SID m_player_id;
-   UUID m_card_id;
    SummonEvent(SID player_id, UUID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class StunEvent: public AnyEvent {
-   static const EventType event_type = EventType::STUN;
+class StunEvent {
    SID m_player_id;
    UUID m_card_id;
+
+  public:
+   static const EventType event_type = EventType::STUN;
    StunEvent(SID player_id, UUID card_id)
-       : AnyEvent(), m_player_id(player_id), m_card_id(card_id)
+       : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_card_id() const {return m_card_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_card_id() const { return m_card_id; }
 };
-class TargetEvent: public AnyEvent {
-   static const EventType event_type = EventType::TARGET;
+class TargetEvent {
    SID m_player_id;
    UUID m_targeted_id;
+
+  public:
+   static const EventType event_type = EventType::TARGET;
    TargetEvent(SID player_id, UUID targeted_id)
-       : AnyEvent(), m_player_id(player_id), m_targeted_id(targeted_id)
+       : m_player_id(player_id), m_targeted_id(targeted_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_targeted_id() const {return m_targeted_id;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_targeted_id() const { return m_targeted_id; }
 };
-class UnitTakeDamageEvent: public AnyEvent {
-   static const EventType event_type = EventType::UNIT_TAKE_DAMAGE;
+class UnitTakeDamageEvent {
    SID m_player_id;
    UUID m_targeted_id;
    i64 m_damage;
+
+  public:
+   static const EventType event_type = EventType::UNIT_TAKE_DAMAGE;
    UnitTakeDamageEvent(SID player_id, UUID targeted_id, i64 damage)
-       : AnyEvent(),
-         m_player_id(player_id),
-         m_targeted_id(targeted_id),
-         m_damage(damage)
+       : m_player_id(player_id), m_targeted_id(targeted_id), m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_targeted_id() const {return m_targeted_id;}
-   [[nodiscard]] auto get_damage() const {return m_damage;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_targeted_id() const { return m_targeted_id; }
+   [[nodiscard]] auto get_damage() const { return m_damage; }
 };
-class UseManaEvent: public AnyEvent {
-   static const EventType event_type = EventType::USE_MANA;
+class UseManaEvent {
    SID m_player_id;
    u8 m_amount;
+
+  public:
+   static const EventType event_type = EventType::USE_MANA;
    UseManaEvent(SID player_id, u8 amount)
-       : AnyEvent(), m_player_id(player_id), m_amount(amount)
+       : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const {return m_player_id;}
-   [[nodiscard]] auto get_amount() const {return m_amount;}
+   [[nodiscard]] auto get_player_id() const { return m_player_id; }
+   [[nodiscard]] auto get_amount() const { return m_amount; }
 };
 
 // The most recent happening event
 using VariantEvent = std::variant<
-   AnyEvent,
    BattleEvent,
    CastEvent,
    DeclAttackEvent,
@@ -339,6 +379,119 @@ using VariantEvent = std::variant<
 
 static VariantEvent last_event;
 
-}  // namespace event
+// visitors to access the data depending on the event
+struct VisitorEventType {
+   template < typename event_t >
+   EventType operator()(const event_t& eve) const
+   {
+      return eve.event_type;
+   }
+};
+struct VisitorPlayerID {
+   template < typename event_t >
+   SID operator()(const event_t& eve) const
+   {
+      return eve.get_player_id();
+   }
+};
+struct VisitorTargetedID {
+   template < typename event_t >
+   UUID operator()(const event_t& eve) const
+   {
+      return eve.get_targeted_id();
+   }
+};
+struct VisitorStrikerID {
+   template < typename event_t >
+   SID operator()(const event_t& eve) const
+   {
+      return eve.get_striker_id();
+   }
+};
+struct VisitorCardID {
+   template < typename event_t >
+   UUID operator()(const event_t& eve) const
+   {
+      return eve.get_card_id();
+   }
+};
+struct VisitorDeadCardID {
+   template < typename event_t >
+   UUID operator()(const event_t& eve) const
+   {
+      return eve.get_dead_card_id();
+   }
+};
+struct VisitorDamage {
+   template < typename event_t >
+   u8 operator()(const event_t& eve) const
+   {
+      return eve.get_damage();
+   }
+};
+struct VisitorAmount {
+   template < typename event_t >
+   u8 operator()(const event_t& eve) const
+   {
+      return eve.get_amount();
+   }
+};
+struct VisitorIsSpell {
+   template < typename event_t >
+   bool operator()(const event_t& eve) const
+   {
+      return eve.is_spell();
+   }
+};
+struct VisitorSpellID {
+   template < typename event_t >
+   UUID operator()(const event_t& eve) const
+   {
+      return eve.get_spell_id();
+   }
+};
+struct VisitorAttackerID {
+   template < typename event_t >
+   UUID operator()(const event_t& eve) const
+   {
+      return eve.get_attacker_id();
+   }
+};
+struct VisitorPosition {
+   template < typename event_t >
+   u8 operator()(const event_t& eve) const
+   {
+      return eve.get_attacker_id();
+   }
+};
+struct VisitorAttackingPlayer {
+   template < typename event_t >
+   SID operator()(const event_t& eve) const
+   {
+      return eve.get_attacking_player();
+   }
+};
+struct VisitorAttackedNexusID {
+   template < typename event_t >
+   SID operator()(const event_t& eve) const
+   {
+      return eve.get_attacked_nexus_id();
+   }
+};
+
+EventType get_event_type(const VariantEvent& event)
+{
+   return std::visit(VisitorEventType{}, event);
+}
+SID get_player_id(const VariantEvent& event)
+{
+   return std::visit(VisitorPlayerID{}, event);
+}
+//SID get_player_id(const VariantEvent& event)
+//{
+//   return std::visit(VisitorPlayerID{}, event);
+//}
+
+}  // namespace events
 
 #endif  // LORAINE_EVENT_H
