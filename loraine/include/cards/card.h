@@ -130,7 +130,8 @@ class Card {
    // convenience operator of the above
    void operator()(State& state, const events::VariantEvent& event)
    {
-      events::EventType eve_type = std::visit(events::VisitorEventType{}, event);
+      events::EventType eve_type = std::visit(
+         events::VisitorEventType{}, event);
       (*this)(state, event, eve_type);
    }
 

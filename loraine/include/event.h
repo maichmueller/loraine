@@ -42,6 +42,7 @@ enum class EventType {
 struct BattleEvent {
    static const EventType event_type = EventType::BATTLE;
    BattleEvent() = default;
+   [[nodiscard]] static auto get_event_data() { return std::tuple{};}
 };
 class CastEvent {
    SID m_player_id;
@@ -54,9 +55,10 @@ class CastEvent {
        : m_player_id(player_id), m_spell_id(spell_id), m_is_spell(is_spell)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_spell_id() const { return m_spell_id; }
-   [[nodiscard]] auto is_spell() const { return m_is_spell; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_spell_id, m_is_spell};
+   }
 };
 class DeclAttackEvent {
    SID m_player_id;
@@ -71,9 +73,10 @@ class DeclAttackEvent {
          m_position(position)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_attacker_id() const { return m_attacker_id; }
-   [[nodiscard]] auto get_position() const { return m_position; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_attacker_id, m_position};
+   }
 };
 class DeclBlockEvent {
    SID m_player_id;
@@ -88,9 +91,10 @@ class DeclBlockEvent {
          m_position(position)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_attacker_id() const { return m_attacker_id; }
-   [[nodiscard]] auto is_spell() const { return m_position; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_attacker_id, m_position};
+   }
 };
 class DieEvent {
    SID m_player_id;
@@ -102,8 +106,10 @@ class DieEvent {
        : m_player_id(player_id), m_dead_card_id(dead_card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_dead_card_id() const { return m_dead_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_dead_card_id};
+   }
 };
 class DrawCardEvent {
    SID m_player_id;
@@ -115,14 +121,18 @@ class DrawCardEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 struct EndRoundEvent {
    static const EventType event_type = EventType::END_ROUND;
+   [[nodiscard]] static auto get_event_data() { return std::tuple{};}
 };
 struct EnlightenmentEvent {
    static const EventType event_type = EventType::ENLIGHTENMENT;
+   [[nodiscard]] static auto get_event_data() { return std::tuple{};}
 };
 class GainManaEvent {
    SID m_player_id;
@@ -134,8 +144,10 @@ class GainManaEvent {
        : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_amount() const { return m_amount; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_amount};
+   }
 };
 class GameEndEvent {
    SID m_player_id;
@@ -147,8 +159,10 @@ class GameEndEvent {
        : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_amount() const { return m_amount; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_amount};
+   }
 };
 class GetCardEvent {
    SID m_player_id;
@@ -160,8 +174,10 @@ class GetCardEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class LevelUpEvent {
    SID m_player_id;
@@ -173,54 +189,46 @@ class LevelUpEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class NexusStrikeEvent {
-   SID m_attacking_player;
    SID m_attacked_nexus_id;
+   SID m_attacking_player;
    i64 m_damage;
 
   public:
    static const EventType event_type = EventType::NEXUS_STRIKE;
-   NexusStrikeEvent(SID attacking_player, SID attacked_nexus_id, i64 damage)
-       : m_attacking_player(attacking_player),
-         m_attacked_nexus_id(attacked_nexus_id),
+   NexusStrikeEvent(SID attacked_nexus_id, SID attacking_player, i64 damage)
+       : m_attacked_nexus_id(attacked_nexus_id),
+         m_attacking_player(attacking_player),
          m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_attacking_player() const
+   [[nodiscard]] auto get_event_data() const
    {
-      return m_attacking_player;
+      return std::tuple{m_attacked_nexus_id, m_attacking_player, m_damage};
    }
-   [[nodiscard]] auto get_attacked_nexus_id() const
-   {
-      return m_attacked_nexus_id;
-   }
-   [[nodiscard]] auto get_damage() const { return m_damage; }
 };
 class NexusTakeDamageEvent {
-   SID m_attacking_player;
    SID m_attacked_nexus_id;
+   SID m_attacking_player;
    i64 m_damage;
 
   public:
    static const EventType event_type = EventType::NEXUS_DAMAGE;
-   NexusTakeDamageEvent(SID attacking_player, SID attacked_nexus_id, i64 damage)
-       : m_attacking_player(attacking_player),
-         m_attacked_nexus_id(attacked_nexus_id),
+   NexusTakeDamageEvent(SID attacked_nexus_id, SID attacking_player, i64 damage)
+       : m_attacked_nexus_id(attacked_nexus_id),
+         m_attacking_player(attacking_player),
          m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_attacking_player() const
+   [[nodiscard]] auto get_event_data() const
    {
-      return m_attacking_player;
+      return std::tuple{m_attacked_nexus_id, m_attacking_player, m_damage};
    }
-   [[nodiscard]] auto get_attacked_nexus_id() const
-   {
-      return m_attacked_nexus_id;
-   }
-   [[nodiscard]] auto get_damage() const { return m_damage; }
 };
 class PlayEvent {
    SID m_player_id;
@@ -232,8 +240,10 @@ class PlayEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class PlaySpell {
    SID m_player_id;
@@ -246,9 +256,10 @@ class PlaySpell {
        : m_player_id(player_id), m_spell_id(card_id), m_is_spell(is_skill)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_spell_id() const { return m_spell_id; }
-   [[nodiscard]] auto is_spell() const { return m_is_spell; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_spell_id, m_is_spell};
+   }
 };
 class RecallEvent {
    SID m_player_id;
@@ -260,14 +271,18 @@ class RecallEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class StartRoundEvent {
    u16 round;
+
   public:
    static const EventType event_type = EventType::START_ROUND;
    explicit StartRoundEvent(u16 round) : round(round) {}
+   [[nodiscard]] auto get_event_data() const { return std::tuple{round}; }
 };
 class StrikeEvent {
    SID m_player_id;
@@ -279,8 +294,10 @@ class StrikeEvent {
        : m_player_id(player_id), m_striker_id(striker_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_striker_id() const { return m_striker_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_striker_id};
+   }
 };
 class SummonEvent {
    SID m_player_id;
@@ -292,8 +309,10 @@ class SummonEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class StunEvent {
    SID m_player_id;
@@ -305,8 +324,10 @@ class StunEvent {
        : m_player_id(player_id), m_card_id(card_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_card_id() const { return m_card_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_card_id};
+   }
 };
 class TargetEvent {
    SID m_player_id;
@@ -318,8 +339,10 @@ class TargetEvent {
        : m_player_id(player_id), m_targeted_id(targeted_id)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_targeted_id() const { return m_targeted_id; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_targeted_id};
+   }
 };
 class UnitTakeDamageEvent {
    SID m_player_id;
@@ -332,9 +355,10 @@ class UnitTakeDamageEvent {
        : m_player_id(player_id), m_targeted_id(targeted_id), m_damage(damage)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_targeted_id() const { return m_targeted_id; }
-   [[nodiscard]] auto get_damage() const { return m_damage; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_targeted_id, m_damage};
+   }
 };
 class UseManaEvent {
    SID m_player_id;
@@ -346,8 +370,10 @@ class UseManaEvent {
        : m_player_id(player_id), m_amount(amount)
    {
    }
-   [[nodiscard]] auto get_player_id() const { return m_player_id; }
-   [[nodiscard]] auto get_amount() const { return m_amount; }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return std::tuple{m_player_id, m_amount};
+   }
 };
 
 // The most recent happening event
@@ -387,95 +413,11 @@ struct VisitorEventType {
       return eve.event_type;
    }
 };
-struct VisitorPlayerID {
+struct VisitorEventData {
    template < typename event_t >
-   SID operator()(const event_t& eve) const
+   auto operator()(const event_t& eve) const
    {
-      return eve.get_player_id();
-   }
-};
-struct VisitorTargetedID {
-   template < typename event_t >
-   UUID operator()(const event_t& eve) const
-   {
-      return eve.get_targeted_id();
-   }
-};
-struct VisitorStrikerID {
-   template < typename event_t >
-   SID operator()(const event_t& eve) const
-   {
-      return eve.get_striker_id();
-   }
-};
-struct VisitorCardID {
-   template < typename event_t >
-   UUID operator()(const event_t& eve) const
-   {
-      return eve.get_card_id();
-   }
-};
-struct VisitorDeadCardID {
-   template < typename event_t >
-   UUID operator()(const event_t& eve) const
-   {
-      return eve.get_dead_card_id();
-   }
-};
-struct VisitorDamage {
-   template < typename event_t >
-   u8 operator()(const event_t& eve) const
-   {
-      return eve.get_damage();
-   }
-};
-struct VisitorAmount {
-   template < typename event_t >
-   u8 operator()(const event_t& eve) const
-   {
-      return eve.get_amount();
-   }
-};
-struct VisitorIsSpell {
-   template < typename event_t >
-   bool operator()(const event_t& eve) const
-   {
-      return eve.is_spell();
-   }
-};
-struct VisitorSpellID {
-   template < typename event_t >
-   UUID operator()(const event_t& eve) const
-   {
-      return eve.get_spell_id();
-   }
-};
-struct VisitorAttackerID {
-   template < typename event_t >
-   UUID operator()(const event_t& eve) const
-   {
-      return eve.get_attacker_id();
-   }
-};
-struct VisitorPosition {
-   template < typename event_t >
-   u8 operator()(const event_t& eve) const
-   {
-      return eve.get_attacker_id();
-   }
-};
-struct VisitorAttackingPlayer {
-   template < typename event_t >
-   SID operator()(const event_t& eve) const
-   {
-      return eve.get_attacking_player();
-   }
-};
-struct VisitorAttackedNexusID {
-   template < typename event_t >
-   SID operator()(const event_t& eve) const
-   {
-      return eve.get_attacked_nexus_id();
+      return eve.get_event_data();
    }
 };
 
@@ -483,15 +425,6 @@ EventType get_event_type(const VariantEvent& event)
 {
    return std::visit(VisitorEventType{}, event);
 }
-SID get_player_id(const VariantEvent& event)
-{
-   return std::visit(VisitorPlayerID{}, event);
-}
-//SID get_player_id(const VariantEvent& event)
-//{
-//   return std::visit(VisitorPlayerID{}, event);
-//}
-
 }  // namespace events
 
 #endif  // LORAINE_EVENT_H
