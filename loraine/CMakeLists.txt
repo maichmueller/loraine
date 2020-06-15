@@ -14,7 +14,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/deck.h
         ${LORAINE_INCLUDE_DIR}/event.h
         ${LORAINE_INCLUDE_DIR}/event_listener.h
-        ${LORAINE_INCLUDE_DIR}/keywords.h
+        ${LORAINE_INCLUDE_DIR}/cards/keywords.h
         ${LORAINE_INCLUDE_DIR}/region.h
         ${LORAINE_INCLUDE_DIR}/uuid_gen.h
         include/cards/effect.h)
