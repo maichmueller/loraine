@@ -168,7 +168,8 @@ class Card {
       u64 mana_cost,
       u64 damage,
       u64 health,
-      const std::initializer_list< Keyword >& keyword_list)
+      std::initializer_list< Keyword > keyword_list,
+      std::map< events::EventType, Effect > effects)
        : m_name(name),
          m_effect_desc(effect_desc),
          m_lore(lore),
@@ -184,6 +185,7 @@ class Card {
          m_keywords(keyword_list),
          m_damage(damage),
          m_health(health),
+         m_effects(std::move(effects))
    {
    }
 
@@ -205,7 +207,8 @@ class Card {
          m_mana_cost(card.get_mana_cost()),
          m_keywords(card.get_keywords()),
          m_damage(card.get_damage()),
-         m_health(card.get_health())
+         m_health(card.get_health()),
+         m_effects(card.get_effects())
    {
    }
 
