@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/dummy.cpp
         ${LORAINE_SRC_DIR}/deck.cpp
-        ${LORAINE_SRC_DIR}/event.cpp
-        ${LORAINE_SRC_DIR}/event_register.cpp
+        ${LORAINE_SRC_DIR}/event_listener.cpp
 
         ${LORAINE_INCLUDE_DIR}/all.h
 
@@ -14,7 +13,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/board.h
         ${LORAINE_INCLUDE_DIR}/deck.h
         ${LORAINE_INCLUDE_DIR}/event.h
-        ${LORAINE_INCLUDE_DIR}/event_register.h
+        ${LORAINE_INCLUDE_DIR}/event_listener.h
         ${LORAINE_INCLUDE_DIR}/keywords.h
         ${LORAINE_INCLUDE_DIR}/region.h
         ${LORAINE_INCLUDE_DIR}/uuid_gen.h

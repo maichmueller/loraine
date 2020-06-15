@@ -28,7 +28,6 @@ template <typename Event>
 void EventListener::on_event(State & state, const Event& e)
 {
    events::EventType eve_type = events::get_event_type(e);
-   auto event_data = std::visit(events::VisitorEventData{}, e);
    auto cards_with_effect = listeners[eve_type];
    if(cards_with_effect.size() > 1) {
       // shuffle the cards to not have the insertion order decide the execution

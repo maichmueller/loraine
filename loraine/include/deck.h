@@ -37,7 +37,7 @@ class Deck {
     * Method to filter out a specific (type of) spell
     * as decided by the filter
     */
-   std::vector< sptr< Card > > find_spell(
+   std::vector< sptr< Spell > > find_spell(
       const std::function< bool(sptr< Card >) >& filter);
 };
 
