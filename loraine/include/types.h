@@ -9,7 +9,7 @@
 #include <memory>
 #include <boost/uuid/uuid.hpp>
 
-using u8 = uint8_t;
+using size_t = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
@@ -19,7 +19,7 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 // short ID for things such as player ID
-using SID = u8;
+using SID = size_t;
 //
 using CardID = u32;
 // unique universal identifier type

@@ -36,6 +36,12 @@ class State {
    SymArray< std::vector< Card > > m_graveyard;
    SymArray< std::vector< Card > > m_tossed_cards;
    sptr< Board > m_board;
+
+  public:
+    State();
+
+    void shuffle_card_into_deck(sptr< Card> card);
+
 };
 
 #endif  // LORAINE_STATE_H
