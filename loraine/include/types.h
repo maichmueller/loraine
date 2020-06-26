@@ -7,26 +7,33 @@
 
 #include <cinttypes>
 #include <memory>
+#include <boost/uuid/uuid.hpp>
 
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
+using size_t = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-using ID = uint64;
-
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
+// short ID for things such as player ID
+using SID = size_t;
+//
+using CardID = u32;
+// unique universal identifier type
+using UUID = boost::uuids::uuid;
+// short handles for most common pointer types
+template < typename T >
+using uptr = std::unique_ptr< T >;
+template < typename T >
+using sptr = std::shared_ptr< T >;
+template < typename T >
+using wptr = std::weak_ptr< T >;
+// a symmetric array to be used to store player symmetric concepts
 template <typename T>
-using uptr = std::unique_ptr<T>;
+using SymArray = std::array<T, 2>;
 
-template <typename T>
-using sptr = std::shared_ptr<T>;
-
-template <typename T>
-using wptr = std::weak_ptr<T>;
 
 #endif  // LORAINE_TYPES_H

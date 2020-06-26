@@ -60,7 +60,8 @@ if (ENABLE_PCH)
     # is a good idea if any #define's change
     #
     # consider breaking this out per project as necessary
-    target_precompile_headers(project_options INTERFACE <vector> <string> <map> <utility> <memory> <array>)
+    target_precompile_headers(project_options
+            INTERFACE <vector> <string> <map> <utility> <memory> <array> <list> <stack>)
 endif()
 
 # Set up some extra Conan dependencies based on our needs
@@ -80,6 +81,7 @@ endif()
 
 include(cmake/Conan.cmake)
 run_conan()
+include(${PROJECT_BINARY_DIR}/conanbuildinfo.cmake)
 
 if(ENABLE_TESTING)
     enable_testing()
@@ -90,17 +92,16 @@ if(ENABLE_TESTING)
 endif()
 
 
-set(LORAINE_FOLDER "loraine")
+set(LORAINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/loraine")
+set(LORAINE_SRC_DIR "${LORAINE_DIR}/cppsrc")
+set(LORAINE_INCLUDE_DIR ${LORAINE_DIR}/include)
 
-set(LORAINE_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${LORAINE_FOLDER}/cppsrc")
-set(LORAINE_INCLUDE_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/${LORAINE_FOLDER}/include)
+message(STATUS "loraine project directory: ${LORAINE_DIR}")
+message(STATUS "loraine include directory: ${LORAINE_INCLUDE_DIR}")
+message(STATUS "loraine src directory: ${LORAINE_SRC_DIR}")
 
 add_subdirectory(loraine)
-set(LORAINE_LIBRARY ${CMAKE_SOURCE_DIR}/build/debug/${LORAINE_FOLDER}/libloraine.a)
 
-add_executable(goloraine ${LORAINE_FOLDER}/app/exec.cpp)
-target_include_directories(goloraine PRIVATE loraine)
-target_link_libraries(goloraine loraine)
+set(LORAINE_LIBRARY ${CMAKE_SOURCE_DIR}/build/debug/${LORAINE_DIR}/libloraine.a)
 
 
