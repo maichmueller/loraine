@@ -23,6 +23,7 @@ class State {
    SymArray< Deck > m_deck;
 
    SymArray< bool > m_is_attacker;
+   SymArray< bool > m_is_enlightened;
    SymArray< bool > m_can_plunder;
    SymArray< bool > m_has_attacked;
 
@@ -36,6 +37,8 @@ class State {
    SymArray< std::vector< Card > > m_graveyard;
    SymArray< std::vector< Card > > m_tossed_cards;
    sptr< Board > m_board;
+
+   std::vector< Action > history;
 
   public:
     State();

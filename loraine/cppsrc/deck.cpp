@@ -104,3 +104,10 @@ void Deck::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
    auto pos = m_cards.begin() + (deck_size - dist(rng::rng_def_engine));
    m_cards.insert(pos, card);
 }
+
+sptr< Card > Deck::draw_card()
+{
+   sptr<Card> card = m_cards.back();
+   m_cards.pop_back();
+   return card;
+}
