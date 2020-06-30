@@ -1,6 +1,12 @@
 #ifndef LORAINE_RULESETS_H
 #define LORAINE_RULESETS_H
 
+
+enum PLAYER{
+   BLUE,
+   RED
+};
+
 #define INDIVIDUAL_CARD_LIMIT 3
 #define DECK_CARDS_LIMIT 40
 #define CHAMPIONS_LIMIT 6
@@ -14,5 +20,16 @@
 #define SPELL_STACK_LIMIT 10
 #define MAX_MANA 10
 #define MAX_SPELL_MANA 3
+
+#define MAX_ROUNDS 40
+
+#define ONGOING 404
+#define TIE 0
+#define BLUE_WINS_NEXUS 1
+#define BLUE_WINS_DRAW 2
+#define BLUE_WINS_CARD 3
+#define RED_WINS_NEXUS -1
+#define RED_WINS_DRAW -2
+#define RED_WINS_CARD -3
 
 #endif  // LORAINE_RULESETS_H

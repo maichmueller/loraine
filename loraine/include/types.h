@@ -9,10 +9,6 @@
 #include <memory>
 #include <boost/uuid/uuid.hpp>
 
-using size_t = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
 
 using i8 = int8_t;
 using i16 = int16_t;
@@ -21,7 +17,7 @@ using i64 = int64_t;
 // short ID for things such as player ID
 using SID = size_t;
 //
-using CardID = u32;
+using CardID = size_t;
 // unique universal identifier type
 using UUID = boost::uuids::uuid;
 // short handles for most common pointer types

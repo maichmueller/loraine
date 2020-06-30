@@ -19,6 +19,7 @@
  * -
  */
 
+
 class Deck {
    // vectors of sptrs should be fastest when cache locality is considered
    // (also for insertion operations)
@@ -39,7 +40,7 @@ class Deck {
     * as decided by the filter.
     * This does NOT pop the filtered indices.
     */
-   std::vector< u32 > _find_indices(
+   std::vector< size_t > _find_indices(
       const std::function< bool(sptr< Card >) >& filter) const;
 
    std::vector< sptr< Card > > _find_cards_pop(
@@ -49,6 +50,17 @@ class Deck {
       const std::function< bool(sptr< Card >) >& filter) const;
 
   public:
+
+   void set_cards(std::vector<sptr<Card>> cards) {
+      m_cards = std::move(cards);
+   }
+   auto & get_cards() {
+      return m_cards;
+   }
+   [[nodiscard]] const auto & get_cards() const {
+      return m_cards;
+   }
+
    /*
     * Method to filter out specific spells
     * as decided by the filter.

@@ -8,7 +8,6 @@
 #include <random>
 
 namespace rng {
-
    static std::random_device rng_dev;
    static std::default_random_engine rng_def_engine{rng_dev()};
 }

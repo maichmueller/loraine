@@ -136,12 +136,12 @@ class DeclAttackEvent: public AnyEvent {
 class DeclBlockEvent: public AnyEvent {
    SID m_player_id;
    UUID m_attacker_id;
-   i8 m_position;
+   i32 m_position;
 
   public:
    static const EventType event_type = EventType::DECL_BLOCK;
    DeclBlockEvent(
-      bool user_triggered, SID player_id, UUID attacker_id, i8 position)
+      bool user_triggered, SID player_id, UUID attacker_id, i32 position)
        : AnyEvent(user_triggered),
          m_player_id(player_id),
          m_attacker_id(attacker_id),
@@ -275,7 +275,7 @@ class NexusStrikeEvent: public AnyEvent {
    SID m_attacked_nexus;
    SID m_attacking_player;
    UUID m_attacking_card_uuid;
-   SymArray< i64 > m_damage;
+   SymArray< i32 > m_damage;
    bool m_direct_strike;  // whether the attack was from hitting the
                           // nexus in battle or through effects/spells
 
@@ -286,7 +286,7 @@ class NexusStrikeEvent: public AnyEvent {
       SID attacked_nexus,
       UUID attacking_card_uuid,
       SID attacking_player,
-      SymArray< i64 > damage,
+      SymArray< i32 > damage,
       bool direct_strike)
        : AnyEvent(user_triggered),
          m_attacked_nexus(attacked_nexus),
@@ -358,11 +358,11 @@ class RecallEvent: public AnyEvent {
    }
 };
 class StartRoundEvent: public AnyEvent {
-   u16 round;
+   size_t round;
 
   public:
    static const EventType event_type = EventType::START_ROUND;
-   explicit StartRoundEvent(bool user_triggered, u16 round)
+   explicit StartRoundEvent(bool user_triggered, size_t round)
        : AnyEvent(user_triggered), round(round)
    {
    }
@@ -435,12 +435,12 @@ class TargetEvent: public AnyEvent {
 class UnitTakeDamageEvent: public AnyEvent {
    SID m_player_id;
    UUID m_targeted_id;
-   i64 m_damage;
+   size_t m_damage;
 
   public:
    static const EventType event_type = EventType::UNIT_TAKE_DAMAGE;
    UnitTakeDamageEvent(
-      bool user_triggered, SID player_id, UUID targeted_id, i64 damage)
+      bool user_triggered, SID player_id, UUID targeted_id, size_t damage)
        : AnyEvent(user_triggered),
          m_player_id(player_id),
          m_targeted_id(targeted_id),

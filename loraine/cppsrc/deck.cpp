@@ -8,10 +8,10 @@
 
 #include "rng_machine.h"
 
-std::vector< u32 > Deck::_find_indices(
+std::vector< size_t > Deck::_find_indices(
    const std::function< bool(sptr< Card >) >& filter) const
 {
-   std::vector< u32 > indices;
+   std::vector< size_t > indices;
    for(auto i = 0; i < m_cards.size(); ++i) {
       if(filter(m_cards[i])) {
          indices.push_back(i);
