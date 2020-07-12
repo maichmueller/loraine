@@ -8,7 +8,7 @@
 
 #include "rng_machine.h"
 
-std::vector< size_t > Deck::_find_indices(
+std::vector< size_t > DeckContainer::_find_indices(
    const std::function< bool(sptr< Card >) >& filter) const
 {
    std::vector< size_t > indices;
@@ -20,7 +20,7 @@ std::vector< size_t > Deck::_find_indices(
    return indices;
 }
 
-std::vector< sptr< Card > > Deck::find_spells(
+std::vector< sptr< Card > > DeckContainer::find_spells(
    const std::function< bool(sptr< Card >) >& filter)
 {
    return _find_cards_pop([&](sptr< Card > card) {
@@ -30,7 +30,7 @@ std::vector< sptr< Card > > Deck::find_spells(
    });
 }
 
-std::vector< sptr< Card > > Deck::find_units(
+std::vector< sptr< Card > > DeckContainer::find_units(
    const std::function< bool(sptr< Card >) >& filter)
 {
    return _find_cards_pop([&](sptr< Card > card) {
@@ -39,20 +39,20 @@ std::vector< sptr< Card > > Deck::find_units(
       }
    });
 }
-sptr< Card > Deck::draw_specific_card(SID card_sid)
+sptr< Card > DeckContainer::draw_specific_card(SID card_sid)
 {
    return m_cards[_find_indices([](sptr< Card > card) { return true; })[0]];
 }
 
-sptr< Spell > Deck::_to_spell(const sptr< Card >& card)
+sptr< Spell > DeckContainer::_to_spell(const sptr< Card >& card)
 {
    return std::dynamic_pointer_cast< Spell >(card);
 }
-sptr< Unit > Deck::_to_unit(const sptr< Card >& card)
+sptr< Unit > DeckContainer::_to_unit(const sptr< Card >& card)
 {
    return std::dynamic_pointer_cast< Unit >(card);
 }
-auto Deck::_find_cards_pop(const std::function< bool(sptr< Card >) >& filter)
+auto DeckContainer::_find_cards_pop(const std::function< bool(sptr< Card >) >& filter)
    -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > cards;
@@ -70,7 +70,7 @@ auto Deck::_find_cards_pop(const std::function< bool(sptr< Card >) >& filter)
    }
    return cards;
 }
-auto Deck::_find_cards_nopop(const std::function< bool(sptr< Card >) >& filter)
+auto DeckContainer::_find_cards_nopop(const std::function< bool(sptr< Card >) >& filter)
    const -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > cards;
@@ -82,7 +82,7 @@ auto Deck::_find_cards_nopop(const std::function< bool(sptr< Card >) >& filter)
    return cards;
 }
 
-auto Deck::find_cards(
+auto DeckContainer::find_cards(
    const std::function< bool(sptr< Card >) >& filter, bool pop)
    -> std::vector< sptr< Card > >
 {
@@ -93,7 +93,7 @@ auto Deck::find_cards(
    }
 }
 
-void Deck::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
+void DeckContainer::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
 {
    auto deck_size = m_cards.size();
    if(top_n > deck_size) {
@@ -105,7 +105,7 @@ void Deck::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
    m_cards.insert(pos, card);
 }
 
-sptr< Card > Deck::draw_card()
+sptr< Card > DeckContainer::draw_card()
 {
    sptr<Card> card = m_cards.back();
    m_cards.pop_back();

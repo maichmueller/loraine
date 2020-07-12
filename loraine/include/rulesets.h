@@ -7,29 +7,35 @@ enum PLAYER{
    RED
 };
 
-#define INDIVIDUAL_CARD_LIMIT 3
-#define DECK_CARDS_LIMIT 40
-#define CHAMPIONS_LIMIT 6
-#define REGIONS_LIMIT 2
+#define INDIVIDUAL_CARD_LIMIT 3u
+#define DECK_CARDS_LIMIT 40u
+#define CHAMPIONS_LIMIT 6u
+#define REGIONS_LIMIT 2u
+#define INITIAL_HAND_SIZE 4u
 
-#define HAND_CARDS_LIMIT 10
-#define BOARD_CARDS_LIMIT 6
+#define ROUND_LIMIT 40u  // after this many rounds it is an auto-tie
 
-#define START_NEXUS_HEALTH 20
+#define BATTLEFIELD_SIZE 6u
+#define BACKROW_SIZE 6u
 
-#define SPELL_STACK_LIMIT 10
-#define MAX_MANA 10
-#define MAX_SPELL_MANA 3
+#define HAND_CARDS_LIMIT 10u
+#define BOARD_CARDS_LIMIT 6u
 
-#define MAX_ROUNDS 40
+#define START_NEXUS_HEALTH 20u
 
-#define ONGOING 404
-#define TIE 0
-#define BLUE_WINS_NEXUS 1
-#define BLUE_WINS_DRAW 2
-#define BLUE_WINS_CARD 3
-#define RED_WINS_NEXUS -1
-#define RED_WINS_DRAW -2
-#define RED_WINS_CARD -3
+#define SPELL_STACK_LIMIT 10u
+#define MAX_MANA 10u
+#define MAX_SPELL_MANA 3u
+
+#define MAX_ROUNDS 40u
+
+#define ONGOING 404u
+#define TIE 0u
+#define BLUE_WINS_NEXUS 1u
+#define BLUE_WINS_DRAW 2u
+#define BLUE_WINS_CARD 3u
+#define RED_WINS_NEXUS 4u
+#define RED_WINS_DRAW 5u
+#define RED_WINS_CARD 6u
 
 #endif  // LORAINE_RULESETS_H

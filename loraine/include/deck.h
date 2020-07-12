@@ -20,7 +20,7 @@
  */
 
 
-class Deck {
+class DeckContainer {
    // vectors of sptrs should be fastest when cache locality is considered
    // (also for insertion operations)
    std::vector< sptr< Card > > m_cards;

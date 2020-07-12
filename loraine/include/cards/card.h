@@ -5,11 +5,12 @@
 #ifndef LORAINE_CARD_H
 #define LORAINE_CARD_H
 
+#include <map>
 #include <utility>
 #include <vector>
 
 #include "effect.h"
-#include "event.h"
+#include "event/event.h"
 #include "keywords.h"
 #include "region.h"
 #include "types.h"
@@ -74,16 +75,16 @@ class Card {
    // variable attributes of the cards
 
    // the mana it costs to play the cards
-   u64 m_mana_cost;
+   size_t m_mana_cost;
    // all the keywords pertaining to the cards
    std::vector< Keyword > m_keywords;
 
    // unit cards based attributes
 
    // the damage the unit deals
-   u64 m_damage;
+   size_t m_damage;
    // the health of the unit
-   u64 m_health;
+   size_t m_health;
 
    // all possible effects
    std::map< events::EventType, Effect > m_effects;
@@ -116,7 +117,7 @@ class Card {
    [[nodiscard]] auto get_damage() const { return m_damage; }
    [[nodiscard]] auto get_health() const { return m_health; }
    [[nodiscard]] auto get_keywords() const { return m_keywords; }
-   [[nodiscard]] auto get_effects() const { return m_effects; }
+   [[nodiscard]] auto get_effects_map() const { return m_effects; }
    [[nodiscard]] auto get_id() const { return m_id; }
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
 
@@ -132,16 +133,14 @@ class Card {
       return m_unit_type == UnitType::FOLLOWER;
    }
 
-   void set_mana_cost(u64 mana_cost) { m_mana_cost = mana_cost; }
-   void set_damage(u64 damage) { m_damage = damage; }
-   void set_health(u64 health) { m_health = health; }
+   void set_mana_cost(size_t mana_cost) { m_mana_cost = mana_cost; }
+   void set_damage(size_t damage) { m_damage = damage; }
+   void set_health(size_t health) { m_health = health; }
    void set_keywords(std::vector< Keyword > keywords)
    {
       m_keywords = std::move(keywords);
    }
-   void set_effect(
-      events::EventType e_type,
-      Effect effect)
+   void set_effect(events::EventType e_type, Effect effect)
    {
       m_effects[e_type] = Effect(std::move(effect));
    }
@@ -165,9 +164,9 @@ class Card {
       Rarity rarity,
       CardType card_type,
       bool is_collectible,
-      u64 mana_cost,
-      u64 damage,
-      u64 health,
+      size_t mana_cost,
+      size_t damage,
+      size_t health,
       std::initializer_list< Keyword > keyword_list,
       std::map< events::EventType, Effect > effects)
        : m_name(name),
@@ -208,7 +207,7 @@ class Card {
          m_keywords(card.get_keywords()),
          m_damage(card.get_damage()),
          m_health(card.get_health()),
-         m_effects(card.get_effects())
+         m_effects(card.get_effects_map())
    {
    }
 
@@ -226,6 +225,8 @@ class Card {
     * Move constructor.
     */
    Card(Card&& card) = delete;
+
+   virtual bool play_condition_check() = 0;
 };
 
 class Unit: public Card {
@@ -239,10 +240,11 @@ class Unit: public Card {
       UnitType unit_type,
       Rarity rarity,
       bool is_collectible,
-      u64 mana_cost,
-      u64 damage,
-      u64 health,
-      const std::initializer_list< Keyword >& keyword_list)
+      size_t mana_cost,
+      size_t damage,
+      size_t health,
+      const std::initializer_list< Keyword >& keyword_list,
+      std::map< events::EventType, Effect > effects)
        : Card(
           id,
           name,
@@ -257,7 +259,8 @@ class Unit: public Card {
           mana_cost,
           damage,
           health,
-          keyword_list)
+          keyword_list,
+          std::move(effects))
    {
    }
 };
@@ -271,8 +274,9 @@ class Spell: public Card {
       Region region,
       Rarity rarity,
       bool is_collectible,
-      u64 mana_cost,
-      const std::initializer_list< Keyword >& keyword_list)
+      size_t mana_cost,
+      const std::initializer_list< Keyword >& keyword_list,
+      std::map< events::EventType, Effect > effects)
        : Card(
           id,
           name,
@@ -287,7 +291,8 @@ class Spell: public Card {
           mana_cost,
           0,
           0,
-          keyword_list)
+          keyword_list,
+          std::move(effects))
    {
    }
 };

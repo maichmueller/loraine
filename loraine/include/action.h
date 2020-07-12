@@ -6,20 +6,20 @@
 #include <cards/card.h>
 
 #include <map>
+#include <utility>
 
+#include "rulesets.h"
 #include "types.h"
 
-enum ActionType {
-   PASS,
-   PLAY,
-   ATTACK,
-   BLOCK,
-   ROUND_START,
-   ROUND_END,
-   ACCEPT
-};
+enum ActionType { PASS, PLAY, ATTACK, BLOCK, ROUND_END, ACCEPT, MULLIGAN };
 
 class Action {
+   // the type of action performed
+   const ActionType m_action_type;
+   size_t m_round;
+   PLAYER m_player;
+
+  public:
    /*
     * The base class method to return all base member variables
     */
@@ -27,6 +27,9 @@ class Action {
    {
       return std::tuple{m_player, m_round, m_action_type};
    }
+   [[nodiscard]] auto get_action_type() const { return m_action_type; }
+   [[nodiscard]] auto get_round() const { return m_round; }
+   [[nodiscard]] auto get_player() const { return m_player; }
 
   protected:
    /*
@@ -60,16 +63,21 @@ class Action {
       return std::tuple{get_action_data(), args...};
    }
 
-   // the type of action performed
-   ActionType m_action_type;
-   size_t m_round;
-   PLAYER m_player;
+   // protected constructor
+   Action(ActionType act_type, size_t round, PLAYER player)
+       : m_action_type(act_type), m_round(round), m_player(player)
+   {
+   }
 };
 
 /*
  * Action for passing
  */
 class PassAction: public Action {
+   PassAction(size_t round, PLAYER player)
+       : Action(ActionType::PASS, round, player)
+   {
+   }
 };
 
 /*
@@ -77,10 +85,16 @@ class PassAction: public Action {
  * action/reaction the opponent has played.
  */
 class AcceptAction: public Action {
-};
-class RoundStartAction: public Action {
+   AcceptAction(size_t round, PLAYER player)
+       : Action(ActionType::ACCEPT, round, player)
+   {
+   }
 };
 class RoundEndAction: public Action {
+   RoundEndAction(size_t round, PLAYER player)
+       : Action(ActionType::ROUND_END, round, player)
+   {
+   }
 };
 
 /*
@@ -89,8 +103,30 @@ class RoundEndAction: public Action {
 class PlayAction: public Action {
    // the actual card that was played
    sptr< Card > card_played;
-   // the potential skill it might have triggered
+   // the potential skill it might have triggered (TF skill from playing spells)
    sptr< Spell > skill_triggered;
+   PlayAction(
+      size_t round,
+      PLAYER player,
+      sptr< Card > card_played,
+      sptr< Spell > skill_triggered = nullptr)
+       : Action(ActionType::PLAY, round, player),
+         card_played(std::move(card_played)),
+         skill_triggered(std::move(skill_triggered))
+   {
+   }
+   [[nodiscard]] auto get_action_data() const
+   {
+      return _get_action_data(card_played, skill_triggered);
+   }
+   [[nodiscard]] auto get_card_played() const
+   {
+      return card_played;
+   }
+   [[nodiscard]] auto get_skill_triggered() const
+   {
+      return skill_triggered;
+   }
 };
 
 /*
@@ -98,7 +134,23 @@ class PlayAction: public Action {
  */
 class AttackAction: public Action {
    // the positions on the battlefield the units take
-   std::map< size_t, sptr< Card > > positions_to_cards;
+   std::vector< sptr< Card > > positions_to_cards;
+   AttackAction(
+      size_t round,
+      PLAYER player,
+      std::vector< sptr< Card > > positions_to_cards)
+       : Action(ActionType::ATTACK, round, player),
+         positions_to_cards(std::move(positions_to_cards))
+   {
+   }
+   [[nodiscard]] auto get_action_data() const
+   {
+      return _get_action_data(positions_to_cards);
+   }
+   [[nodiscard]] auto get_positions_to_cards() const
+   {
+      return positions_to_cards;
+   }
 };
 
 /*
@@ -106,7 +158,46 @@ class AttackAction: public Action {
  */
 class BlockAction: public Action {
    // the positions on the battlefield the units take
-   std::map< size_t, sptr< Card > > positions_to_cards;
+   std::vector< sptr< Card > > positions_to_cards;
+   BlockAction(
+      size_t round,
+      PLAYER player,
+      std::vector< sptr< Card > > positions_to_cards)
+       : Action(ActionType::BLOCK, round, player),
+         positions_to_cards(std::move(positions_to_cards))
+   {
+   }
+   [[nodiscard]] auto get_action_data() const
+   {
+      return _get_action_data(positions_to_cards);
+   }
+   [[nodiscard]] auto get_positions_to_cards() const
+   {
+      return positions_to_cards;
+   }
+};
+
+/*
+ * Action for deciding which cards to replace in the initial draw
+ */
+class MulliganAction: public Action {
+   // the positions on the battlefield the units take
+   std::array< bool, INITIAL_HAND_SIZE > replace;
+   MulliganAction(
+      size_t round,
+      PLAYER player,
+      std::array< bool, INITIAL_HAND_SIZE > replace)
+       : Action(ActionType::MULLIGAN, round, player), replace(replace)
+   {
+   }
+   [[nodiscard]] auto get_action_data() const
+   {
+      return _get_action_data(replace);
+   }
+   [[nodiscard]] auto get_replace_decisions() const
+   {
+      return replace;
+   }
 };
 
 #endif  // LORAINE_ACTION_H

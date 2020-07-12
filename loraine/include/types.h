@@ -29,7 +29,7 @@ template < typename T >
 using wptr = std::weak_ptr< T >;
 // a symmetric array to be used to store player symmetric concepts
 template <typename T>
-using SymArray = std::array<T, 2>;
+using SymArr = std::array<T, 2>;
 
 
 #endif  // LORAINE_TYPES_H

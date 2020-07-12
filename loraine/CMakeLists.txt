@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.15)
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
+        ${LORAINE_SRC_DIR}/state.cpp
+        ${LORAINE_SRC_DIR}/game.cpp
 
         ${LORAINE_INCLUDE_DIR}/all.h
 
@@ -18,7 +20,8 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/uuid_gen.h
         ${LORAINE_INCLUDE_DIR}/action.h
         ${LORAINE_INCLUDE_DIR}/cards/effect.h
-        ${LORAINE_INCLUDE_DIR}/rng_machine.h cppsrc/state.cpp)
+        ${LORAINE_INCLUDE_DIR}/rng_machine.h
+        ${LORAINE_INCLUDE_DIR}/game.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 add_library(loraine STATIC ${LIBRARY_SOURCES})

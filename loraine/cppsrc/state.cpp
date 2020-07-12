@@ -2,10 +2,6 @@
 
 #include "state.h"
 
-int State::start_round()
-{
-   return 0;
-}
 sptr< Card > State::draw_card()
 {
    return sptr< Card >();
@@ -30,4 +26,22 @@ void State::_check_terminal()
    }
    m_terminal = ONGOING;
    m_terminal_checked = true;
+}
+
+void State::_commit_to_history(sptr< Action > action)
+{
+   m_history.emplace_back(std::move(action));
+}
+void State::_check_enlightenment() const
+{
+   auto player = PLAYER::BLUE;
+
+   if(get_mana_gems(player) >= MAX_MANA) {
+      events::active_event::set(events::EnlightenmentEvent(player));
+   }
+   player = PLAYER::RED;
+
+   if(get_mana_gems(player) >= MAX_MANA) {
+      events::active_event::set(events::EnlightenmentEvent(player));
+   }
 }

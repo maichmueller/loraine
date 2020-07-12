@@ -9,7 +9,7 @@
 
 namespace rng {
    static std::random_device rng_dev;
-   static std::default_random_engine rng_def_engine{rng_dev()};
+   static std::mt19937_64 rng_def_engine{rng_dev()};
 }
 
 #endif  // LORAINE_RNG_MACHINE_H
