@@ -28,10 +28,6 @@ jobs:
 #        with:
 #          python-version: '3.x'
 
-
-      - name: Install zlib
-        run: apt install zlib1g-dev
-
       - name: Use cmake
         run: cmake --version
 
@@ -46,6 +42,9 @@ jobs:
           python3 -m pip install --upgrade pip setuptools
           python3 -m pip install conan
           source ~/.profile
+          
+      - name: Install zlib
+        run: conan install zlib/1.2.11@conan/stable
 
       - name: Configure CMake
         # Use a bash shell so we can use the same syntax for environment variable
