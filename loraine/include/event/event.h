@@ -483,18 +483,6 @@ EventType get_event_type(const VariantEvent& event)
    return std::visit(VisitorEventType{}, event);
 }
 
-struct active_event {
-   static void set(AnyEvent && event) {
-      m_active_event = std::move(event);
-//      events::Event
-   }
-   static const VariantEvent & get() {
-      return m_active_event;
-   }
-  private:
-   static VariantEvent m_active_event;
-
-};
 }  // namespace events
 
 #endif  // LORAINE_EVENT_H

@@ -13,15 +13,16 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/agent.h
         ${LORAINE_INCLUDE_DIR}/board.h
         ${LORAINE_INCLUDE_DIR}/deck.h
-        ${LORAINE_INCLUDE_DIR}/event.h
-        ${LORAINE_INCLUDE_DIR}/event_listener.h
+        ${LORAINE_INCLUDE_DIR}/event/event.h
+        ${LORAINE_INCLUDE_DIR}/event/event_listener.h
         ${LORAINE_INCLUDE_DIR}/cards/keywords.h
         ${LORAINE_INCLUDE_DIR}/region.h
         ${LORAINE_INCLUDE_DIR}/uuid_gen.h
         ${LORAINE_INCLUDE_DIR}/action.h
         ${LORAINE_INCLUDE_DIR}/cards/effect.h
         ${LORAINE_INCLUDE_DIR}/rng_machine.h
-        ${LORAINE_INCLUDE_DIR}/game.h)
+        ${LORAINE_INCLUDE_DIR}/game.h
+        ${LORAINE_INCLUDE_DIR}/event/active_event.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 add_library(loraine STATIC ${LIBRARY_SOURCES})

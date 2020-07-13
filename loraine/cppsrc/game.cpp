@@ -17,7 +17,6 @@ bool Game::run_game()
    // terminal state. Then we return out out of the method
    while(true) {
       _start_round();
-      // ask current agent for action
 
       while(true) {
          // check for breaking the action loop
@@ -32,6 +31,7 @@ bool Game::run_game()
             break;
          }
 
+         // ask current agent for action
          PLAYER turn = m_state->get_turn();
          auto action = agents[turn].decide_action(*m_state);
          m_state->do_action(action);
