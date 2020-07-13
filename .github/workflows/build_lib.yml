@@ -42,9 +42,9 @@ jobs:
           python3 -m pip install --upgrade pip setuptools
           python3 -m pip install conan
           source ~/.profile
-          
+
       - name: Install zlib
-        run: conan install zlib/1.2.11@conan/stable
+        run: conan install zlib/1.2.11
 
       - name: Configure CMake
         # Use a bash shell so we can use the same syntax for environment variable
