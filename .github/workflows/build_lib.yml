@@ -46,7 +46,7 @@ jobs:
       - name: Install zlib
         run: |
           conan install zlib/1.2.11@conan/stable
-          conan install --build
+#          conan install --build
 
       - name: Configure CMake
         # Use a bash shell so we can use the same syntax for environment variable
