@@ -29,6 +29,8 @@ jobs:
 #          python-version: '3.x'
 
 
+      - name: Install zlib
+        run: apt install zlib1g-dev
 
       - name: Use cmake
         run: cmake --version
