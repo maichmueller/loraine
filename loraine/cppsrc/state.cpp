@@ -1,6 +1,7 @@
 
 
 #include "state.h"
+#include "event/active_event.h"
 
 sptr< Card > State::draw_card()
 {

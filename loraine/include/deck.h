@@ -19,7 +19,6 @@
  * -
  */
 
-
 class DeckContainer {
    // vectors of sptrs should be fastest when cache locality is considered
    // (also for insertion operations)
@@ -49,17 +48,15 @@ class DeckContainer {
    std::vector< sptr< Card > > _find_cards_nopop(
       const std::function< bool(sptr< Card >) >& filter) const;
 
-  public:
+   sptr<Card> _pop_single_card(size_t index);
 
-   void set_cards(std::vector<sptr<Card>> cards) {
+  public:
+   void set_cards(std::vector< sptr< Card > > cards)
+   {
       m_cards = std::move(cards);
    }
-   auto & get_cards() {
-      return m_cards;
-   }
-   [[nodiscard]] const auto & get_cards() const {
-      return m_cards;
-   }
+   auto& get_cards() { return m_cards; }
+   [[nodiscard]] const auto& get_cards() const { return m_cards; }
 
    /*
     * Method to filter out specific spells
