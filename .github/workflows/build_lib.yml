@@ -43,9 +43,9 @@ jobs:
           python3 -m pip install conan
           source ~/.profile
 
-      - name: Install zlib
-        run: |
-          conan install zlib/1.2.11@conan/stable
+#      - name: Install zlib
+#        run: |
+#          conan install zlib/1.2.11@conan/stable
 
 #      - name: Remove cache
 #        run: conan remove -f "*"
