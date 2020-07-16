@@ -57,7 +57,7 @@ struct AnyEvent {
     */
    template < typename Tuple, size_t... I, typename... Args >
    [[nodiscard]] auto _get_event_data_base(
-      Tuple t, std::index_sequence< I... >, Args... args) const
+      Tuple t, std::index_sequence< I... > /*unused*/, Args... args) const
    {
       return std::tuple{std::get< I >(t)..., args...};
    }
@@ -77,7 +77,7 @@ struct AnyEvent {
    template < typename... Args >
    [[nodiscard]] auto _get_event_data(Args... args) const
    {
-      return std::tuple{get_event_data(), args...};
+      return _get_event_data_base_applied(get_event_data(), args...);
    }
 
   public:

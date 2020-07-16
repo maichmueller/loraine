@@ -15,6 +15,7 @@
 #include "rulesets.h"
 #include "types.h"
 
+
 class State {
    using HandType = std::array< sptr< Card >, HAND_CARDS_LIMIT >;
 
@@ -57,6 +58,7 @@ class State {
    void _check_terminal();
 
    void _check_enlightenment() const;
+
 
   public:
    State();
@@ -187,6 +189,7 @@ class State {
       set_mana_gems(
          std::min(m_mana_gems[player] + amount, size_t(MAX_MANA)), player);
    }
+   void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2);}
 
    void inline shuffle_card_into_deck(const sptr< Card >& card, PLAYER player)
    {
@@ -213,6 +216,10 @@ class State {
    }
 
    sptr< Card > draw_card();
+
+   void play_unit(const sptr<Card> & unit);
+
+   void play_spell(const sptr<Card> & spell);
 };
 
 #endif  // LORAINE_STATE_H

@@ -42,3 +42,35 @@ bool Game::run_game()
       }
    }
 }
+
+void Game::_do_action(const sptr< Action >& action)
+{
+   auto action_type = action->get_action_type();
+   switch(action_type) {
+      case PASS: break;
+      case PLAY: {
+         auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
+         auto [player, round, _, card] = cast_action->get_action_data();
+         if(card->get_card_type() == CardType::SPELL) {
+            m_state->play_spell(card);
+         } else {
+            m_state->play_unit(card);
+         }
+      }
+      case ATTACK: {
+         auto cast_action = std::dynamic_pointer_cast< AttackAction >(action);
+         auto [player, round, _, positions] = cast_action->get_action_data();
+         for(auto & pos_card : positions) {
+
+         }
+      }
+
+      case BLOCK: break;
+      case ROUND_END: break;
+      case ACCEPT: break;
+      case MULLIGAN: break;
+
+      m_state->incr_turn();
+   }
+   return action_type;
+}

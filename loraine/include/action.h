@@ -60,7 +60,7 @@ class Action {
    template < typename... Args >
    [[nodiscard]] auto _get_action_data(Args... args) const
    {
-      return std::tuple{get_action_data(), args...};
+      return _get_action_data_base_applied(get_action_data(), args...);
    }
 
    // protected constructor
@@ -74,6 +74,7 @@ class Action {
  * Action for passing
  */
 class PassAction: public Action {
+  public:
    PassAction(size_t round, PLAYER player)
        : Action(ActionType::PASS, round, player)
    {
@@ -85,12 +86,14 @@ class PassAction: public Action {
  * action/reaction the opponent has played.
  */
 class AcceptAction: public Action {
+  public:
    AcceptAction(size_t round, PLAYER player)
        : Action(ActionType::ACCEPT, round, player)
    {
    }
 };
 class RoundEndAction: public Action {
+  public:
    RoundEndAction(size_t round, PLAYER player)
        : Action(ActionType::ROUND_END, round, player)
    {
@@ -103,29 +106,23 @@ class RoundEndAction: public Action {
 class PlayAction: public Action {
    // the actual card that was played
    sptr< Card > card_played;
-   // the potential skill it might have triggered (TF skill from playing spells)
-   sptr< Spell > skill_triggered;
+
+  public:
    PlayAction(
       size_t round,
       PLAYER player,
-      sptr< Card > card_played,
-      sptr< Spell > skill_triggered = nullptr)
+      sptr< Card > card_played)
        : Action(ActionType::PLAY, round, player),
-         card_played(std::move(card_played)),
-         skill_triggered(std::move(skill_triggered))
+         card_played(std::move(card_played))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(card_played, skill_triggered);
+      return _get_action_data(card_played);
    }
    [[nodiscard]] auto get_card_played() const
    {
       return card_played;
-   }
-   [[nodiscard]] auto get_skill_triggered() const
-   {
-      return skill_triggered;
    }
 };
 
@@ -135,6 +132,7 @@ class PlayAction: public Action {
 class AttackAction: public Action {
    // the positions on the battlefield the units take
    std::vector< sptr< Card > > positions_to_cards;
+  public:
    AttackAction(
       size_t round,
       PLAYER player,
@@ -159,6 +157,8 @@ class AttackAction: public Action {
 class BlockAction: public Action {
    // the positions on the battlefield the units take
    std::vector< sptr< Card > > positions_to_cards;
+
+  public:
    BlockAction(
       size_t round,
       PLAYER player,
@@ -183,6 +183,7 @@ class BlockAction: public Action {
 class MulliganAction: public Action {
    // the positions on the battlefield the units take
    std::array< bool, INITIAL_HAND_SIZE > replace;
+  public:
    MulliganAction(
       size_t round,
       PLAYER player,

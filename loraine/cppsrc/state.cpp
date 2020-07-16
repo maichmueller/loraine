@@ -1,6 +1,8 @@
 
 
 #include "state.h"
+
+#include "action.h"
 #include "event/active_event.h"
 
 sptr< Card > State::draw_card()
@@ -46,3 +48,5 @@ void State::_check_enlightenment() const
       events::active_event::set(events::EnlightenmentEvent(player));
    }
 }
+
+
