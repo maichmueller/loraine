@@ -108,10 +108,7 @@ class PlayAction: public Action {
    sptr< Card > card_played;
 
   public:
-   PlayAction(
-      size_t round,
-      PLAYER player,
-      sptr< Card > card_played)
+   PlayAction(size_t round, PLAYER player, sptr< Card > card_played)
        : Action(ActionType::PLAY, round, player),
          card_played(std::move(card_played))
    {
@@ -120,34 +117,33 @@ class PlayAction: public Action {
    {
       return _get_action_data(card_played);
    }
-   [[nodiscard]] auto get_card_played() const
-   {
-      return card_played;
-   }
+   [[nodiscard]] auto get_card_played() const { return card_played; }
 };
 
 /*
  * Action for declaring an attack
  */
 class AttackAction: public Action {
-   // the positions on the battlefield the units take
-   std::vector< sptr< Card > > positions_to_cards;
+   // the positions on the battlefield the units from the backrow take.
+   // One has a vector naming the position the unit from the backrow
+   // (where it holds the position of its current index in the backrow
+   // container) onto the position specified in the vector.
+   std::vector< size_t > back_to_field_vec;
+
   public:
    AttackAction(
-      size_t round,
-      PLAYER player,
-      std::vector< sptr< Card > > positions_to_cards)
+      size_t round, PLAYER player, std::vector< size_t > back_to_field_vec)
        : Action(ActionType::ATTACK, round, player),
-         positions_to_cards(std::move(positions_to_cards))
+         back_to_field_vec(std::move(back_to_field_vec))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(positions_to_cards);
+      return _get_action_data(back_to_field_vec);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
-      return positions_to_cards;
+      return back_to_field_vec;
    }
 };
 
@@ -155,25 +151,26 @@ class AttackAction: public Action {
  * Action for declaring block
  */
 class BlockAction: public Action {
-   // the positions on the battlefield the units take
-   std::vector< sptr< Card > > positions_to_cards;
+   // the positions on the battlefield the units from the backrow take.
+   // One has a vector naming the position the unit from the backrow
+   // (where it holds the position of its current index in the backrow
+   // container) onto the position specified in the vector.
+   std::vector< size_t > back_to_field_vec;
 
   public:
    BlockAction(
-      size_t round,
-      PLAYER player,
-      std::vector< sptr< Card > > positions_to_cards)
+      size_t round, PLAYER player, std::vector< size_t > back_to_field_vec)
        : Action(ActionType::BLOCK, round, player),
-         positions_to_cards(std::move(positions_to_cards))
+         back_to_field_vec(std::move(back_to_field_vec))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(positions_to_cards);
+      return _get_action_data(back_to_field_vec);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
-      return positions_to_cards;
+      return back_to_field_vec;
    }
 };
 
@@ -183,6 +180,7 @@ class BlockAction: public Action {
 class MulliganAction: public Action {
    // the positions on the battlefield the units take
    std::array< bool, INITIAL_HAND_SIZE > replace;
+
   public:
    MulliganAction(
       size_t round,
@@ -195,10 +193,7 @@ class MulliganAction: public Action {
    {
       return _get_action_data(replace);
    }
-   [[nodiscard]] auto get_replace_decisions() const
-   {
-      return replace;
-   }
+   [[nodiscard]] auto get_replace_decisions() const { return replace; }
 };
 
 #endif  // LORAINE_ACTION_H

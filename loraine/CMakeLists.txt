@@ -5,6 +5,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
         ${LORAINE_SRC_DIR}/game.cpp
+        ${LORAINE_SRC_DIR}/board.cpp
 
         ${LORAINE_INCLUDE_DIR}/all.h
 

@@ -50,6 +50,19 @@ class Effect {
          m_assoc_card(std::move(card_ptr))
    {
    }
+   Effect(Effect&& effect) noexcept
+   {
+      m_effect = effect.m_effect;
+      effect.m_effect = nullptr;
+
+      m_is_null = effect.m_is_null;
+      m_is_registered = effect.m_is_registered;
+      m_counter_rnd = effect.m_counter_rnd;
+      m_counter_total = effect.m_counter_total;
+
+      m_assoc_card = effect.m_assoc_card;
+      effect.m_assoc_card = nullptr;
+   }
 
   private:
    std::function< void(State&, const events::VariantEvent&) > m_effect;

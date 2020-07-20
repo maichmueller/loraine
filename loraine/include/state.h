@@ -15,7 +15,6 @@
 #include "rulesets.h"
 #include "types.h"
 
-
 class State {
    using HandType = std::array< sptr< Card >, HAND_CARDS_LIMIT >;
 
@@ -42,7 +41,7 @@ class State {
 
    SymArr< std::vector< sptr< Card > > > m_graveyard{};
    SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
-   sptr< Board > m_board{};
+   sptr< Board > m_board = std::make_shared< Board >();
 
    std::vector< sptr< Action > > m_history;
 
@@ -52,13 +51,13 @@ class State {
    PLAYER m_turn;
    int m_terminal;
    bool m_terminal_checked;
+   std::vector< sptr< Spell > > m_spell_stack;
 
    void inline _commit_to_history(sptr< Action > action);
 
    void _check_terminal();
 
    void _check_enlightenment() const;
-
 
   public:
    State();
@@ -132,6 +131,11 @@ class State {
 
    void set_turn(PLAYER player) { m_turn = player; }
 
+   void set_spell_stack(std::vector< sptr< Spell > > spell_stack)
+   {
+      m_spell_stack = std::move(spell_stack);
+   }
+
    [[nodiscard]] auto get_nexus_health(PLAYER player) const
    {
       return m_nexus_health[player];
@@ -183,13 +187,14 @@ class State {
    [[nodiscard]] auto get_round() const { return m_round; }
    [[nodiscard]] auto get_turn() const { return m_turn; }
    [[nodiscard]] auto get_starting_player() const { return m_starting_player; }
+   [[nodiscard]] auto get_spell_stack() const { return m_spell_stack; }
 
    void incr_managems(size_t amount, PLAYER player)
    {
       set_mana_gems(
          std::min(m_mana_gems[player] + amount, size_t(MAX_MANA)), player);
    }
-   void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2);}
+   void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2); }
 
    void inline shuffle_card_into_deck(const sptr< Card >& card, PLAYER player)
    {
@@ -217,9 +222,12 @@ class State {
 
    sptr< Card > draw_card();
 
-   void play_unit(const sptr<Card> & unit);
+   void play_unit(const sptr< Card >& unit);
 
-   void play_spell(const sptr<Card> & spell);
+   void play_spell(const sptr< Card >& spell);
+
+   void move_to_graveyard(sptr< Card > card, PLAYER player);
+   void move_to_tossed(sptr< Card > card, PLAYER player);
 };
 
 #endif  // LORAINE_STATE_H

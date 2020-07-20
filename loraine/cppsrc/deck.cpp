@@ -116,11 +116,11 @@ sptr< Card > DeckContainer::draw_card()
 sptr< Card > DeckContainer::_pop_single_card(size_t  index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
-      std::stringstream msgstream;
-      msgstream << "Index " << std::to_string(index)
+      std::stringstream msg;
+      msg << "Index " << std::to_string(index)
                 << " out of bounds for deck of size "
                 << std::to_string(deck_size) << ".";
-      throw std::logic_error(msgstream.str());
+      throw std::logic_error(msg.str());
    }
    auto begin = std::begin(m_cards);
    auto pos = begin - index;

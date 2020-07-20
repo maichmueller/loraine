@@ -1,6 +1,8 @@
 
 #include "game.h"
 
+#include <event/active_event.h>
+
 bool Game::run_game()
 {
    // decide the player who starts attacking
@@ -33,7 +35,7 @@ bool Game::run_game()
 
          // ask current agent for action
          PLAYER turn = m_state->get_turn();
-         auto action = agents[turn].decide_action(*m_state);
+         auto action = m_agents[turn].decide_action(*m_state);
          m_state->do_action(action);
       }
 
@@ -60,17 +62,30 @@ void Game::_do_action(const sptr< Action >& action)
       case ATTACK: {
          auto cast_action = std::dynamic_pointer_cast< AttackAction >(action);
          auto [player, round, _, positions] = cast_action->get_action_data();
-         for(auto & pos_card : positions) {
+         m_state->get_board()->move_to_battlefield(positions, player);
 
-         }
+         _activate_battlemode(true);
       }
 
       case BLOCK: break;
       case ROUND_END: break;
-      case ACCEPT: break;
+      case ACCEPT: {
+         _resolve_spell_stack();
+         if (m_battle_mode) {
+            _resolve_battle();
+         }
+
+      }
       case MULLIGAN: break;
 
       m_state->incr_turn();
    }
    return action_type;
+}
+void Game::_activate_battlemode(bool battlemode_on) {
+   m_battle_mode = battlemode_on;
+   events::active_event::set(events::BattleEvent());
+}
+void Game::_resolve_spell_stack() {
+   m_state->g
 }

@@ -10,7 +10,9 @@
 
 class Game {
    sptr< State > m_state;
-   SymArr< Agent > agents;
+   SymArr< Agent > m_agents;
+
+   bool m_battle_mode = false;
 
    void _mulligan();
    void _draw_initial_hand(PLAYER player);
@@ -22,6 +24,11 @@ class Game {
 
    void _end_round();
 
+   void _activate_battlemode(bool b);
+
+   void _resolve_battle();
+
+   void _resolve_spell_stack();
   public:
    bool run_game();
 };

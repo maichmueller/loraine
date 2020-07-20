@@ -33,7 +33,7 @@ enum struct Group {
    YETI,
 };
 
-enum struct CardType { SPELL, UNIT };
+enum struct CardType { SPELL, UNIT, SKILL };
 
 enum struct UnitType { NONE, FOLLOWER, CHAMPION };
 
@@ -79,13 +79,6 @@ class Card {
    // all the keywords pertaining to the cards
    std::vector< Keyword > m_keywords;
 
-   // unit cards based attributes
-
-   // the damage the unit deals
-   size_t m_damage;
-   // the health of the unit
-   size_t m_health;
-
    // all possible effects
    std::map< events::EventType, Effect > m_effects;
 
@@ -114,8 +107,6 @@ class Card {
    [[nodiscard]] auto get_rarity() const { return m_rarity; }
    [[nodiscard]] auto get_card_type() const { return m_card_type; }
    [[nodiscard]] auto get_mana_cost() const { return m_mana_cost; }
-   [[nodiscard]] auto get_damage() const { return m_damage; }
-   [[nodiscard]] auto get_health() const { return m_health; }
    [[nodiscard]] auto get_keywords() const { return m_keywords; }
    [[nodiscard]] auto get_effects_map() const { return m_effects; }
    [[nodiscard]] auto get_id() const { return m_id; }
@@ -124,6 +115,14 @@ class Card {
    // status requests
    [[nodiscard]] auto is_collectible() const { return m_is_collectible; }
    [[nodiscard]] auto is_unit() const { return m_card_type == CardType::UNIT; }
+   [[nodiscard]] auto is_spell() const
+   {
+      return m_card_type == CardType::SPELL;
+   }
+   [[nodiscard]] auto is_skill() const
+   {
+      return m_card_type == CardType::SKILL;
+   }
    [[nodiscard]] auto is_champion() const
    {
       return m_unit_type == UnitType::CHAMPION;
@@ -134,8 +133,7 @@ class Card {
    }
 
    void set_mana_cost(size_t mana_cost) { m_mana_cost = mana_cost; }
-   void set_damage(size_t damage) { m_damage = damage; }
-   void set_health(size_t health) { m_health = health; }
+
    void set_keywords(std::vector< Keyword > keywords)
    {
       m_keywords = std::move(keywords);
@@ -165,8 +163,6 @@ class Card {
       CardType card_type,
       bool is_collectible,
       size_t mana_cost,
-      size_t damage,
-      size_t health,
       std::initializer_list< Keyword > keyword_list,
       std::map< events::EventType, Effect > effects)
        : m_name(name),
@@ -182,8 +178,6 @@ class Card {
          m_uuid(new_uuid()),
          m_mana_cost(mana_cost),
          m_keywords(keyword_list),
-         m_damage(damage),
-         m_health(health),
          m_effects(std::move(effects))
    {
    }
@@ -205,8 +199,6 @@ class Card {
          m_uuid(new_uuid()),
          m_mana_cost(card.get_mana_cost()),
          m_keywords(card.get_keywords()),
-         m_damage(card.get_damage()),
-         m_health(card.get_health()),
          m_effects(card.get_effects_map())
    {
    }
@@ -230,6 +222,14 @@ class Card {
 };
 
 class Unit: public Card {
+  public:
+   void set_damage(size_t damage) { m_damage = damage; }
+   void set_health(size_t health) { m_health = health; }
+   void set_flag_is_damaged(bool is_damaged) { m_is_damaged = is_damaged; }
+   [[nodiscard]] auto get_damage() const { return m_damage; }
+   [[nodiscard]] auto get_health() const { return m_health; }
+   [[nodiscard]] auto is_damaged() const { return m_is_damaged; }
+
    Unit(
       SID id,
       char* const name,
@@ -241,10 +241,11 @@ class Unit: public Card {
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost,
+      const std::initializer_list< Keyword >& keyword_list,
+      std::map< events::EventType, Effect > effects,
       size_t damage,
       size_t health,
-      const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, Effect > effects)
+      bool is_damaged)
        : Card(
           id,
           name,
@@ -257,12 +258,30 @@ class Unit: public Card {
           CardType::UNIT,
           is_collectible,
           mana_cost,
-          damage,
-          health,
           keyword_list,
-          std::move(effects))
+          std::move(effects)),
+         m_damage(damage),
+         m_health(health),
+         m_is_damaged(is_damaged)
    {
    }
+   Unit(const Unit& card)
+       : Card(card),
+         m_damage(card.get_damage()),
+         m_health(card.get_health()),
+         m_is_damaged(card.is_damaged())
+   {
+   }
+
+  private:
+   // unit cards based attributes
+
+   // the damage the unit deals
+   size_t m_damage;
+   // the health of the unit
+   size_t m_health;
+   // whether the unit is currently damaged
+   bool m_is_damaged;
 };
 
 class Spell: public Card {
@@ -272,6 +291,7 @@ class Spell: public Card {
       char* const effect_desc,
       char* const lore,
       Region region,
+      Group group,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost,
@@ -283,19 +303,18 @@ class Spell: public Card {
           effect_desc,
           lore,
           region,
-          Group::NONE,
+          group,
           UnitType::NONE,
           rarity,
           CardType::SPELL,
           is_collectible,
           mana_cost,
-          0,
-          0,
           keyword_list,
           std::move(effects))
    {
    }
 };
+
 
 // using VariantCard = std::variant <Follower, Champion, Spell>;
 
