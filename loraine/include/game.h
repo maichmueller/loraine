@@ -24,13 +24,14 @@ class Game {
 
    void _end_round();
 
-   void _activate_battlemode(bool b);
+   void _activate_battlemode(PLAYER attack_player, bool b);
 
    void _resolve_battle();
 
    void _resolve_spell_stack();
   public:
    bool run_game();
+
 };
 
 #endif  // LORAINE_GAME_H

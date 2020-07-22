@@ -64,28 +64,73 @@ void Game::_do_action(const sptr< Action >& action)
          auto [player, round, _, positions] = cast_action->get_action_data();
          m_state->get_board()->move_to_battlefield(positions, player);
 
-         _activate_battlemode(true);
+         _activate_battlemode(player, true);
       }
 
       case BLOCK: break;
       case ROUND_END: break;
       case ACCEPT: {
          _resolve_spell_stack();
-         if (m_battle_mode) {
+         if(m_battle_mode) {
             _resolve_battle();
          }
-
       }
-      case MULLIGAN: break;
-
-      m_state->incr_turn();
+      case MULLIGAN: break; m_state->incr_turn();
    }
    return action_type;
 }
-void Game::_activate_battlemode(bool battlemode_on) {
+void Game::_activate_battlemode(PLAYER attack_player, bool battlemode_on)
+{
    m_battle_mode = battlemode_on;
+   m_state->set_attacker(attack_player);
    events::active_event::set(events::BattleEvent());
 }
-void Game::_resolve_spell_stack() {
-   m_state->g
+void Game::_resolve_spell_stack()
+{
+   auto& spell_stack = m_state->get_spell_stack();
+   while(! spell_stack.empty()) {
+      auto last_spell = *spell_stack.back();
+      spell_stack.pop_back();
+      // spells dont react to events particularly, so they are passed a None-
+      // event
+      last_spell(*m_state, events::AnyEvent());
+   }
+}
+void Game::_resolve_battle()
+{
+   auto attacker = m_state->get_attacker().value();
+   auto& battlefield_att = m_state->get_board()->get_battlefield(attacker);
+   auto& battlefield_def = m_state->get_board()->get_battlefield(
+      PLAYER(1 - attacker));
+   for(auto pos = 0; pos < BATTLEFIELD_SIZE; ++pos) {
+      auto unit_att_opt = battlefield_att.at(pos);
+
+      if(unit_att_opt.has_value()) {
+         // if this spot on the battlefield sees an actual unit posted for
+         // attack we need to make it strike
+         auto unit_att = unit_att_opt.value();
+         auto unit_def_opt = battlefield_def.at(pos);
+         if(unit_def_opt.has_value()) {
+            // if there is a defender posted on the same spot of the attacker,
+            // it needs to battle the attacker
+            auto unit_def = unit_def_opt.value();
+
+            auto att_kwords = unit_att->get_keywords();
+            bool quick_attacks = std::find(
+                                   att_kwords.begin(),
+                                   att_kwords.end(),
+                                   Keyword::QUICK_ATTACK)
+                                != att_kwords.end();
+            bool overwhelms = std::find(
+                                   att_kwords.begin(),
+                                   att_kwords.end(),
+                                   Keyword::OVERWHELM)
+                                != att_kwords.end();
+            if(quick_attacks) {
+               
+            }
+            unit_att, unit_def_opt, quick_attacks);
+         }
+      }
+   }
 }

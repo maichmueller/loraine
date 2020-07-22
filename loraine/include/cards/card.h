@@ -66,16 +66,17 @@ class Card {
    // whether a card is collectible (i.e. can be added to a deck)
    const bool m_is_collectible;
 
-   // the short ID, a running uint counting its card position in the total
-   // card gallery
+   // the short ID, a running uint counting its index in the total card gallery
    const SID m_id;
    // the unique id used to identify this specific instance of a card
    UUID m_uuid;
 
    // variable attributes of the cards
 
-   // the mana it costs to play the cards
-   size_t m_mana_cost;
+   // the mana it costs to play the cards (as default)
+   const size_t m_mana_cost_base;
+   // the current change to the mana cost of the card
+   int m_mana_cost_delta;
    // all the keywords pertaining to the cards
    std::vector< Keyword > m_keywords;
 
@@ -106,7 +107,12 @@ class Card {
    [[nodiscard]] auto get_unit_type() const { return m_unit_type; }
    [[nodiscard]] auto get_rarity() const { return m_rarity; }
    [[nodiscard]] auto get_card_type() const { return m_card_type; }
-   [[nodiscard]] auto get_mana_cost() const { return m_mana_cost; }
+   [[nodiscard]] auto get_mana_cost_base() const { return m_mana_cost_base; }
+   [[nodiscard]] auto get_mana_cost_delta() const { return m_mana_cost_delta; }
+   [[nodiscard]] auto get_mana_cost() const
+   {
+      return m_mana_cost_base + m_mana_cost_delta;
+   }
    [[nodiscard]] auto get_keywords() const { return m_keywords; }
    [[nodiscard]] auto get_effects_map() const { return m_effects; }
    [[nodiscard]] auto get_id() const { return m_id; }
@@ -132,7 +138,10 @@ class Card {
       return m_unit_type == UnitType::FOLLOWER;
    }
 
-   void set_mana_cost(size_t mana_cost) { m_mana_cost = mana_cost; }
+   void set_mana_cost(size_t mana_cost)
+   {
+      m_mana_cost_delta = mana_cost - m_mana_cost_base;
+   }
 
    void set_keywords(std::vector< Keyword > keywords)
    {
@@ -140,7 +149,7 @@ class Card {
    }
    void set_effect(events::EventType e_type, Effect effect)
    {
-      m_effects[e_type] = Effect(std::move(effect));
+      m_effects[e_type] = std::move(effect);
    }
 
    /*
@@ -162,9 +171,10 @@ class Card {
       Rarity rarity,
       CardType card_type,
       bool is_collectible,
-      size_t mana_cost,
+      size_t mana_cost_base,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, Effect > effects)
+      std::map< events::EventType, Effect > effects,
+      int mana_cost_delta = 0)
        : m_name(name),
          m_effect_desc(effect_desc),
          m_lore(lore),
@@ -176,7 +186,8 @@ class Card {
          m_is_collectible(is_collectible),
          m_id(id),
          m_uuid(new_uuid()),
-         m_mana_cost(mana_cost),
+         m_mana_cost_base(mana_cost_base),
+         m_mana_cost_delta(mana_cost_delta),
          m_keywords(keyword_list),
          m_effects(std::move(effects))
    {
@@ -197,7 +208,8 @@ class Card {
          m_is_collectible(card.is_collectible()),
          m_id(card.get_id()),
          m_uuid(new_uuid()),
-         m_mana_cost(card.get_mana_cost()),
+         m_mana_cost_base(card.get_mana_cost_base()),
+         m_mana_cost_delta(card.get_mana_cost_delta()),
          m_keywords(card.get_keywords()),
          m_effects(card.get_effects_map())
    {
@@ -218,17 +230,38 @@ class Card {
     */
    Card(Card&& card) = delete;
 
-   virtual bool play_condition_check() = 0;
+   virtual bool play_condition_check() { return true; }
+
+   void add_mana_cost(int amount) { m_mana_cost_delta += amount; }
 };
 
 class Unit: public Card {
   public:
-   void set_damage(size_t damage) { m_damage = damage; }
-   void set_health(size_t health) { m_health = health; }
-   void set_flag_is_damaged(bool is_damaged) { m_is_damaged = is_damaged; }
-   [[nodiscard]] auto get_damage() const { return m_damage; }
-   [[nodiscard]] auto get_health() const { return m_health; }
-   [[nodiscard]] auto is_damaged() const { return m_is_damaged; }
+   inline void set_attack(size_t attack)
+   {
+      m_attack_delta = attack - m_attack_base;
+   }
+   inline void set_health(size_t health)
+   {
+      m_health_delta = health - m_health_base;
+   }
+   inline void set_flag_is_damaged(bool is_damaged)
+   {
+      m_is_damaged = is_damaged;
+   }
+   [[nodiscard]] inline auto get_attack_base() const { return m_attack_base; }
+   [[nodiscard]] inline auto get_attack_delta() const { return m_attack_delta; }
+   [[nodiscard]] inline auto get_attack() const
+   {
+      return m_attack_base + m_attack_delta;
+   }
+   [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
+   [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
+   [[nodiscard]] inline auto get_health() const
+   {
+      return m_health_base + m_health_delta;
+   }
+   [[nodiscard]] inline auto is_damaged() const { return m_is_damaged; }
 
    Unit(
       SID id,
@@ -240,12 +273,15 @@ class Unit: public Card {
       UnitType unit_type,
       Rarity rarity,
       bool is_collectible,
-      size_t mana_cost,
+      size_t mana_cost_base,
+      size_t attack_base,
+      size_t health_base,
       const std::initializer_list< Keyword >& keyword_list,
       std::map< events::EventType, Effect > effects,
-      size_t damage,
-      size_t health,
-      bool is_damaged)
+      int mana_cost_delta = 0,
+      int attack_delta = 0,
+      int health_delta = 0,
+      bool is_damaged = false)
        : Card(
           id,
           name,
@@ -257,18 +293,21 @@ class Unit: public Card {
           rarity,
           CardType::UNIT,
           is_collectible,
-          mana_cost,
+          mana_cost_base,
           keyword_list,
-          std::move(effects)),
-         m_damage(damage),
-         m_health(health),
+          std::move(effects),
+          mana_cost_delta),
+         m_attack_base(attack_base),
+         m_health_base(health_base),
+         m_attack_delta(attack_delta),
+         m_health_delta(health_delta),
          m_is_damaged(is_damaged)
    {
    }
    Unit(const Unit& card)
        : Card(card),
-         m_damage(card.get_damage()),
-         m_health(card.get_health()),
+         m_attack_delta(card.get_attack_delta()),
+         m_health_delta(card.get_health_delta()),
          m_is_damaged(card.is_damaged())
    {
    }
@@ -276,12 +315,20 @@ class Unit: public Card {
   private:
    // unit cards based attributes
 
-   // the damage the unit deals
-   size_t m_damage;
-   // the health of the unit
-   size_t m_health;
+   // the base damage the unit deals.
+   const size_t m_attack_base = 0;
+   // the base health of the unit
+   const size_t m_health_base = 0;
+
+   // The current change in health and damage attributes (hence 'delta')
+
+   // the damage change the unit deals.
+   int m_attack_delta;
+   // the health change of the unit
+   int m_health_delta;
+
    // whether the unit is currently damaged
-   bool m_is_damaged;
+   bool m_is_damaged = false;
 };
 
 class Spell: public Card {
@@ -296,7 +343,8 @@ class Spell: public Card {
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, Effect > effects)
+      std::map< events::EventType, Effect > effects,
+      int mana_cost_delta = 0)
        : Card(
           id,
           name,
@@ -310,11 +358,11 @@ class Spell: public Card {
           is_collectible,
           mana_cost,
           keyword_list,
-          std::move(effects))
+          std::move(effects),
+          mana_cost_delta)
    {
    }
 };
-
 
 // using VariantCard = std::variant <Follower, Champion, Spell>;
 

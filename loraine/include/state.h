@@ -49,11 +49,12 @@ class State {
    PLAYER m_starting_player;
    size_t m_round = 0;
    PLAYER m_turn;
+   std::optional< PLAYER > m_attacker;
    int m_terminal;
    bool m_terminal_checked;
    std::vector< sptr< Spell > > m_spell_stack;
 
-   void inline _commit_to_history(sptr< Action > action);
+   inline void _commit_to_history(sptr< Action > action);
 
    void _check_terminal();
 
@@ -62,141 +63,154 @@ class State {
   public:
    State();
 
-   void set_nexus_health(int value, PLAYER player)
+   inline void set_nexus_health(int value, PLAYER player)
    {
       m_nexus_health[player] = value;
    }
-   void set_mana(size_t value, PLAYER player) { m_mana[player] = value; }
+   inline void set_mana(size_t value, PLAYER player) { m_mana[player] = value; }
 
-   void set_mana_gems(size_t value, PLAYER player)
+   inline void set_mana_gems(size_t value, PLAYER player)
    {
       m_mana_gems[player] = value;
       _check_enlightenment();
    }
-   void set_spell_mana(size_t value, PLAYER player)
+   inline void set_spell_mana(size_t value, PLAYER player)
    {
       m_spell_mana[player] = value;
    }
-   void set_hand(HandType hand, PLAYER player)
+   inline void set_hand(HandType hand, PLAYER player)
    {
       m_hand[player] = std::move(hand);
    }
-   void set_deck(DeckContainer deck, PLAYER player)
+   inline void set_deck(DeckContainer deck, PLAYER player)
    {
       m_deck_cont[player] = std::move(deck);
    }
 
-   void set_flag_can_attack(bool value, PLAYER player)
+   inline void set_flag_can_attack(bool value, PLAYER player)
    {
       m_can_attack[player] = value;
    }
-   void set_flag_is_enlightened(bool value, PLAYER player)
+   inline void set_flag_is_enlightened(bool value, PLAYER player)
    {
       m_is_enlightened[player] = value;
    }
-   void set_flag_can_plunder(bool value, PLAYER player)
+   inline void set_flag_can_plunder(bool value, PLAYER player)
    {
       m_can_plunder[player] = value;
    }
 
-   void set_dead_ally_count(size_t value, PLAYER player)
+   inline void set_dead_ally_count(size_t value, PLAYER player)
    {
       m_dead_ally_count[player] = value;
    }
-   void set_dead_ally_count_rnd(size_t value, PLAYER player)
+   inline void set_dead_ally_count_rnd(size_t value, PLAYER player)
    {
       m_dead_ally_count_rnd[player] = value;
    }
-   void set_graveyard(std::vector< sptr< Card > > value, PLAYER player)
+   inline void set_graveyard(std::vector< sptr< Card > > value, PLAYER player)
    {
       m_graveyard[player] = std::move(value);
    }
-   void set_tossed_card(std::vector< sptr< Card > > value, PLAYER player)
+   inline void set_tossed_card(std::vector< sptr< Card > > value, PLAYER player)
    {
       m_tossed_cards[player] = std::move(value);
    }
 
-   void set_board(sptr< Board > value) { m_board = std::move(value); }
-   void set_history(std::vector< sptr< Action > > history)
+   inline void set_board(sptr< Board > value) { m_board = std::move(value); }
+   inline void set_history(std::vector< sptr< Action > > history)
    {
       m_history = std::move(history);
    }
 
-   void set_starting_player(PLAYER player)
+   inline void set_starting_player(PLAYER player)
    {
       m_starting_player = player;
       set_flag_can_attack(true, player);
       set_turn(player);
    }
 
-   void set_turn(PLAYER player) { m_turn = player; }
+   inline void set_turn(PLAYER player) { m_turn = player; }
 
-   void set_spell_stack(std::vector< sptr< Spell > > spell_stack)
+   inline void set_attacker(PLAYER player) { m_attacker = player; }
+   inline void reset_attacker() { m_attacker.reset(); }
+
+   inline void set_spell_stack(std::vector< sptr< Spell > > spell_stack)
    {
       m_spell_stack = std::move(spell_stack);
    }
 
-   [[nodiscard]] auto get_nexus_health(PLAYER player) const
+   [[nodiscard]] inline auto get_nexus_health(PLAYER player) const
    {
       return m_nexus_health[player];
    }
-   [[nodiscard]] auto get_mana(PLAYER player) const { return m_mana[player]; }
-   [[nodiscard]] auto get_mana_gems(PLAYER player) const
+   [[nodiscard]] inline auto get_mana(PLAYER player) const
+   {
+      return m_mana[player];
+   }
+   [[nodiscard]] inline auto get_mana_gems(PLAYER player) const
    {
       return m_mana_gems[player];
    }
-   [[nodiscard]] auto get_spell_mana(PLAYER player) const
+   [[nodiscard]] inline auto get_spell_mana(PLAYER player) const
    {
       return m_spell_mana[player];
    }
-   [[nodiscard]] auto* get_hand(PLAYER player) const { return &m_hand[player]; }
-   [[nodiscard]] auto* get_deck(PLAYER player) const
+   [[nodiscard]] inline auto* get_hand(PLAYER player) const
+   {
+      return &m_hand[player];
+   }
+   [[nodiscard]] inline auto* get_deck(PLAYER player) const
    {
       return &m_deck_cont[player];
    }
-   [[nodiscard]] auto get_flag_can_attack(PLAYER player) const
+   [[nodiscard]] inline auto get_flag_can_attack(PLAYER player) const
    {
       return m_can_attack[player];
    }
-   [[nodiscard]] auto get_flag_is_enlightened(PLAYER player) const
+   [[nodiscard]] inline auto get_flag_is_enlightened(PLAYER player) const
    {
       return m_is_enlightened[player];
    }
-   [[nodiscard]] auto get_flag_can_plunder(PLAYER player) const
+   [[nodiscard]] inline auto get_flag_can_plunder(PLAYER player) const
    {
       return m_can_plunder[player];
    }
-   [[nodiscard]] auto get_dead_ally_count(PLAYER player) const
+   [[nodiscard]] inline auto get_dead_ally_count(PLAYER player) const
    {
       return m_dead_ally_count[player];
    }
-   [[nodiscard]] auto get_dead_ally_count_rnd(PLAYER player) const
+   [[nodiscard]] inline auto get_dead_ally_count_rnd(PLAYER player) const
    {
       return m_dead_ally_count_rnd[player];
    }
-   [[nodiscard]] auto get_graveyard(PLAYER player) const
+   [[nodiscard]] inline auto get_graveyard(PLAYER player) const
    {
       return m_graveyard[player];
    }
-   [[nodiscard]] auto get_tossed_cards(PLAYER player) const
+   [[nodiscard]] inline auto get_tossed_cards(PLAYER player) const
    {
       return m_tossed_cards[player];
    }
-   [[nodiscard]] auto get_board() const { return m_board; }
-   [[nodiscard]] auto* get_history() const { return &m_history; }
-   [[nodiscard]] auto get_round() const { return m_round; }
-   [[nodiscard]] auto get_turn() const { return m_turn; }
-   [[nodiscard]] auto get_starting_player() const { return m_starting_player; }
-   [[nodiscard]] auto get_spell_stack() const { return m_spell_stack; }
+   [[nodiscard]] inline auto get_board() const { return m_board; }
+   [[nodiscard]] inline auto* get_history() const { return &m_history; }
+   [[nodiscard]] inline auto get_round() const { return m_round; }
+   [[nodiscard]] inline auto get_turn() const { return m_turn; }
+   [[nodiscard]] inline auto get_attacker() const { return m_attacker; }
+   [[nodiscard]] inline auto get_starting_player() const
+   {
+      return m_starting_player;
+   }
+   [[nodiscard]] inline auto& get_spell_stack() { return m_spell_stack; }
 
-   void incr_managems(size_t amount, PLAYER player)
+   inline void incr_managems(size_t amount, PLAYER player)
    {
       set_mana_gems(
          std::min(m_mana_gems[player] + amount, size_t(MAX_MANA)), player);
    }
-   void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2); }
+   inline void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2); }
 
-   void inline shuffle_card_into_deck(const sptr< Card >& card, PLAYER player)
+   inline void shuffle_card_into_deck(const sptr< Card >& card, PLAYER player)
    {
       auto& deck = m_deck_cont[player].get_cards();
       std::uniform_int_distribution< size_t > dist(0, deck.size());
@@ -212,7 +226,7 @@ class State {
    /*
     * Check if the current game state is terminal
     */
-   int inline is_terminal()
+   inline int is_terminal()
    {
       if(! m_terminal_checked) {
          _check_terminal();

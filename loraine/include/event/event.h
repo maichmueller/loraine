@@ -46,7 +46,7 @@ struct AnyEvent {
    /*
     * The base class method to return all base member variables
     */
-   [[nodiscard]] auto get_event_data() const { return std::tuple{}; }
+   [[nodiscard]] auto get_event_data() const { return std::tuple{event_type}; }
 
   protected:
    /*
@@ -84,6 +84,7 @@ struct AnyEvent {
    virtual ~AnyEvent() = default;
    AnyEvent() {}
 };
+
 struct BattleEvent: public AnyEvent {
    static const EventType event_type = EventType::BATTLE;
    explicit BattleEvent() : AnyEvent() {}
