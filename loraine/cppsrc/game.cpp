@@ -108,26 +108,45 @@ void Game::_resolve_battle()
       if(unit_att_opt.has_value()) {
          // if this spot on the battlefield sees an actual unit posted for
          // attack we need to make it strike
-         auto unit_att = unit_att_opt.value();
+         auto unit_att = std::dynamic_pointer_cast< Unit >(
+            unit_att_opt.value());
          auto unit_def_opt = battlefield_def.at(pos);
          if(unit_def_opt.has_value()) {
             // if there is a defender posted on the same spot of the attacker,
             // it needs to battle the attacker
-            auto unit_def = unit_def_opt.value();
+            auto unit_def = std::dynamic_pointer_cast< Unit >(
+               unit_def_opt.value());
 
             auto att_kwords = unit_att->get_keywords();
             bool quick_attacks = std::find(
-                                   att_kwords.begin(),
-                                   att_kwords.end(),
-                                   Keyword::QUICK_ATTACK)
-                                != att_kwords.end();
+                                    att_kwords.begin(),
+                                    att_kwords.end(),
+                                    Keyword::QUICK_ATTACK)
+                                 != att_kwords.end();
             bool overwhelms = std::find(
-                                   att_kwords.begin(),
-                                   att_kwords.end(),
-                                   Keyword::OVERWHELM)
-                                != att_kwords.end();
+                                 att_kwords.begin(),
+                                 att_kwords.end(),
+                                 Keyword::OVERWHELM)
+                              != att_kwords.end();
             if(quick_attacks) {
-               
+               auto attack_damage = -unit_att->get_attack();
+               bool def_is_damageable = unit_def->is_damageable(
+                  unit_att, attack_damage);
+               std::optional<int> health_def;
+               if(def_is_damageable) {
+                  health_def = unit_def->add_health(attack_damage);
+                  events::active_event::set(events::UnitTakeDamageEvent(
+                     attacker, unit_def, attack_damage));
+               }
+
+               // activate the strike event now
+               events::active_event::set(
+                  events::StrikeEvent(attacker, unit_att->get_uuid()));
+
+               if(health_def.has_value()) {
+                  events::active_event::set(events::UnitTakeDamageEvent())
+                  _kill(unit_def)
+               }
             }
             unit_att, unit_def_opt, quick_attacks);
          }

@@ -3,11 +3,17 @@
 #define LORAINE_EVENT_H
 
 #include <stack>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include "rulesets.h"
 #include "types.h"
+
+// forward-declare Card, Unit, Spell
+class Card;
+class Unit;
+class Spell;
 
 namespace events {
 
@@ -405,18 +411,18 @@ class TargetEvent: public AnyEvent {
 };
 class UnitTakeDamageEvent: public AnyEvent {
    PLAYER m_player;
-   UUID m_targeted_id;
+   sptr<Unit> m_unit;
    size_t m_damage;
 
   public:
    static const EventType event_type = EventType::UNIT_TAKE_DAMAGE;
-   UnitTakeDamageEvent(PLAYER player, UUID targeted_id, size_t damage)
-       : m_player(player), m_targeted_id(targeted_id), m_damage(damage)
+   UnitTakeDamageEvent(PLAYER player, sptr<Unit> unit, size_t damage)
+       : m_player(player), m_unit(std::move(unit)), m_damage(damage)
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_targeted_id, m_damage);
+      return _get_event_data(m_player, m_unit, m_damage);
    }
 };
 class UseManaEvent: public AnyEvent {

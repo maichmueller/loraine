@@ -113,8 +113,8 @@ class Card {
    {
       return m_mana_cost_base + m_mana_cost_delta;
    }
-   [[nodiscard]] auto get_keywords() const { return m_keywords; }
-   [[nodiscard]] auto get_effects_map() const { return m_effects; }
+   [[nodiscard]] const auto& get_keywords() const { return m_keywords; }
+   [[nodiscard]] const auto& get_effects_map() const { return m_effects; }
    [[nodiscard]] auto get_id() const { return m_id; }
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
 
@@ -236,6 +236,31 @@ class Card {
 };
 
 class Unit: public Card {
+  private:
+   // unit cards based attributes
+
+   // the base damage the unit deals.
+   const size_t m_attack_base = 0;
+   // the base health of the unit
+   const size_t m_health_base = 0;
+
+   // The current change in health and damage attributes (hence 'delta')
+
+   // the damage change the unit deals.
+   int m_attack_delta;
+   // the health change of the unit
+   int m_health_delta;
+
+   // whether the unit is currently damaged
+   bool m_is_damaged = false;
+
+   // a status checker if this unit can be damaged (some cards negate damage)
+   std::function< bool(const std::optional< sptr< Card > >&, size_t) >
+      m_check_is_damageable;
+   // a status checker if this unit can be damaged (some cards negate damage)
+   std::function< bool(const std::optional< sptr< Card > >&) >
+      m_check_is_killable;
+
   public:
    inline void set_attack(size_t attack)
    {
@@ -261,7 +286,32 @@ class Unit: public Card {
    {
       return m_health_base + m_health_delta;
    }
+   [[nodiscard]] inline auto get_check_is_damageable() const
+   {
+      return m_check_is_damageable;
+   }
+   [[nodiscard]] inline auto get_check_is_killable() const
+   {
+      return m_check_is_killable;
+   }
    [[nodiscard]] inline auto is_damaged() const { return m_is_damaged; }
+   [[nodiscard]] inline bool is_damageable(
+      const std::optional< sptr< Card > >& optional_card = {},
+      size_t amount = 0) const
+   {
+      return m_check_is_damageable(optional_card, amount);
+   }
+   [[nodiscard]] inline bool is_killable(
+      const std::optional< sptr< Card > >& optional_card = {}) const
+   {
+      return m_check_is_killable(optional_card);
+   }
+
+   inline int add_health(int amount)
+   {
+      m_health_delta = amount;
+      return get_health();
+   }
 
    Unit(
       SID id,
@@ -281,7 +331,16 @@ class Unit: public Card {
       int mana_cost_delta = 0,
       int attack_delta = 0,
       int health_delta = 0,
-      bool is_damaged = false)
+      bool is_damaged = false,
+      std::function< bool(const std::optional< sptr< Card > >&, size_t) >
+         check_is_damageable =
+            [](const std::optional< sptr< Card > >& /*unused*/,
+               size_t /*unused*/) { return true; },
+      std::function< bool(const std::optional< sptr< Card > >&) >
+         check_is_killable =
+            [](const std::optional< sptr< Card > >& /*unused*/) {
+               return true;
+            })
        : Card(
           id,
           name,
@@ -301,34 +360,19 @@ class Unit: public Card {
          m_health_base(health_base),
          m_attack_delta(attack_delta),
          m_health_delta(health_delta),
-         m_is_damaged(is_damaged)
+         m_is_damaged(is_damaged),
+         m_check_is_damageable(std::move(check_is_damageable)),
+         m_check_is_killable(std::move(check_is_killable))
    {
    }
    Unit(const Unit& card)
        : Card(card),
          m_attack_delta(card.get_attack_delta()),
          m_health_delta(card.get_health_delta()),
-         m_is_damaged(card.is_damaged())
+         m_is_damaged(card.is_damaged()),
+         m_check_is_damageable(std::move(card.get_check_is_damageable()))
    {
    }
-
-  private:
-   // unit cards based attributes
-
-   // the base damage the unit deals.
-   const size_t m_attack_base = 0;
-   // the base health of the unit
-   const size_t m_health_base = 0;
-
-   // The current change in health and damage attributes (hence 'delta')
-
-   // the damage change the unit deals.
-   int m_attack_delta;
-   // the health change of the unit
-   int m_health_delta;
-
-   // whether the unit is currently damaged
-   bool m_is_damaged = false;
 };
 
 class Spell: public Card {
