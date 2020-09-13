@@ -48,14 +48,14 @@ class DeckContainer {
    std::vector< sptr< Card > > _find_cards_nopop(
       const std::function< bool(sptr< Card >) >& filter) const;
 
-   sptr<Card> _pop_single_card(size_t index);
-
   public:
    void set_cards(std::vector< sptr< Card > > cards)
    {
       m_cards = std::move(cards);
    }
+
    auto& get_cards() { return m_cards; }
+
    [[nodiscard]] const auto& get_cards() const { return m_cards; }
 
    /*
@@ -93,10 +93,20 @@ class DeckContainer {
     * Draw the top card
     */
    sptr< Card > draw_card();
+
+   /*
+    * Draw the top card
+    */
+   sptr< Card > draw_card_by_index(size_t index);
+
    /*
     * Drawing randomly on of the cards that matches the given ID.
     */
    sptr< Card > draw_specific_card(SID card_sid);
+
+   [[nodiscard]] auto size() const {
+      return m_cards.size();
+   }
 };
 
 #endif  // LORAINE_DECK_H

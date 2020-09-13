@@ -16,8 +16,10 @@
 #include "types.h"
 
 class State {
+  public:
    using HandType = std::array< sptr< Card >, HAND_CARDS_LIMIT >;
 
+  private:
    // player symmetric attributes
 
    SymArr< SID > m_nexus_ids{0, 1};
@@ -43,18 +45,19 @@ class State {
    SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
    sptr< Board > m_board = std::make_shared< Board >();
 
-   std::vector< sptr< Action > > m_history;
+   std::vector< sptr< AnyAction > > m_history;
 
    // state attributes
    PLAYER m_starting_player;
    size_t m_round = 0;
    PLAYER m_turn;
+   unsigned short m_pass_count = 0;
    std::optional< PLAYER > m_attacker;
    int m_terminal;
    bool m_terminal_checked;
    std::vector< sptr< Spell > > m_spell_stack;
 
-   inline void _commit_to_history(sptr< Action > action);
+   inline void _commit_to_history(sptr< AnyAction > action);
 
    void _check_terminal();
 
@@ -118,7 +121,7 @@ class State {
    }
 
    inline void set_board(sptr< Board > value) { m_board = std::move(value); }
-   inline void set_history(std::vector< sptr< Action > > history)
+   inline void set_history(std::vector< sptr< AnyAction > > history)
    {
       m_history = std::move(history);
    }
@@ -219,11 +222,6 @@ class State {
    }
 
    /*
-    * Perform the passed action
-    */
-   void do_action(const sptr< Action >& action);
-
-   /*
     * Check if the current game state is terminal
     */
    inline int is_terminal()
@@ -236,12 +234,21 @@ class State {
 
    sptr< Card > draw_card();
 
-   void play_unit(const sptr< Card >& unit);
+   sptr< Card > draw_card_by_idx(PLAYER player, size_t index);
 
-   void play_spell(const sptr< Card >& spell);
+   std::vector< sptr< Card > > draw_n_cards(PLAYER player, size_t n, bool random = true);
+
+   void play_unit(const sptr< Unit >& unit);
+
+   void play_spell(const sptr< Spell >& spell);
 
    void move_to_graveyard(sptr< Card > card, PLAYER player);
    void move_to_tossed(sptr< Card > card, PLAYER player);
+
+   inline void incr_pass_count() { m_pass_count += 1; }
+   inline void reset_pass_count() { m_pass_count = 0; }
+
+   void shuffle_deck(PLAYER player);
 };
 
 #endif  // LORAINE_STATE_H

@@ -16,4 +16,8 @@ struct active_event {
   private:
    static VariantEvent m_active_event;
 };
+
+inline void trigger(AnyEvent&& event) {
+   events::active_event::set(std::move(event));
+}
 }  // namespace events

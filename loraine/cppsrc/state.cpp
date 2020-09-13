@@ -31,7 +31,7 @@ void State::_check_terminal()
    m_terminal_checked = true;
 }
 
-void State::_commit_to_history(sptr< Action > action)
+void State::_commit_to_history(sptr< AnyAction > action)
 {
    m_history.emplace_back(std::move(action));
 }
@@ -48,5 +48,35 @@ void State::_check_enlightenment() const
       events::active_event::set(events::EnlightenmentEvent(player));
    }
 }
+sptr< Card > State::draw_card_by_idx(PLAYER player, size_t index)
+{
+   return m_deck_cont[player].draw_card_by_index(index);
+}
+std::vector< sptr< Card > > State::draw_n_cards(
+   PLAYER player, size_t n, bool random)
+{
+   std::vector< sptr< Card > > cards;
+   cards.reserve(n);
 
+   if(random) {
+      auto deck = m_deck_cont.at(player);
 
+      std::vector< size_t > indices;
+      indices.reserve(deck.size());
+      for(size_t i = 0; i < deck.size(); ++i) {
+         indices.at(i) = i;
+      }
+
+      // draw without replacement n many indices by shuffling
+      // all indices and taking the first n many.
+      std::shuffle(indices.begin(), indices.end(), rng::rng_def_engine);
+      for(size_t i = 0; i < n; ++i) {
+         cards.emplace_back(draw_card_by_idx(player, indices.at(i)));
+      }
+   } else {
+      for(size_t i = 0; i < n; ++i) {
+         cards.emplace_back(draw_card());
+      }
+   }
+   return cards;
+}

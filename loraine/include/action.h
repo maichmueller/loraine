@@ -11,9 +11,9 @@
 #include "rulesets.h"
 #include "types.h"
 
-enum ActionType { PASS, PLAY, ATTACK, BLOCK, ROUND_END, ACCEPT, MULLIGAN };
+enum ActionType { PASS, PLAY, ATTACK, BLOCK, ACCEPT, MULLIGAN };
 
-class Action {
+class AnyAction {
    // the type of action performed
    const ActionType m_action_type;
    size_t m_round;
@@ -64,7 +64,7 @@ class Action {
    }
 
    // protected constructor
-   Action(ActionType act_type, size_t round, PLAYER player)
+   AnyAction(ActionType act_type, size_t round, PLAYER player)
        : m_action_type(act_type), m_round(round), m_player(player)
    {
    }
@@ -73,10 +73,10 @@ class Action {
 /*
  * Action for passing
  */
-class PassAction: public Action {
+class PassAction: public AnyAction {
   public:
    PassAction(size_t round, PLAYER player)
-       : Action(ActionType::PASS, round, player)
+       : AnyAction(ActionType::PASS, round, player)
    {
    }
 };
@@ -85,31 +85,23 @@ class PassAction: public Action {
  * This is the action for accepting the spell/skill outcome of whatever
  * action/reaction the opponent has played.
  */
-class AcceptAction: public Action {
+class AcceptAction: public AnyAction {
   public:
    AcceptAction(size_t round, PLAYER player)
-       : Action(ActionType::ACCEPT, round, player)
+       : AnyAction(ActionType::ACCEPT, round, player)
    {
    }
 };
-class RoundEndAction: public Action {
-  public:
-   RoundEndAction(size_t round, PLAYER player)
-       : Action(ActionType::ROUND_END, round, player)
-   {
-   }
-};
-
 /*
  * Action for playing a unit/spell/skill
  */
-class PlayAction: public Action {
+class PlayAction: public AnyAction {
    // the actual card that was played
    sptr< Card > card_played;
 
   public:
    PlayAction(size_t round, PLAYER player, sptr< Card > card_played)
-       : Action(ActionType::PLAY, round, player),
+       : AnyAction(ActionType::PLAY, round, player),
          card_played(std::move(card_played))
    {
    }
@@ -123,23 +115,28 @@ class PlayAction: public Action {
 /*
  * Action for declaring an attack
  */
-class AttackAction: public Action {
+class AttackAction: public AnyAction {
    // the positions on the battlefield the units from the backrow take.
    // One has a vector naming the position the unit from the backrow
    // (where it holds the position of its current index in the backrow
    // container) onto the position specified in the vector.
    std::vector< size_t > back_to_field_vec;
+   std::optional< std::vector< sptr< Spell > > > potential_spells;
 
   public:
    AttackAction(
-      size_t round, PLAYER player, std::vector< size_t > back_to_field_vec)
-       : Action(ActionType::ATTACK, round, player),
-         back_to_field_vec(std::move(back_to_field_vec))
+      size_t round,
+      PLAYER player,
+      std::vector< size_t > back_to_field_vec,
+      std::optional< std::vector< sptr< Spell > > > potential_spells)
+       : AnyAction(ActionType::ATTACK, round, player),
+         back_to_field_vec(std::move(back_to_field_vec)),
+         potential_spells(std::move(potential_spells))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(back_to_field_vec);
+      return _get_action_data(back_to_field_vec, potential_spells);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
@@ -150,23 +147,28 @@ class AttackAction: public Action {
 /*
  * Action for declaring block
  */
-class BlockAction: public Action {
+class BlockAction: public AnyAction {
    // the positions on the battlefield the units from the backrow take.
    // One has a vector naming the position the unit from the backrow
    // (where it holds the position of its current index in the backrow
    // container) onto the position specified in the vector.
    std::vector< size_t > back_to_field_vec;
+   std::optional< std::vector< sptr< Spell > > > potential_spells;
 
   public:
    BlockAction(
-      size_t round, PLAYER player, std::vector< size_t > back_to_field_vec)
-       : Action(ActionType::BLOCK, round, player),
-         back_to_field_vec(std::move(back_to_field_vec))
+      size_t round,
+      PLAYER player,
+      std::vector< size_t > back_to_field_vec,
+      std::optional< std::vector< sptr< Spell > > > potential_spells)
+       : AnyAction(ActionType::BLOCK, round, player),
+         back_to_field_vec(std::move(back_to_field_vec)),
+         potential_spells(std::move(potential_spells))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(back_to_field_vec);
+      return _get_action_data(back_to_field_vec, potential_spells);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
@@ -177,7 +179,7 @@ class BlockAction: public Action {
 /*
  * Action for deciding which cards to replace in the initial draw
  */
-class MulliganAction: public Action {
+class MulliganAction: public AnyAction {
    // the positions on the battlefield the units take
    std::array< bool, INITIAL_HAND_SIZE > replace;
 
@@ -186,7 +188,7 @@ class MulliganAction: public Action {
       size_t round,
       PLAYER player,
       std::array< bool, INITIAL_HAND_SIZE > replace)
-       : Action(ActionType::MULLIGAN, round, player), replace(replace)
+       : AnyAction(ActionType::MULLIGAN, round, player), replace(replace)
    {
    }
    [[nodiscard]] auto get_action_data() const

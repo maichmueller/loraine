@@ -66,7 +66,7 @@ auto DeckContainer::_find_cards_pop(
 
    for(const auto& idx : indices) {
       size_t shifted_idx = idx - idx_shift;
-      popped_cards.emplace_back(_pop_single_card(shifted_idx));
+      popped_cards.emplace_back(draw_card_by_index(shifted_idx));
       ++idx_shift;
    }
    return popped_cards;
@@ -113,7 +113,7 @@ sptr< Card > DeckContainer::draw_card()
    m_cards.pop_back();
    return card;
 }
-sptr< Card > DeckContainer::_pop_single_card(size_t  index)
+sptr< Card > DeckContainer::draw_card_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
       std::stringstream msg;

@@ -152,6 +152,12 @@ class Card {
       m_effects[e_type] = std::move(effect);
    }
 
+   [[nodiscard]] inline bool has_keyword(Keyword kword) const
+   {
+      return std::find(m_keywords.begin(), m_keywords.end(), kword)
+             != m_keywords.end();
+   }
+
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
@@ -238,47 +244,47 @@ class Card {
 class Unit: public Card {
   private:
    // unit cards based attributes
+   bool m_alive = true;
 
    // the base damage the unit deals.
-   const size_t m_attack_base = 0;
+   const size_t m_power_base = 0;
    // the base health of the unit
    const size_t m_health_base = 0;
 
    // The current change in health and damage attributes (hence 'delta')
 
    // the damage change the unit deals.
-   int m_attack_delta;
+   int m_power_delta;
    // the health change of the unit
    int m_health_delta;
 
    // whether the unit is currently damaged
-   bool m_is_damaged = false;
-
-   // a status checker if this unit can be damaged (some cards negate damage)
-   std::function< bool(const std::optional< sptr< Card > >&, size_t) >
-      m_check_is_damageable;
-   // a status checker if this unit can be damaged (some cards negate damage)
-   std::function< bool(const std::optional< sptr< Card > >&) >
-      m_check_is_killable;
+   bool m_damaged = false;
 
   public:
-   inline void set_attack(size_t attack)
+   inline void set_power(size_t power)
    {
-      m_attack_delta = attack - m_attack_base;
+      m_power_delta = static_cast< decltype(m_power_delta) >(
+         power - m_power_base);
    }
    inline void set_health(size_t health)
    {
-      m_health_delta = health - m_health_base;
+      m_health_delta = static_cast< decltype(m_health_delta) >(
+         health - m_health_base);
    }
-   inline void set_flag_is_damaged(bool is_damaged)
+   [[noreturn]] inline void set_flag_damaged(bool damaged)
    {
-      m_is_damaged = is_damaged;
+      m_damaged = damaged;
    }
-   [[nodiscard]] inline auto get_attack_base() const { return m_attack_base; }
-   [[nodiscard]] inline auto get_attack_delta() const { return m_attack_delta; }
-   [[nodiscard]] inline auto get_attack() const
+   [[noreturn]] inline void set_flag_alive(bool alive)
    {
-      return m_attack_base + m_attack_delta;
+      m_alive = alive;
+   }
+   [[nodiscard]] inline auto get_power_base() const { return m_power_base; }
+   [[nodiscard]] inline auto get_power_delta() const { return m_power_delta; }
+   [[nodiscard]] inline auto get_power() const
+   {
+      return m_power_base + m_power_delta;
    }
    [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
    [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
@@ -286,25 +292,9 @@ class Unit: public Card {
    {
       return m_health_base + m_health_delta;
    }
-   [[nodiscard]] inline auto get_check_is_damageable() const
-   {
-      return m_check_is_damageable;
-   }
-   [[nodiscard]] inline auto get_check_is_killable() const
-   {
-      return m_check_is_killable;
-   }
-   [[nodiscard]] inline auto is_damaged() const { return m_is_damaged; }
-   [[nodiscard]] inline bool is_damageable(
-      const std::optional< sptr< Card > >& optional_card = {},
-      size_t amount = 0) const
-   {
-      return m_check_is_damageable(optional_card, amount);
-   }
-   [[nodiscard]] inline bool is_killable(
-      const std::optional< sptr< Card > >& optional_card = {}) const
-   {
-      return m_check_is_killable(optional_card);
+
+   [[nodiscard]] inline bool is_alive() const {
+      return m_alive;
    }
 
    inline int add_health(int amount)
@@ -324,23 +314,25 @@ class Unit: public Card {
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost_base,
-      size_t attack_base,
+      size_t power_base,
       size_t health_base,
       const std::initializer_list< Keyword >& keyword_list,
       std::map< events::EventType, Effect > effects,
       int mana_cost_delta = 0,
-      int attack_delta = 0,
+      int power_delta = 0,
       int health_delta = 0,
-      bool is_damaged = false,
-      std::function< bool(const std::optional< sptr< Card > >&, size_t) >
-         check_is_damageable =
-            [](const std::optional< sptr< Card > >& /*unused*/,
-               size_t /*unused*/) { return true; },
-      std::function< bool(const std::optional< sptr< Card > >&) >
-         check_is_killable =
-            [](const std::optional< sptr< Card > >& /*unused*/) {
-               return true;
-            })
+      bool is_damaged = false
+      //      std::function< bool(const std::optional< sptr< Card > >&, size_t)
+      //      >
+      //         check_is_damageable =
+      //            [](const std::optional< sptr< Card > >& /*unused*/,
+      //               size_t /*unused*/) { return true; },
+      //      std::function< bool(const std::optional< sptr< Card > >&) >
+      //         check_is_killable =
+      //            [](const std::optional< sptr< Card > >& /*unused*/) {
+      //               return true;
+      //            })
+      )
        : Card(
           id,
           name,
@@ -356,21 +348,21 @@ class Unit: public Card {
           keyword_list,
           std::move(effects),
           mana_cost_delta),
-         m_attack_base(attack_base),
+         m_power_base(power_base),
          m_health_base(health_base),
-         m_attack_delta(attack_delta),
+         m_power_delta(power_delta),
          m_health_delta(health_delta),
-         m_is_damaged(is_damaged),
-         m_check_is_damageable(std::move(check_is_damageable)),
-         m_check_is_killable(std::move(check_is_killable))
+         m_damaged(is_damaged)
+   //         m_check_is_damageable(std::move(check_is_damageable)),
+   //         m_check_is_killable(std::move(check_is_killable))
    {
    }
    Unit(const Unit& card)
        : Card(card),
-         m_attack_delta(card.get_attack_delta()),
-         m_health_delta(card.get_health_delta()),
-         m_is_damaged(card.is_damaged()),
-         m_check_is_damageable(std::move(card.get_check_is_damageable()))
+         m_power_delta(card.get_power_delta()),
+         m_health_delta(card.get_health_delta())
+   //         m_is_damaged(card.is_damaged()),
+   //         m_check_is_damageable(std::move(card.get_check_is_damageable()))
    {
    }
 };
