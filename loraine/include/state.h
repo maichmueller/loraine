@@ -29,7 +29,6 @@ class State {
    SymArr< size_t > m_spell_mana{0, 0};
 
    SymArr< bool > m_can_attack{false, false};
-   SymArr< bool > m_is_enlightened{false, false};
    SymArr< bool > m_can_plunder{false, false};
 
    // the number of dead allies per player
@@ -61,25 +60,35 @@ class State {
 
    void _check_terminal();
 
-   void _check_enlightenment() const;
-
   public:
    State();
 
-   inline void set_nexus_health(int value, PLAYER player)
+   inline void set_nexus_health(long int value, PLAYER player)
    {
       m_nexus_health[player] = value;
    }
-   inline void set_mana(size_t value, PLAYER player) { m_mana[player] = value; }
+   inline void damage_nexus(size_t amount, PLAYER player)
+   {
+      m_nexus_health[player] -= amount;
+   }
+   inline void heal_nexus(size_t amount, PLAYER player)
+   {
+      m_nexus_health[player] = std::min(
+         m_nexus_health[player] + amount, size_t(START_NEXUS_HEALTH));
+   }
+   inline void set_mana(size_t value, PLAYER player)
+   {
+      m_mana[player] = std::min(static_cast< size_t >(MAX_MANA), value);
+   }
 
    inline void set_mana_gems(size_t value, PLAYER player)
    {
       m_mana_gems[player] = value;
-      _check_enlightenment();
    }
    inline void set_spell_mana(size_t value, PLAYER player)
    {
-      m_spell_mana[player] = value;
+      m_spell_mana[player] = std::min(
+         static_cast< size_t >(MAX_SPELL_MANA), value);
    }
    inline void set_hand(HandType hand, PLAYER player)
    {
@@ -93,10 +102,6 @@ class State {
    inline void set_flag_can_attack(bool value, PLAYER player)
    {
       m_can_attack[player] = value;
-   }
-   inline void set_flag_is_enlightened(bool value, PLAYER player)
-   {
-      m_is_enlightened[player] = value;
    }
    inline void set_flag_can_plunder(bool value, PLAYER player)
    {
@@ -171,9 +176,9 @@ class State {
    {
       return m_can_attack[player];
    }
-   [[nodiscard]] inline auto get_flag_is_enlightened(PLAYER player) const
+   [[nodiscard]] inline auto is_enlightened(PLAYER player) const
    {
-      return m_is_enlightened[player];
+      return m_mana_gems[player] == MAX_MANA;
    }
    [[nodiscard]] inline auto get_flag_can_plunder(PLAYER player) const
    {
@@ -204,14 +209,24 @@ class State {
    {
       return m_starting_player;
    }
+   [[nodiscard]] inline auto get_pass_count() const { return m_pass_count; }
    [[nodiscard]] inline auto& get_spell_stack() { return m_spell_stack; }
 
-   inline void incr_managems(size_t amount, PLAYER player)
+   inline void incr_managems(PLAYER player, size_t amount = 1)
    {
       set_mana_gems(
          std::min(m_mana_gems[player] + amount, size_t(MAX_MANA)), player);
    }
+   inline void decr_managems(PLAYER player, size_t amount = 1)
+   {
+      set_mana_gems(std::max(m_mana_gems[player] - amount, size_t(1)), player);
+   }
+   inline void fill_mana(PLAYER player)
+   {
+      m_mana[player] = m_mana_gems[player];
+   }
    inline void incr_turn() { m_turn = PLAYER((m_turn + 1) % 2); }
+   inline void incr_round() { m_round += 1; }
 
    inline void shuffle_card_into_deck(const sptr< Card >& card, PLAYER player)
    {
@@ -236,7 +251,8 @@ class State {
 
    sptr< Card > draw_card_by_idx(PLAYER player, size_t index);
 
-   std::vector< sptr< Card > > draw_n_cards(PLAYER player, size_t n, bool random = true);
+   std::vector< sptr< Card > > draw_n_cards(
+      PLAYER player, size_t n, bool random = true);
 
    void play_unit(const sptr< Unit >& unit);
 

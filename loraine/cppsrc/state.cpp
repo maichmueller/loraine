@@ -35,19 +35,7 @@ void State::_commit_to_history(sptr< AnyAction > action)
 {
    m_history.emplace_back(std::move(action));
 }
-void State::_check_enlightenment() const
-{
-   auto player = PLAYER::BLUE;
 
-   if(get_mana_gems(player) >= MAX_MANA) {
-      events::active_event::set(events::EnlightenmentEvent(player));
-   }
-   player = PLAYER::RED;
-
-   if(get_mana_gems(player) >= MAX_MANA) {
-      events::active_event::set(events::EnlightenmentEvent(player));
-   }
-}
 sptr< Card > State::draw_card_by_idx(PLAYER player, size_t index)
 {
    return m_deck_cont[player].draw_card_by_index(index);

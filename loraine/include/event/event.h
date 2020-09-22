@@ -18,11 +18,13 @@ class Spell;
 namespace events {
 
 enum class EventType {
-   NONE,
-   BATTLE,  // battle commences
-   CAST,  // casting spells/skills (activation event, not committing event)
+   NONE = 0,
    ATTACK,  // declaring attacker
+   //   BATTLE,  // battle commences
+   BEHOLD,  // the player has an 8+ mana unit in hand or in play
+   CAST,  // casting spells/skills (activation event, not committing event)
    BLOCK,  // declaring blockers
+   DAYBREAK,  // the played card is the first to be played in this round
    DIE,  // a unit dies
    DISCARD,  // removing a card from hand (not playing)
    DRAW_CARD,  // draw a card (own deck or enemy deck)
@@ -32,13 +34,14 @@ enum class EventType {
    GET_CARD,  // get a cards from
    LEVEL_UP,  // champion levels up
    NEXUS_STRIKE,  // from direct attack
-   PLAY_UNIT,  // playing a unit from hand onto the field
-   PLAY_SPELL,  // playing a spell from hand
+   NIGHTFALL,  // the played card is not the first to be played in this round
+   PLAY_UNIT,  // summoning a unit from hand
    RECALL,  // a unit gets recalled from field back to the hand
-   START_ROUND,  // the round starts
+   ROUND_END,  // the round ends
+   ROUND_START,  // the round starts
    STRIKE,  // a unit strikes (anything)
    STUN,  // stunning a unit
-   SUMMON,  // summoning a unit (subset of playing a unit)
+   SUMMON,  // summoning a unit
    TARGET,  // targeting a unit with a spell/skill (
             // 'targeting' effects only occur, when the unit is actually hit)
             // 'being targeted' effects only occur, when the unit survives)
@@ -51,7 +54,7 @@ struct AnyEvent {
    /*
     * The base class method to return all base member variables
     */
-   [[nodiscard]] auto get_event_data() const { return std::tuple{event_type}; }
+   [[nodiscard]] static auto get_event_data() { return std::tuple{event_type}; }
 
   protected:
    /*
@@ -67,7 +70,7 @@ struct AnyEvent {
       return std::tuple{std::get< I >(t)..., args...};
    }
    template < typename Tuple, typename... Args >
-   auto _get_event_data_base_applied(Tuple t, Args... args) const
+   [[nodiscard]] auto _get_event_data_base_applied(Tuple t, Args... args) const
    {
       static constexpr auto size = std::tuple_size< Tuple >::value;
       return _get_event_data_base(
@@ -87,29 +90,9 @@ struct AnyEvent {
 
   public:
    virtual ~AnyEvent() = default;
-   AnyEvent() {}
+   AnyEvent() = default;
 };
 
-struct BattleEvent: public AnyEvent {
-   static const EventType event_type = EventType::BATTLE;
-   explicit BattleEvent() : AnyEvent() {}
-};
-class CastEvent: public AnyEvent {
-   PLAYER m_player;
-   sptr< Card > m_spell;
-   bool m_is_spell;
-
-  public:
-   static const EventType event_type = EventType::CAST;
-   CastEvent(PLAYER player, sptr< Card > spell, bool is_spell)
-       : m_player(player), m_spell(std::move(spell)), m_is_spell(is_spell)
-   {
-   }
-   [[nodiscard]] auto get_event_data() const
-   {
-      return _get_event_data(m_player, m_spell, m_is_spell);
-   }
-};
 class AttackEvent: public AnyEvent {
    PLAYER m_player;
    std::vector< size_t > m_positions;
@@ -123,6 +106,22 @@ class AttackEvent: public AnyEvent {
    [[nodiscard]] auto get_event_data() const
    {
       return _get_event_data(m_player, m_positions);
+   }
+};
+// struct BattleEvent: public AnyEvent {
+//   static const EventType event_type = EventType::BATTLE;
+//   explicit BattleEvent() : AnyEvent() {}
+//};
+class BeholdEvent: public AnyEvent {
+   PLAYER m_player;
+
+  public:
+   static const EventType event_type = EventType::BEHOLD;
+   explicit BeholdEvent(PLAYER player) : m_player(player) {}
+
+   [[nodiscard]] auto get_event_data() const
+   {
+      return _get_event_data(m_player);
    }
 };
 class BlockEvent: public AnyEvent {
@@ -140,19 +139,53 @@ class BlockEvent: public AnyEvent {
       return _get_event_data(m_player, m_positions);
    }
 };
-class DieEvent: public AnyEvent {
+class CastEvent: public AnyEvent {
    PLAYER m_player;
-   sptr< Card > m_dying_card;
+   sptr< Spell > m_spell;
+   bool m_is_spell;
 
   public:
-   static const EventType event_type = EventType::DIE;
-   DieEvent(PLAYER player, sptr< Card > dying_card)
-       : m_player(player), m_dying_card(std::move(dying_card))
+   static const EventType event_type = EventType::CAST;
+   CastEvent(PLAYER player, sptr< Spell > spell, bool is_spell)
+      : m_player(player), m_spell(std::move(spell)), m_is_spell(is_spell)
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_dying_card);
+      return _get_event_data(m_player, m_spell, m_is_spell);
+   }
+};
+class DaybreakEvent: public AnyEvent {
+   PLAYER m_player;
+   sptr< Card > m_card;
+
+  public:
+   static const EventType event_type = EventType::DAYBREAK;
+   DaybreakEvent(PLAYER player, sptr< Card > card)
+       : m_player(player), m_card(std::move(card))
+   {
+   }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return _get_event_data(m_player, m_card);
+   }
+};
+class DieEvent: public AnyEvent {
+   PLAYER m_player;
+   sptr< Unit > m_killed;
+   sptr< Card > m_killer;
+
+  public:
+   static const EventType event_type = EventType::DIE;
+   DieEvent(PLAYER player, sptr< Unit > killed, sptr< Card > killer)
+       : m_player(player),
+         m_killed(std::move(killed)),
+         m_killer(std::move(killer))
+   {
+   }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return _get_event_data(m_player, m_killed, m_killer);
    }
 };
 class DiscardEvent: public AnyEvent {
@@ -280,13 +313,13 @@ class NexusStrikeEvent: public AnyEvent {
          m_direct_strike);
    }
 };
-class PlayEvent: public AnyEvent {
+class NightfallEvent: public AnyEvent {
    PLAYER m_player;
    sptr< Card > m_card;
 
   public:
-   static const EventType event_type = EventType::PLAY_UNIT;
-   PlayEvent(PLAYER player, sptr< Card > card)
+   static const EventType event_type = EventType::NIGHTFALL;
+   NightfallEvent(PLAYER player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -295,20 +328,19 @@ class PlayEvent: public AnyEvent {
       return _get_event_data(m_player, m_card);
    }
 };
-class PlaySpell: public AnyEvent {
+class PlayEvent: public AnyEvent {
    PLAYER m_player;
-   sptr< Card > m_spell;
-   bool m_is_spell;
+   sptr< Unit > m_card;
 
   public:
-   static const EventType event_type = EventType::PLAY_SPELL;
-   PlaySpell(PLAYER player, sptr< Card > card, bool is_skill)
-       : m_player(player), m_spell(std::move(card)), m_is_spell(is_skill)
+   static const EventType event_type = EventType::PLAY_UNIT;
+   PlayEvent(PLAYER player, sptr< Unit > card)
+       : m_player(player), m_card(std::move(card))
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_spell, m_is_spell);
+      return _get_event_data(m_player, m_card);
    }
 };
 class RecallEvent: public AnyEvent {
@@ -326,12 +358,20 @@ class RecallEvent: public AnyEvent {
       return _get_event_data(m_player, m_card);
    }
 };
-class StartRoundEvent: public AnyEvent {
+class RoundEndEvent: public AnyEvent {
    size_t round;
 
   public:
-   static const EventType event_type = EventType::START_ROUND;
-   explicit StartRoundEvent(size_t round) : round(round) {}
+   static const EventType event_type = EventType::ROUND_END;
+   explicit RoundEndEvent(size_t round) : round(round) {}
+   [[nodiscard]] auto get_event_data() const { return _get_event_data(round); }
+};
+class RoundStartEvent: public AnyEvent {
+   size_t round;
+
+  public:
+   static const EventType event_type = EventType::ROUND_START;
+   explicit RoundStartEvent(size_t round) : round(round) {}
    [[nodiscard]] auto get_event_data() const { return _get_event_data(round); }
 };
 class StrikeEvent: public AnyEvent {
@@ -429,10 +469,12 @@ class UseManaEvent: public AnyEvent {
 // The most recent happening event
 using VariantEvent = std::variant<
    AnyEvent,
-   BattleEvent,
-   CastEvent,
+   //   BattleEvent,
    AttackEvent,
+   BeholdEvent,
+   CastEvent,
    BlockEvent,
+   DaybreakEvent,
    DieEvent,
    DiscardEvent,
    DrawCardEvent,
@@ -442,10 +484,11 @@ using VariantEvent = std::variant<
    GetCardEvent,
    LevelUpEvent,
    NexusStrikeEvent,
+   NightfallEvent,
    PlayEvent,
-   PlaySpell,
    RecallEvent,
-   StartRoundEvent,
+   RoundEndEvent,
+   RoundStartEvent,
    StrikeEvent,
    StunEvent,
    SummonEvent,

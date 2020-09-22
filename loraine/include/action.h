@@ -20,6 +20,7 @@ class AnyAction {
    PLAYER m_player;
 
   public:
+   virtual ~AnyAction() = default;
    /*
     * The base class method to return all base member variables
     */
@@ -120,27 +121,35 @@ class AttackAction: public AnyAction {
    // One has a vector naming the position the unit from the backrow
    // (where it holds the position of its current index in the backrow
    // container) onto the position specified in the vector.
-   std::vector< size_t > back_to_field_vec;
+   std::vector< size_t > camp_to_field_vec;
+   std::map< size_t, size_t > opp_camp_to_field_map;
    std::optional< std::vector< sptr< Spell > > > potential_spells;
 
   public:
    AttackAction(
       size_t round,
       PLAYER player,
-      std::vector< size_t > back_to_field_vec,
+      std::vector< size_t > camp_to_field_vec,
+      std::map< size_t, size_t > opp_camp_to_field_map,
       std::optional< std::vector< sptr< Spell > > > potential_spells)
        : AnyAction(ActionType::ATTACK, round, player),
-         back_to_field_vec(std::move(back_to_field_vec)),
+         camp_to_field_vec(std::move(camp_to_field_vec)),
+         opp_camp_to_field_map(std::move(opp_camp_to_field_map)),
          potential_spells(std::move(potential_spells))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(back_to_field_vec, potential_spells);
+      return _get_action_data(
+         camp_to_field_vec, opp_camp_to_field_map, potential_spells);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
-      return back_to_field_vec;
+      return camp_to_field_vec;
+   }
+   [[nodiscard]] auto get_opp_positions_to_cards() const
+   {
+      return opp_camp_to_field_map;
    }
 };
 

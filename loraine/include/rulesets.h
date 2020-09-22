@@ -3,7 +3,7 @@
 
 
 enum PLAYER{
-   BLUE,
+   BLUE = 0,
    RED
 };
 
@@ -16,7 +16,7 @@ enum PLAYER{
 #define ROUND_LIMIT 40u  // after this many rounds it is an auto-tie
 
 #define BATTLEFIELD_SIZE 6u
-#define BACKROW_SIZE 6u
+#define CAMP_SIZE 6u
 
 #define HAND_CARDS_LIMIT 10u
 #define BOARD_CARDS_LIMIT 6u

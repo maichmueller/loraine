@@ -10,18 +10,21 @@
 
 class Game {
    sptr< State > m_state;
-   SymArr< sptr<Agent> > m_agents;
+   SymArr< sptr< Agent > > m_agents;
 
    bool m_battle_mode = false;
 
    void _mulligan(
       const std::vector< sptr< Card > >& hand_blue,
       const std::vector< sptr< Card > >& hand_red);
-   std::vector< sptr< Card > > _draw_initial_hand(
-      PLAYER player);
+   std::vector< sptr< Card > > _draw_initial_hand(PLAYER player);
    bool _do_action(const sptr< AnyAction >& action);
    /*
-    * Start the next round
+    * Start the next round.
+    * Does the following actions in order:
+    * - Set flag plunder to false and attack token to the attacker.
+    * - Increase managems
+    * - Refill mana
     */
    void _start_round();
 
@@ -34,27 +37,46 @@ class Game {
 
    void _resolve_spell_stack();
 
-   void _nexus_hit(
+   void _nexus_strike(
       PLAYER attacked_nexus,
       PLAYER attacking_player,
       const sptr< size_t >& damage,
-      std::shared_ptr< Card > responsible_card);
+      const std::shared_ptr< Card >& responsible_card,
+      bool strike_during_combat);
 
-   int _strike_unit(
-      const PLAYER& attacker,
-      const PLAYER& defender,
+   long int _strike_unit(
+      PLAYER attacker,
+      PLAYER defender,
       const std::shared_ptr< Unit >& unit_att,
       std::shared_ptr< Unit >& unit_def) const;
 
-   void _kill_unit(PLAYER killer, const std::shared_ptr< Unit >& unit);
+   void _kill_unit(
+      PLAYER killer,
+      const std::shared_ptr< Unit >& killed_unit,
+      const std::shared_ptr< Card >& killing_card);
 
-   int _deal_damage_to_unit(
-      const PLAYER& player_of_unit,
+   long int _deal_damage_to_unit(
+      PLAYER unit_owner,
       std::shared_ptr< Unit >& unit,
       const sptr< size_t >& damage) const;
 
+   void _check_enlightenment(PLAYER player);
+
   public:
    bool run_game();
+   void incr_managems(PLAYER player, size_t amount = 1);
+   void decr_managems(PLAYER player, size_t amount = 1);
+
+   void play(sptr< Unit > unit);
+   void cast(sptr< Spell > spell);
+   void summon(sptr< Unit > unit);
+   void summon_exact_copy(sptr< Unit > unit);
+
+   inline void lifesteal(const sptr<Unit>& unit, size_t amount) {
+      m_state->heal_nexus(amount, unit->get_owner());
+   }
+   [[nodiscard]] sptr< State > get_state() { return m_state; }
+   [[nodiscard]] sptr< State > get_state() const { return m_state; }
 };
 
 #endif  // LORAINE_GAME_H

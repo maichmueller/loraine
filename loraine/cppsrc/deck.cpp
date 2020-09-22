@@ -42,7 +42,7 @@ sptr< Card > DeckContainer::draw_specific_card(SID card_sid)
       return card->get_id() == card_sid;
    });
    std::shuffle(indices.begin(), indices.end(), rng::rng_def_engine);
-   return _pop_single_card(indices[0]);
+   return draw_card_by_index(indices[0]);
 }
 
 sptr< Spell > DeckContainer::_to_spell(const sptr< Card >& card)

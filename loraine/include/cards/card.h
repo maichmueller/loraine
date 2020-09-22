@@ -6,6 +6,7 @@
 #define LORAINE_CARD_H
 
 #include <map>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -16,8 +17,10 @@
 #include "types.h"
 #include "uuid_gen.h"
 
-// forward-declaration of state
+// forward-declarations
 class State;
+class Grant;
+class Game;
 
 enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
 
@@ -42,12 +45,12 @@ enum struct UnitType { NONE, FOLLOWER, CHAMPION };
  */
 class Card {
    // effects need to have access to members to compute their conditions
-   friend Effect;
+   friend EffectContainer;
 
-  protected:
+  private:
    // fixed attributes of the cards
 
-   // the cards's name
+   // the cards' name
    const char* const m_name;
    // the description text of the cards
    const char* const m_effect_desc;
@@ -74,29 +77,34 @@ class Card {
    // variable attributes of the cards
 
    // the mana it costs to play the cards (as default)
-   const size_t m_mana_cost_base;
+   const size_t m_mana_cost_ref;
+   // when effects move the base cost to a new permanent value
+   long int m_mana_cost_base;
    // the current change to the mana cost of the card
-   int m_mana_cost_delta;
+   long int m_mana_cost_delta;
    // all the keywords pertaining to the cards
-   std::vector< Keyword > m_keywords;
+   KeywordMap m_keywords;
 
    // all possible effects
-   std::map< events::EventType, Effect > m_effects;
+   std::map< events::EventType, EffectContainer > m_effects;
+   // all grants bestowed on the card
+   std::map< UUID, sptr< Grant > > m_grants;
+
+   // the player whose card this is
+   PLAYER m_owner;
 
   public:
-   void operator()(
-      State& state,
+   inline void operator()(
+      Game& game,
       const events::VariantEvent& event,
       events::EventType event_type)
    {
-      m_effects[event_type](state, event);
+      m_effects.at(event_type)(game, event);
    }
    // convenience operator of the above
-   void operator()(State& state, const events::VariantEvent& event)
+   inline void operator()(Game& game, const events::VariantEvent& event)
    {
-      events::EventType eve_type = std::visit(
-         events::VisitorEventType{}, event);
-      (*this)(state, event, eve_type);
+      (*this)(game, event, get_event_type(event));
    }
 
    [[nodiscard]] auto get_name() const { return m_name; }
@@ -107,18 +115,24 @@ class Card {
    [[nodiscard]] auto get_unit_type() const { return m_unit_type; }
    [[nodiscard]] auto get_rarity() const { return m_rarity; }
    [[nodiscard]] auto get_card_type() const { return m_card_type; }
+   [[nodiscard]] auto get_mana_cost_ref() const { return m_mana_cost_ref; }
    [[nodiscard]] auto get_mana_cost_base() const { return m_mana_cost_base; }
    [[nodiscard]] auto get_mana_cost_delta() const { return m_mana_cost_delta; }
    [[nodiscard]] auto get_mana_cost() const
    {
-      return m_mana_cost_base + m_mana_cost_delta;
+      return std::max(0L, m_mana_cost_base + m_mana_cost_delta);
    }
    [[nodiscard]] const auto& get_keywords() const { return m_keywords; }
+   [[nodiscard]] auto& get_keywords() { return m_keywords; }
    [[nodiscard]] const auto& get_effects_map() const { return m_effects; }
+   [[nodiscard]] const auto& get_grants_map() const { return m_grants; }
+   [[nodiscard]] auto& get_grants_map() { return m_grants; }
    [[nodiscard]] auto get_id() const { return m_id; }
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
+   [[nodiscard]] PLAYER get_owner() const { return m_owner; }
 
    // status requests
+
    [[nodiscard]] auto is_collectible() const { return m_is_collectible; }
    [[nodiscard]] auto is_unit() const { return m_card_type == CardType::UNIT; }
    [[nodiscard]] auto is_spell() const
@@ -133,31 +147,49 @@ class Card {
    {
       return m_unit_type == UnitType::CHAMPION;
    }
+
    [[nodiscard]] auto is_follower() const
    {
       return m_unit_type == UnitType::FOLLOWER;
    }
 
+   void reduce_mana_cost(long int amount) { m_mana_cost_delta += amount; }
    void set_mana_cost(size_t mana_cost)
    {
-      m_mana_cost_delta = mana_cost - m_mana_cost_base;
+      m_mana_cost_delta = static_cast< long int >(mana_cost - m_mana_cost_base);
    }
 
-   void set_keywords(std::vector< Keyword > keywords)
+   void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
+
+   void set_effect(events::EventType e_type, EffectContainer effect)
    {
-      m_keywords = std::move(keywords);
+      // if the key is already found in the effects map, delete the previous
+      // effect. This essentially implies we overwrite preexisting effects
+      if(m_effects.find(e_type) != m_effects.end()) {
+         m_effects.erase(e_type);
+      }
+      m_effects.emplace(e_type, std::move(effect));
    }
-   void set_effect(events::EventType e_type, Effect effect)
+
+   inline void remove_effect(events::EventType e_type)
    {
-      m_effects[e_type] = std::move(effect);
+      m_effects.erase(e_type);
    }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
-      return std::find(m_keywords.begin(), m_keywords.end(), kword)
-             != m_keywords.end();
+      return m_keywords.at(static_cast< unsigned long >(kword));
+   }
+   inline void add_keyword(Keyword kword)
+   {
+      m_keywords[static_cast< unsigned long >(kword)] = true;
+   }
+   inline void remove_keyword(Keyword kword)
+   {
+      m_keywords[static_cast< unsigned long >(kword)] = false;
    }
 
+   virtual bool play_condition_check() { return true; }
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
@@ -167,6 +199,7 @@ class Card {
     *  Basic constructor
     */
    Card(
+      PLAYER owner,
       SID id,
       const char* const name,
       const char* const effect_desc,
@@ -177,27 +210,10 @@ class Card {
       Rarity rarity,
       CardType card_type,
       bool is_collectible,
-      size_t mana_cost_base,
+      size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, Effect > effects,
-      int mana_cost_delta = 0)
-       : m_name(name),
-         m_effect_desc(effect_desc),
-         m_lore(lore),
-         m_region(region),
-         m_group(group),
-         m_unit_type(unit_type),
-         m_rarity(rarity),
-         m_card_type(card_type),
-         m_is_collectible(is_collectible),
-         m_id(id),
-         m_uuid(new_uuid()),
-         m_mana_cost_base(mana_cost_base),
-         m_mana_cost_delta(mana_cost_delta),
-         m_keywords(keyword_list),
-         m_effects(std::move(effects))
-   {
-   }
+      std::map< events::EventType, EffectContainer > effects,
+      long int mana_cost_delta = 0);
 
    /*
     * Copy Constructor
@@ -214,10 +230,12 @@ class Card {
          m_is_collectible(card.is_collectible()),
          m_id(card.get_id()),
          m_uuid(new_uuid()),
+         m_mana_cost_ref(card.get_mana_cost_ref()),
          m_mana_cost_base(card.get_mana_cost_base()),
          m_mana_cost_delta(card.get_mana_cost_delta()),
          m_keywords(card.get_keywords()),
-         m_effects(card.get_effects_map())
+         m_effects(card.get_effects_map()),
+         m_owner(card.get_owner())
    {
    }
 
@@ -235,75 +253,145 @@ class Card {
     * Move constructor.
     */
    Card(Card&& card) = delete;
-
-   virtual bool play_condition_check() { return true; }
-
-   void add_mana_cost(int amount) { m_mana_cost_delta += amount; }
 };
+
+Card::Card(
+   PLAYER owner,
+   SID id,
+   const char* const name,
+   const char* const effect_desc,
+   const char* const lore,
+   Region region,
+   Group group,
+   UnitType unit_type,
+   Rarity rarity,
+   CardType card_type,
+   bool is_collectible,
+   size_t mana_cost,
+   std::initializer_list< Keyword > keyword_list,
+   std::map< events::EventType, EffectContainer > effects,
+   long int mana_cost_delta)
+    : m_name(name),
+      m_effect_desc(effect_desc),
+      m_lore(lore),
+      m_region(region),
+      m_group(group),
+      m_unit_type(unit_type),
+      m_rarity(rarity),
+      m_card_type(card_type),
+      m_is_collectible(is_collectible),
+      m_id(id),
+      m_uuid(new_uuid()),
+      m_mana_cost_ref(mana_cost),
+      m_mana_cost_base(mana_cost),
+      m_mana_cost_delta(mana_cost_delta),
+      m_keywords(create_kword_list(keyword_list)),
+      m_effects(std::move(effects)),
+      m_owner(owner)
+{
+}
 
 class Unit: public Card {
   private:
    // unit cards based attributes
    bool m_alive = true;
 
-   // the base damage the unit deals.
-   const size_t m_power_base = 0;
-   // the base health of the unit
-   const size_t m_health_base = 0;
+   // the fixed reference damage the unit deals.
+   const size_t m_power_ref;
+   // the permanent power of the unit (can be moved by e.g. effects)
+   size_t m_power_base;
+   // the fixed reference health of the unit
+   const size_t m_health_ref;
+   // the permanent base value of the unit (can be moved by e.g. effects)
+   size_t m_health_base;
 
    // The current change in health and damage attributes (hence 'delta')
 
-   // the damage change the unit deals.
-   int m_power_delta;
-   // the health change of the unit
-   int m_health_delta;
+   // the current change to the unit power (temporary buffs/nerfs).
+   long int m_power_delta = 0;
+   // the current change to the unit health (temporary buffs/nerfs).
+   long int m_health_delta = 0;
+   // the damage the unit has taken
+   size_t m_damage = 0;
 
-   // whether the unit is currently damaged
-   bool m_damaged = false;
+   std::function< void(Game&) > m_last_breath;
 
   public:
-   inline void set_power(size_t power)
+   inline void set_power(size_t power, bool as_delta = true)
    {
-      m_power_delta = static_cast< decltype(m_power_delta) >(
-         power - m_power_base);
+      if(as_delta) {
+         m_power_delta = static_cast< decltype(m_power_delta) >(
+            power - m_power_base);
+      } else {
+         m_power_base = power;
+         m_power_delta = 0;
+      }
    }
    inline void set_health(size_t health)
    {
       m_health_delta = static_cast< decltype(m_health_delta) >(
          health - m_health_base);
    }
-   [[noreturn]] inline void set_flag_damaged(bool damaged)
+   inline void die(Game& game)
    {
-      m_damaged = damaged;
+      if(has_keyword(Keyword::LAST_BREATH)) {
+         m_last_breath(game);
+      }
+      m_alive = false;
    }
-   [[noreturn]] inline void set_flag_alive(bool alive)
+   inline void revive() { m_alive = true; }
+   inline void set_last_breath(std::function< void(Game&) > lb)
    {
-      m_alive = alive;
+      m_last_breath = std::move(lb);
    }
+   [[nodiscard]] inline auto is_damaged() const { return m_damage > 0; }
+   [[nodiscard]] inline auto get_power_ref() const { return m_power_ref; }
    [[nodiscard]] inline auto get_power_base() const { return m_power_base; }
    [[nodiscard]] inline auto get_power_delta() const { return m_power_delta; }
    [[nodiscard]] inline auto get_power() const
    {
-      return m_power_base + m_power_delta;
+      return std::max(size_t(0), m_power_base + m_power_delta);
    }
-   [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
-   [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
    [[nodiscard]] inline auto get_health() const
    {
-      return m_health_base + m_health_delta;
+      return m_health_base + m_health_delta - m_damage;
    }
+   [[nodiscard]] inline auto get_health_ref() const { return m_health_ref; }
+   [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
+   [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
+   [[nodiscard]] inline auto get_damage() const { return m_damage; }
+   [[nodiscard]] inline auto get_last_breath() const { return m_last_breath; }
+   [[nodiscard]] inline bool is_alive() const { return m_alive; }
 
-   [[nodiscard]] inline bool is_alive() const {
-      return m_alive;
-   }
-
-   inline int add_health(int amount)
+   inline void take_damage(size_t amount) { m_damage += amount; }
+   inline void heal(size_t amount)
    {
-      m_health_delta = amount;
-      return get_health();
+      m_damage = std::max(size_t(0), m_damage - amount);
+   }
+   inline void regenerate()
+   {
+      m_damage = 0;
+   }
+   inline void change_health(long int amount, bool permanent)
+   {
+      if(permanent) {
+         m_health_base += amount;
+
+      } else {
+         m_health_delta += amount;
+      }
+   }
+   inline void change_power(long int amount, bool permanent)
+   {
+      if(permanent) {
+         m_power_base += amount;
+      } else {
+         m_power_delta += amount;
+      }
    }
 
    Unit(
+      PLAYER owner,
       SID id,
       char* const name,
       char* const effect_desc,
@@ -313,27 +401,14 @@ class Unit: public Card {
       UnitType unit_type,
       Rarity rarity,
       bool is_collectible,
-      size_t mana_cost_base,
-      size_t power_base,
-      size_t health_base,
+      size_t mana_cost_ref,
+      size_t power_ref,
+      size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, Effect > effects,
-      int mana_cost_delta = 0,
-      int power_delta = 0,
-      int health_delta = 0,
-      bool is_damaged = false
-      //      std::function< bool(const std::optional< sptr< Card > >&, size_t)
-      //      >
-      //         check_is_damageable =
-      //            [](const std::optional< sptr< Card > >& /*unused*/,
-      //               size_t /*unused*/) { return true; },
-      //      std::function< bool(const std::optional< sptr< Card > >&) >
-      //         check_is_killable =
-      //            [](const std::optional< sptr< Card > >& /*unused*/) {
-      //               return true;
-      //            })
-      )
+      std::map< events::EventType, EffectContainer > effects,
+      std::function< void(Game&) > last_breath = [](Game& g) { return; })
        : Card(
+          owner,
           id,
           name,
           effect_desc,
@@ -344,31 +419,38 @@ class Unit: public Card {
           rarity,
           CardType::UNIT,
           is_collectible,
-          mana_cost_base,
+          mana_cost_ref,
           keyword_list,
-          std::move(effects),
-          mana_cost_delta),
-         m_power_base(power_base),
-         m_health_base(health_base),
-         m_power_delta(power_delta),
-         m_health_delta(health_delta),
-         m_damaged(is_damaged)
-   //         m_check_is_damageable(std::move(check_is_damageable)),
-   //         m_check_is_killable(std::move(check_is_killable))
+          std::move(effects)),
+         m_power_ref(power_ref),
+         m_power_base(power_ref),
+         m_health_ref(health_ref),
+         m_health_base(health_ref),
+         m_last_breath(std::move(last_breath))
    {
    }
+
    Unit(const Unit& card)
        : Card(card),
+         m_power_ref(card.get_power_ref()),
+         m_power_base(card.get_power_base()),
+         m_health_ref(card.get_health_ref()),
+         m_health_base(card.get_health_base()),
          m_power_delta(card.get_power_delta()),
-         m_health_delta(card.get_health_delta())
-   //         m_is_damaged(card.is_damaged()),
-   //         m_check_is_damageable(std::move(card.get_check_is_damageable()))
+         m_health_delta(card.get_health_delta()),
+         m_damage(card.get_damage()),
+         m_last_breath(card.get_last_breath())
    {
    }
+   Unit& operator=(const Unit& unit) = delete;
+   ~Unit() override = default;
+   Unit(Unit&&) = delete;
+   Unit& operator=(Unit&&) = delete;
 };
 
 class Spell: public Card {
    Spell(
+      PLAYER owner,
       SID id,
       char* const name,
       char* const effect_desc,
@@ -379,9 +461,10 @@ class Spell: public Card {
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, Effect > effects,
+      std::map< events::EventType, EffectContainer > effects,
       int mana_cost_delta = 0)
        : Card(
+          owner,
           id,
           name,
           effect_desc,
@@ -399,6 +482,13 @@ class Spell: public Card {
    {
    }
 };
+
+sptr<Unit> to_unit(const sptr<Card> & card) {
+   return std::dynamic_pointer_cast<Unit>(card);
+}
+sptr<Spell> to_spell(const sptr<Card> & card) {
+   return std::dynamic_pointer_cast<Spell>(card);
+}
 
 // using VariantCard = std::variant <Follower, Champion, Spell>;
 
