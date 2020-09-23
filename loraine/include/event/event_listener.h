@@ -45,9 +45,6 @@ class EventListener {
    void clear_registers();
 };
 
-// the global event listener for all
-extern EventListener event_listener;
-
 }  // namespace events
 
 #endif  // LORAINE_EVENT_LISTENER_H

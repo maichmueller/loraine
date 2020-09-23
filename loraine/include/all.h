@@ -7,4 +7,6 @@
 #include "state.h"
 #include "types.h"
 
+#include "utils.h"
+
 #endif  // LORAINE_ALL_H

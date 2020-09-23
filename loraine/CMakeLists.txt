@@ -23,7 +23,8 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/cards/effect.h
         ${LORAINE_INCLUDE_DIR}/rng_machine.h
         ${LORAINE_INCLUDE_DIR}/game.h
-        ${LORAINE_INCLUDE_DIR}/event/active_event.h include/cards/common_effects.h include/cards/grants.h)
+        ${LORAINE_INCLUDE_DIR}/event/active_event.h include/cards/common_effects.h include/cards/grants.h
+        ${LORAINE_INCLUDE_DIR}/utils.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 add_library(loraine STATIC ${LIBRARY_SOURCES})

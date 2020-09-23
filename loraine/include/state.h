@@ -29,6 +29,7 @@ class State {
    SymArr< size_t > m_spell_mana{0, 0};
 
    SymArr< bool > m_can_attack{false, false};
+   SymArr< bool > m_scout_token{false, false};
    SymArr< bool > m_can_plunder{false, false};
 
    // the number of dead allies per player
@@ -40,7 +41,7 @@ class State {
    SymArr< HandType > m_hand;
    SymArr< DeckContainer > m_deck_cont;
 
-   SymArr< std::vector< sptr< Card > > > m_graveyard{};
+   SymArr< std::vector< std::vector< sptr< Unit > > > > m_graveyard{};
    SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
    sptr< Board > m_board = std::make_shared< Board >();
 
@@ -116,7 +117,8 @@ class State {
    {
       m_dead_ally_count_rnd[player] = value;
    }
-   inline void set_graveyard(std::vector< sptr< Card > > value, PLAYER player)
+   inline void set_graveyard(
+      std::vector< std::vector< sptr< Unit > > > value, PLAYER player)
    {
       m_graveyard[player] = std::move(value);
    }
@@ -139,6 +141,8 @@ class State {
    }
 
    inline void set_turn(PLAYER player) { m_turn = player; }
+
+   inline void set_scout_token(PLAYER player, bool value) { m_scout_token.at(player) = value;}
 
    inline void set_attacker(PLAYER player) { m_attacker = player; }
    inline void reset_attacker() { m_attacker.reset(); }
@@ -175,6 +179,10 @@ class State {
    [[nodiscard]] inline auto get_flag_can_attack(PLAYER player) const
    {
       return m_can_attack[player];
+   }
+   [[nodiscard]] inline auto get_scout_token(PLAYER player) const
+   {
+      return m_scout_token[player];
    }
    [[nodiscard]] inline auto is_enlightened(PLAYER player) const
    {
@@ -258,11 +266,13 @@ class State {
 
    void play_spell(const sptr< Spell >& spell);
 
-   void move_to_graveyard(sptr< Card > card, PLAYER player);
-   void move_to_tossed(sptr< Card > card, PLAYER player);
+   void move_to_graveyard(sptr< Unit > unit);
+   void move_to_tossed(sptr< Card > card);
 
    inline void incr_pass_count() { m_pass_count += 1; }
    inline void reset_pass_count() { m_pass_count = 0; }
+
+   void expand_graveyard();
 
    void shuffle_deck(PLAYER player);
 };

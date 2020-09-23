@@ -68,3 +68,12 @@ std::vector< sptr< Card > > State::draw_n_cards(
    }
    return cards;
 }
+void State::move_to_graveyard(sptr< Unit > unit) {
+   auto player = unit->get_owner();
+   m_graveyard.at(player).at(m_round).emplace_back(unit);
+   m_board->remove_dead_unit(unit);
+}
+void State::expand_graveyard() {
+   m_graveyard.at(PLAYER::BLUE).emplace_back(std::vector<sptr<Unit>>());
+   m_graveyard.at(PLAYER::RED).emplace_back(std::vector<sptr<Unit>>());
+}

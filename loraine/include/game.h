@@ -2,6 +2,8 @@
 #ifndef LORAINE_GAME_H
 #define LORAINE_GAME_H
 
+#include <event/event_listener.h>
+
 #include "agent.h"
 #include "cards/card.h"
 #include "rulesets.h"
@@ -11,6 +13,8 @@
 class Game {
    sptr< State > m_state;
    SymArr< sptr< Agent > > m_agents;
+   events::EventListener m_event_listener;
+   events::VariantEvent m_active_event;
 
    bool m_battle_mode = false;
 
@@ -48,7 +52,7 @@ class Game {
       PLAYER attacker,
       PLAYER defender,
       const std::shared_ptr< Unit >& unit_att,
-      std::shared_ptr< Unit >& unit_def) const;
+      std::shared_ptr< Unit >& unit_def);
 
    void _kill_unit(
       PLAYER killer,
@@ -58,7 +62,7 @@ class Game {
    long int _deal_damage_to_unit(
       PLAYER unit_owner,
       std::shared_ptr< Unit >& unit,
-      const sptr< size_t >& damage) const;
+      const sptr< size_t >& damage);
 
    void _check_enlightenment(PLAYER player);
 
@@ -75,8 +79,19 @@ class Game {
    inline void lifesteal(const sptr<Unit>& unit, size_t amount) {
       m_state->heal_nexus(amount, unit->get_owner());
    }
-   [[nodiscard]] sptr< State > get_state() { return m_state; }
-   [[nodiscard]] sptr< State > get_state() const { return m_state; }
+
+   inline void set(events::AnyEvent&& event)
+   {
+      m_active_event = std::move(event);
+
+      m_event_listener.on_event(m_active_event);
+   }
+   inline void trigger_event(events::AnyEvent&& event) {
+      m_active_event = std::move(event);
+   }
+
+   [[nodiscard]] const auto& get_active_event() const { return m_active_event; }
+   [[nodiscard]] auto get_state() const { return m_state; }
 };
 
 #endif  // LORAINE_GAME_H

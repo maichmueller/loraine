@@ -1,8 +1,6 @@
 
 #include "game.h"
 
-#include <event/active_event.h>
-
 #include <utility>
 
 #include "rulesets.h"
@@ -82,16 +80,35 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                 positions_own,
                 positions_opp,
                 opt_spells] = cast_action->get_action_data();
-            m_state->get_board()->move_to_battlefield(positions_own, player);
-            m_state->get_board()->move_to_battlefield(positions_opp, player);
+            auto board = m_state->get_board();
+            board->move_to_battlefield(positions_own, player);
+            board->move_to_battlefield(positions_opp, PLAYER(1 - player));
             if(opt_spells.has_value()) {
                for(const auto& spell : opt_spells.value()) {
                   m_state->play_spell(spell);
                }
                _activate_battlemode(player, positions_own);
             }
-            // remove the attack token of the attacker, as it is now used up
-            m_state->set_flag_can_attack(false, player);
+            // remove the attack token of the attacker, as it is now used up,
+            // unless all units were scouts (for the first attack)
+            bool scout_attack = true;
+            if(! m_state->get_scout_token(player)) {
+               for(auto opt_unit : board->get_battlefield(player)) {
+                  if(opt_unit.has_value()) {
+                     if(! opt_unit.value()->has_keyword(Keyword::SCOUT)) {
+                        scout_attack = false;
+                        break;
+                     }
+                  }
+               }
+            } else {
+               scout_attack = false;
+            }
+            if(scout_attack) {
+               m_state->set_scout_token(player, true);
+            } else {
+               m_state->set_flag_can_attack(false, player);
+            }
          }
 
          case BLOCK: {
@@ -128,7 +145,7 @@ void Game::_activate_battlemode(
 {
    m_battle_mode = true;
    m_state->set_attacker(attack_player);
-   events::trigger(events::AttackEvent(attack_player, std::move(positions)));
+   trigger_event(events::AttackEvent(attack_player, std::move(positions)));
 }
 void Game::_resolve_spell_stack()
 {
@@ -206,10 +223,11 @@ void Game::_resolve_battle()
                      sptr< size_t > overwhelm_dmg = std::make_shared< size_t >(
                         -health_def_after);
 
-                     events::trigger(events::NexusStrikeEvent(
+                     trigger_event(events::NexusStrikeEvent(
                         defender, attacker, overwhelm_dmg, unit_att, true));
 
-                     _nexus_strike(defender, attacker, overwhelm_dmg, unit_att);
+                     _nexus_strike(
+                        defender, attacker, overwhelm_dmg, unit_att, true);
                   }
                }
             }
@@ -220,11 +238,13 @@ void Game::_resolve_battle()
                unit_att->get_power());
 
             if(*att_power > 0) {
-               events::trigger(events::StrikeEvent(attacker, unit_att));
-               _nexus_strike(defender, attacker, att_power, unit_att);
+               trigger_event(events::StrikeEvent(attacker, unit_att));
+               _nexus_strike(defender, attacker, att_power, unit_att, true);
             }
          }
       }
+      m_state->get_board()->retreat_to_camp(attacker);
+      m_state->get_board()->retreat_to_camp(defender);
       m_battle_mode = false;
    }
 }
@@ -232,12 +252,12 @@ long int Game::_strike_unit(
    PLAYER attacker,
    PLAYER defender,
    const std::shared_ptr< Unit >& unit_att,
-   std::shared_ptr< Unit >& unit_def) const
+   std::shared_ptr< Unit >& unit_def)
 {
    sptr< size_t > att_power = std::make_shared< size_t >(unit_att->get_power());
 
    if(*att_power > 0) {
-      events::trigger(events::StrikeEvent(attacker, unit_att));
+      trigger_event(events::StrikeEvent(attacker, unit_att));
       return _deal_damage_to_unit(defender, unit_def, att_power);
    }
    return unit_def->get_health();
@@ -245,9 +265,9 @@ long int Game::_strike_unit(
 long int Game::_deal_damage_to_unit(
    PLAYER unit_owner,
    std::shared_ptr< Unit >& unit,
-   const sptr< size_t >& damage) const
+   const sptr< size_t >& damage)
 {
-   events::trigger(events::UnitTakeDamageEvent(unit_owner, unit, damage));
+   trigger_event(events::UnitTakeDamageEvent(unit_owner, unit, damage));
    unit->take_damage(*damage);
    return unit->get_health();
 }
@@ -257,11 +277,11 @@ void Game::_kill_unit(
    const std::shared_ptr< Card >& killing_card)
 {
    killed_unit->die(*this);
-   events::trigger(events::DieEvent(killer, killed_unit, killing_card));
+   trigger_event(events::DieEvent(killer, killed_unit, killing_card));
    if(! killed_unit->is_alive()) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive
-      m_state->move_to_graveyard(killed_unit, killed_unit->get_owner());
+      m_state->move_to_graveyard(killed_unit);
    }
    if(! m_battle_mode) {
       m_state->get_board()->reorganize_camp(killed_unit->get_owner());
@@ -275,7 +295,7 @@ void Game::_nexus_strike(
    const std::shared_ptr< Card >& responsible_card,
    bool strike_during_combat)
 {
-   events::trigger(events::NexusStrikeEvent(
+   trigger_event(events::NexusStrikeEvent(
       attacked_nexus,
       attacking_player,
       damage,
@@ -284,7 +304,8 @@ void Game::_nexus_strike(
 
    m_state->damage_nexus(*damage, attacked_nexus);
    if(strike_during_combat) {
-      if(auto unit = to_unit(responsible_card); unit->has_keyword(Keyword::LIFESTEAL)) {
+      if(auto unit = to_unit(responsible_card);
+         unit->has_keyword(Keyword::LIFESTEAL)) {
          lifesteal(unit, *damage);
       }
    }
@@ -335,7 +356,7 @@ void Game::_mulligan(
 }
 void Game::_end_round()
 {
-   events::trigger(events::RoundEndEvent(m_state->get_round()));
+   trigger_event(events::RoundEndEvent(m_state->get_round()));
    for(int p = 0; p != 1; ++p) {
       auto player = PLAYER(p);
       // undo temporary buffs/nerfs and possibly heal the units if applicable
@@ -361,14 +382,19 @@ void Game::_end_round()
 void Game::_start_round()
 {
    m_state->incr_round();
+   m_state->expand_graveyard();
+
    m_state->set_flag_can_plunder(false, PLAYER::BLUE);
    m_state->set_flag_can_plunder(false, PLAYER::RED);
+
    auto attacker = PLAYER(
       m_state->get_starting_player() + m_state->get_round() % 2);
    m_state->set_flag_can_attack(attacker == PLAYER::BLUE, PLAYER::BLUE);
    m_state->set_flag_can_attack(attacker == PLAYER::RED, PLAYER::RED);
+   m_state->set_scout_token(PLAYER::BLUE, false);
+   m_state->set_scout_token(PLAYER::RED, false);
 
-   events::trigger(events::RoundStartEvent(m_state->get_round()));
+   trigger_event(events::RoundStartEvent(m_state->get_round()));
    for(int player = PLAYER::BLUE; player != PLAYER::RED; ++player) {
       incr_managems(PLAYER(player));
    }
@@ -384,7 +410,7 @@ void Game::incr_managems(PLAYER player, size_t amount)
 void Game::_check_enlightenment(PLAYER player)
 {
    if(m_state->is_enlightened(player)) {
-      events::trigger(events::EnlightenmentEvent(player));
+      trigger_event(events::EnlightenmentEvent(player));
    }
 }
 void Game::decr_managems(PLAYER player, size_t amount)
