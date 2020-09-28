@@ -7,7 +7,7 @@
 #include <rulesets.h>
 
 struct GiveManaGem {
-   GiveManaGem(Game& game, PLAYER player)
+   GiveManaGem(Game& game, Player player)
    {
       auto state = game.get_state();
       bool enlightened = state->is_enlightened(player);
@@ -16,7 +16,7 @@ struct GiveManaGem {
          events::trigger(events::EnlightenmentEvent(player));
       }
    }
-   void undo(Game& game, PLAYER player) { game.decr_managems(player); }
+   void undo(Game& game, Player player) { game.decr_managems(player); }
 };
 
 struct GiveUnitStats {

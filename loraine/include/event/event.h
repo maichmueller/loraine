@@ -31,7 +31,6 @@ enum class EventType {
    END_ROUND,  // the round ends
    ENLIGHTENMENT,  // reaching 10 mana gems
    GAIN_MANAGEM,  // gaining an amount of mana (e.g. round-start)
-   GET_CARD,  // get a cards from
    LEVEL_UP,  // champion levels up
    NEXUS_STRIKE,  // from direct attack
    NIGHTFALL,  // the played card is not the first to be played in this round
@@ -40,13 +39,11 @@ enum class EventType {
    ROUND_END,  // the round ends
    ROUND_START,  // the round starts
    STRIKE,  // a unit strikes (anything)
+   SCOUT,  // a scout attack occurred (not yet needed afaik)
    STUN,  // stunning a unit
    SUMMON,  // summoning a unit
-   TARGET,  // targeting a unit with a spell/skill (
-            // 'targeting' effects only occur, when the unit is actually hit)
-            // 'being targeted' effects only occur, when the unit survives)
+   TARGET,  // targeting a unit with a spell/skill
    UNIT_TAKE_DAMAGE,  // any unit on the field takes damage
-   USE_MANA,  // using mana (play units, cast spells etc.)
 };
 
 struct AnyEvent {
@@ -94,12 +91,12 @@ struct AnyEvent {
 };
 
 class AttackEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    std::vector< size_t > m_positions;
 
   public:
    static const EventType event_type = EventType::ATTACK;
-   AttackEvent(PLAYER player, std::vector< size_t > positions)
+   AttackEvent(Player player, std::vector< size_t > positions)
        : m_player(player), m_positions(std::move(positions))
    {
    }
@@ -113,11 +110,11 @@ class AttackEvent: public AnyEvent {
 //   explicit BattleEvent() : AnyEvent() {}
 //};
 class BeholdEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
 
   public:
    static const EventType event_type = EventType::BEHOLD;
-   explicit BeholdEvent(PLAYER player) : m_player(player) {}
+   explicit BeholdEvent(Player player) : m_player(player) {}
 
    [[nodiscard]] auto get_event_data() const
    {
@@ -125,12 +122,12 @@ class BeholdEvent: public AnyEvent {
    }
 };
 class BlockEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    std::vector< size_t > m_positions;
 
   public:
    static const EventType event_type = EventType::BLOCK;
-   BlockEvent(PLAYER player, std::vector< size_t > positions)
+   BlockEvent(Player player, std::vector< size_t > positions)
        : m_player(player), m_positions(std::move(positions))
    {
    }
@@ -140,28 +137,27 @@ class BlockEvent: public AnyEvent {
    }
 };
 class CastEvent: public AnyEvent {
-   PLAYER m_player;
    sptr< Spell > m_spell;
    bool m_is_spell;
 
   public:
    static const EventType event_type = EventType::CAST;
-   CastEvent(PLAYER player, sptr< Spell > spell, bool is_spell)
-      : m_player(player), m_spell(std::move(spell)), m_is_spell(is_spell)
+   CastEvent(sptr< Spell > spell, bool is_spell = true)
+       : m_spell(std::move(spell)), m_is_spell(is_spell)
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_spell, m_is_spell);
+      return _get_event_data(m_spell, m_is_spell);
    }
 };
 class DaybreakEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::DAYBREAK;
-   DaybreakEvent(PLAYER player, sptr< Card > card)
+   DaybreakEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -171,13 +167,14 @@ class DaybreakEvent: public AnyEvent {
    }
 };
 class DieEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Unit > m_killed;
-   sptr< Card > m_killer;
+   std::optional< sptr< Card > > m_killer;
 
   public:
    static const EventType event_type = EventType::DIE;
-   DieEvent(PLAYER player, sptr< Unit > killed, sptr< Card > killer)
+   DieEvent(
+      Player player, sptr< Unit > killed, std::optional< sptr< Card > > killer)
        : m_player(player),
          m_killed(std::move(killed)),
          m_killer(std::move(killer))
@@ -189,13 +186,13 @@ class DieEvent: public AnyEvent {
    }
 };
 class DiscardEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    CardID m_card_id;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::DISCARD;
-   DiscardEvent(PLAYER player, CardID card_id, sptr< Card > card)
+   DiscardEvent(Player player, CardID card_id, sptr< Card > card)
        : m_player(player), m_card_id(card_id), m_card(std::move(card))
    {
    }
@@ -205,12 +202,12 @@ class DiscardEvent: public AnyEvent {
    }
 };
 class DrawCardEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::DRAW_CARD;
-   DrawCardEvent(PLAYER player, sptr< Card > card)
+   DrawCardEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -223,23 +220,23 @@ struct EndRoundEvent: public AnyEvent {
    static const EventType event_type = EventType::END_ROUND;
 };
 class EnlightenmentEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
 
   public:
    static const EventType event_type = EventType::ENLIGHTENMENT;
-   EnlightenmentEvent(PLAYER player) : m_player(player) {}
+   EnlightenmentEvent(Player player) : m_player(player) {}
    [[nodiscard]] auto get_event_data() const
    {
       return _get_event_data(m_player);
    }
 };
 class GainManaEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    size_t m_amount;
 
   public:
    static const EventType event_type = EventType::GAIN_MANAGEM;
-   GainManaEvent(PLAYER player, size_t amount)
+   GainManaEvent(Player player, size_t amount)
        : m_player(player), m_amount(amount)
    {
    }
@@ -248,28 +245,13 @@ class GainManaEvent: public AnyEvent {
       return _get_event_data(m_player, m_amount);
    }
 };
-class GetCardEvent: public AnyEvent {
-   PLAYER m_player;
-   CardID m_card_id;
-
-  public:
-   static const EventType event_type = EventType::GET_CARD;
-   GetCardEvent(PLAYER player, CardID card_id)
-       : m_player(player), m_card_id(card_id)
-   {
-   }
-   [[nodiscard]] auto get_event_data() const
-   {
-      return _get_event_data(m_player, m_card_id);
-   }
-};
 class LevelUpEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::LEVEL_UP;
-   LevelUpEvent(PLAYER player, sptr< Card > card)
+   LevelUpEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -279,27 +261,22 @@ class LevelUpEvent: public AnyEvent {
    }
 };
 class NexusStrikeEvent: public AnyEvent {
-   PLAYER m_attacked_nexus;
-   PLAYER m_attacking_player;
+   Player m_attacked_nexus;
+   Player m_attacking_player;
    sptr< Card > m_attacking_card;
    sptr< size_t > m_damage;
-   bool m_direct_strike;  // whether the attack was from hitting the nexus
-                          // TRUE: in battle
-                          // FALSE: through effects/spells
 
   public:
    static const EventType event_type = EventType::NEXUS_STRIKE;
    NexusStrikeEvent(
-      PLAYER attacked_nexus,
-      PLAYER attacking_player,
+      Player attacked_nexus,
+      Player attacking_player,
       sptr< size_t > damage,
-      sptr< Card > attacking_card,
-      bool direct_strike)
+      sptr< Card > attacking_card)
        : m_attacked_nexus(attacked_nexus),
          m_attacking_player(attacking_player),
          m_attacking_card(std::move(attacking_card)),
-         m_damage(std::move(damage)),
-         m_direct_strike(direct_strike)
+         m_damage(std::move(damage)))
    {
    }
    [[nodiscard]] auto get_event_data() const
@@ -309,17 +286,16 @@ class NexusStrikeEvent: public AnyEvent {
          m_attacking_player,
          m_direct_strike,
          m_damage,
-         m_attacking_card,
-         m_direct_strike);
+         m_attacking_card);
    }
 };
 class NightfallEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::NIGHTFALL;
-   NightfallEvent(PLAYER player, sptr< Card > card)
+   NightfallEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -329,27 +305,26 @@ class NightfallEvent: public AnyEvent {
    }
 };
 class PlayEvent: public AnyEvent {
-   PLAYER m_player;
    sptr< Unit > m_card;
 
   public:
    static const EventType event_type = EventType::PLAY_UNIT;
-   PlayEvent(PLAYER player, sptr< Unit > card)
-       : m_player(player), m_card(std::move(card))
+   PlayEvent(sptr< Unit > card)
+       : m_card(std::move(card))
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_card);
+      return _get_event_data(m_card);
    }
 };
 class RecallEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::RECALL;
-   RecallEvent(PLAYER player, sptr< Card > card)
+   RecallEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -374,13 +349,24 @@ class RoundStartEvent: public AnyEvent {
    explicit RoundStartEvent(size_t round) : round(round) {}
    [[nodiscard]] auto get_event_data() const { return _get_event_data(round); }
 };
+class ScoutEvent: public AnyEvent {
+   Player m_player;
+
+  public:
+   static const EventType event_type = EventType::SCOUT;
+   ScoutEvent(Player player) : m_player(player) {}
+   [[nodiscard]] auto get_event_data() const
+   {
+      return _get_event_data(m_player);
+   }
+};
 class StrikeEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_striker;
 
   public:
    static const EventType event_type = EventType::STRIKE;
-   StrikeEvent(PLAYER player, sptr< Card > striker)
+   StrikeEvent(Player player, sptr< Card > striker)
        : m_player(player), m_striker(std::move(striker))
    {
    }
@@ -390,27 +376,26 @@ class StrikeEvent: public AnyEvent {
    }
 };
 class SummonEvent: public AnyEvent {
-   PLAYER m_player;
-   sptr< Card > m_card;
+   sptr< Unit > m_card;
 
   public:
    static const EventType event_type = EventType::SUMMON;
-   SummonEvent(PLAYER player, sptr< Card > card)
-       : m_player(player), m_card(std::move(card))
+   SummonEvent(sptr< Unit > card)
+       : m_card(std::move(card))
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_card);
+      return _get_event_data( m_card);
    }
 };
 class StunEvent: public AnyEvent {
-   PLAYER m_player;
+   Player m_player;
    sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::STUN;
-   StunEvent(PLAYER player, sptr< Card > card)
+   StunEvent(Player player, sptr< Card > card)
        : m_player(player), m_card(std::move(card))
    {
    }
@@ -420,49 +405,34 @@ class StunEvent: public AnyEvent {
    }
 };
 class TargetEvent: public AnyEvent {
-   PLAYER m_player;
+   sptr<Card> m_cause;
    sptr< Card > m_targeted;
 
   public:
    static const EventType event_type = EventType::TARGET;
-   TargetEvent(PLAYER player, sptr< Card > targeted)
-       : m_player(player), m_targeted(std::move(targeted))
+   TargetEvent(sptr<Card> cause, sptr< Card > targeted)
+       : m_cause(std::move(cause)), m_targeted(std::move(targeted))
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_targeted);
+      return _get_event_data(m_cause, m_targeted);
    }
 };
 class UnitTakeDamageEvent: public AnyEvent {
-   PLAYER m_player;  // the player whose unit is damaged
+   sptr<Card> m_cause; // the damage causing card
    sptr< Unit > m_unit;
    sptr< size_t > m_damage;
 
   public:
    static const EventType event_type = EventType::UNIT_TAKE_DAMAGE;
-   UnitTakeDamageEvent(PLAYER player, sptr< Unit > unit, sptr< size_t > damage)
-       : m_player(player), m_unit(std::move(unit)), m_damage(std::move(damage))
+   UnitTakeDamageEvent(sptr<Card> cause, sptr< Unit > unit, sptr< size_t > damage)
+       : m_cause(std::move(cause)), m_unit(std::move(unit)), m_damage(std::move(damage))
    {
    }
    [[nodiscard]] auto get_event_data() const
    {
-      return _get_event_data(m_player, m_unit, m_damage);
-   }
-};
-class UseManaEvent: public AnyEvent {
-   PLAYER m_player;
-   size_t m_amount;
-
-  public:
-   static const EventType event_type = EventType::USE_MANA;
-   UseManaEvent(PLAYER player, size_t amount)
-       : m_player(player), m_amount(amount)
-   {
-   }
-   [[nodiscard]] auto get_event_data() const
-   {
-      return _get_event_data(m_player, m_amount);
+      return _get_event_data(m_cause, m_unit, m_damage);
    }
 };
 
@@ -481,7 +451,6 @@ using VariantEvent = std::variant<
    EndRoundEvent,
    EnlightenmentEvent,
    GainManaEvent,
-   GetCardEvent,
    LevelUpEvent,
    NexusStrikeEvent,
    NightfallEvent,
@@ -493,8 +462,7 @@ using VariantEvent = std::variant<
    StunEvent,
    SummonEvent,
    TargetEvent,
-   UnitTakeDamageEvent,
-   UseManaEvent >;
+   UnitTakeDamageEvent >;
 
 // visitors to access the data depending on the event
 struct VisitorEventType {

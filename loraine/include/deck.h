@@ -95,12 +95,12 @@ class DeckContainer {
    sptr< Card > draw_card();
 
    /*
-    * Draw the top card
+    * Draw the card at a specific index
     */
    sptr< Card > draw_card_by_index(size_t index);
 
    /*
-    * Drawing randomly on of the cards that matches the given ID.
+    * Drawing randomly one of the cards that matches the given ID.
     */
    sptr< Card > draw_specific_card(SID card_sid);
 

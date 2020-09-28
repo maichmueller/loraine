@@ -86,12 +86,10 @@ class Card {
    KeywordMap m_keywords;
 
    // all possible effects
-   std::map< events::EventType, EffectContainer > m_effects;
-   // all grants bestowed on the card
-   std::map< UUID, sptr< Grant > > m_grants;
+   std::map< events::EventType, std::vector< EffectContainer > > m_effects;
 
    // the player whose card this is
-   PLAYER m_owner;
+   Player m_owner;
 
   public:
    inline void operator()(
@@ -99,7 +97,9 @@ class Card {
       const events::VariantEvent& event,
       events::EventType event_type)
    {
-      m_effects.at(event_type)(game, event);
+      for(auto& effect : m_effects.at(event_type)) {
+         effect(game, event);
+      }
    }
    // convenience operator of the above
    inline void operator()(Game& game, const events::VariantEvent& event)
@@ -125,11 +125,9 @@ class Card {
    [[nodiscard]] const auto& get_keywords() const { return m_keywords; }
    [[nodiscard]] auto& get_keywords() { return m_keywords; }
    [[nodiscard]] const auto& get_effects_map() const { return m_effects; }
-   [[nodiscard]] const auto& get_grants_map() const { return m_grants; }
-   [[nodiscard]] auto& get_grants_map() { return m_grants; }
    [[nodiscard]] auto get_id() const { return m_id; }
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
-   [[nodiscard]] PLAYER get_owner() const { return m_owner; }
+   [[nodiscard]] Player get_owner() const { return m_owner; }
 
    // status requests
 
@@ -161,7 +159,14 @@ class Card {
 
    void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
 
-   void set_effect(events::EventType e_type, EffectContainer effect)
+   void set_effect_vec(events::EventType e_type, std::vector<EffectContainer> effects) {
+      auto & curr_vec = m_effects[e_type];
+      for(auto && eff : effects) {
+         curr_vec.emplace_back(std::move(eff));
+      }
+   }
+
+   void add_effect(events::EventType e_type, EffectContainer effect)
    {
       // if the key is already found in the effects map, delete the previous
       // effect. This essentially implies we overwrite preexisting effects
@@ -171,9 +176,17 @@ class Card {
       m_effects.emplace(e_type, std::move(effect));
    }
 
-   inline void remove_effect(events::EventType e_type)
+   inline void remove_effect(
+      events::EventType e_type, const EffectContainer& effect)
    {
-      m_effects.erase(e_type);
+      if(std::find(
+            m_effects.begin(),
+            m_effects.end(),
+            [&](const auto& val) { return val.first == e_type; })
+         != m_effects.end()) {
+         std::vector< EffectContainer >& eff_vec = m_effects.at(e_type);
+         eff_vec.erase(std::find(eff_vec.begin(), eff_vec.end(), effect));
+      }
    }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
@@ -199,7 +212,7 @@ class Card {
     *  Basic constructor
     */
    Card(
-      PLAYER owner,
+      Player owner,
       SID id,
       const char* const name,
       const char* const effect_desc,
@@ -212,7 +225,7 @@ class Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, EffectContainer > effects,
+      std::map< events::EventType, std::vector< EffectContainer > > effects,
       long int mana_cost_delta = 0);
 
    /*
@@ -256,7 +269,7 @@ class Card {
 };
 
 Card::Card(
-   PLAYER owner,
+   Player owner,
    SID id,
    const char* const name,
    const char* const effect_desc,
@@ -269,7 +282,7 @@ Card::Card(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< Keyword > keyword_list,
-   std::map< events::EventType, EffectContainer > effects,
+   std::map< events::EventType, std::vector< EffectContainer > > effects,
    long int mana_cost_delta)
     : m_name(name),
       m_effect_desc(effect_desc),
@@ -368,10 +381,7 @@ class Unit: public Card {
    {
       m_damage = std::max(size_t(0), m_damage - amount);
    }
-   inline void regenerate()
-   {
-      m_damage = 0;
-   }
+   inline void regenerate() { m_damage = 0; }
    inline void change_health(long int amount, bool permanent)
    {
       if(permanent) {
@@ -391,7 +401,7 @@ class Unit: public Card {
    }
 
    Unit(
-      PLAYER owner,
+      Player owner,
       SID id,
       char* const name,
       char* const effect_desc,
@@ -405,8 +415,8 @@ class Unit: public Card {
       size_t power_ref,
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, EffectContainer > effects,
-      std::function< void(Game&) > last_breath = [](Game& g) { return; })
+      std::map< events::EventType, std::vector<EffectContainer> > effects,
+      std::function< void(Game&) > last_breath = [](Game& g) {})
        : Card(
           owner,
           id,
@@ -450,7 +460,7 @@ class Unit: public Card {
 
 class Spell: public Card {
    Spell(
-      PLAYER owner,
+      Player owner,
       SID id,
       char* const name,
       char* const effect_desc,
@@ -461,7 +471,7 @@ class Spell: public Card {
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, EffectContainer > effects,
+      std::map< events::EventType, std::vector< EffectContainer > > effects,
       int mana_cost_delta = 0)
        : Card(
           owner,
@@ -483,11 +493,13 @@ class Spell: public Card {
    }
 };
 
-sptr<Unit> to_unit(const sptr<Card> & card) {
-   return std::dynamic_pointer_cast<Unit>(card);
+sptr< Unit > to_unit(const sptr< Card >& card)
+{
+   return std::dynamic_pointer_cast< Unit >(card);
 }
-sptr<Spell> to_spell(const sptr<Card> & card) {
-   return std::dynamic_pointer_cast<Spell>(card);
+sptr< Spell > to_spell(const sptr< Card >& card)
+{
+   return std::dynamic_pointer_cast< Spell >(card);
 }
 
 // using VariantCard = std::variant <Follower, Champion, Spell>;

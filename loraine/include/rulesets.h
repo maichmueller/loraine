@@ -2,7 +2,7 @@
 #define LORAINE_RULESETS_H
 
 
-enum PLAYER{
+enum Player {
    BLUE = 0,
    RED
 };

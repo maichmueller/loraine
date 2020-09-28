@@ -17,7 +17,7 @@ class AnyAction {
    // the type of action performed
    const ActionType m_action_type;
    size_t m_round;
-   PLAYER m_player;
+   Player m_player;
 
   public:
    virtual ~AnyAction() = default;
@@ -65,7 +65,7 @@ class AnyAction {
    }
 
    // protected constructor
-   AnyAction(ActionType act_type, size_t round, PLAYER player)
+   AnyAction(ActionType act_type, size_t round, Player player)
        : m_action_type(act_type), m_round(round), m_player(player)
    {
    }
@@ -76,7 +76,7 @@ class AnyAction {
  */
 class PassAction: public AnyAction {
   public:
-   PassAction(size_t round, PLAYER player)
+   PassAction(size_t round, Player player)
        : AnyAction(ActionType::PASS, round, player)
    {
    }
@@ -88,7 +88,7 @@ class PassAction: public AnyAction {
  */
 class AcceptAction: public AnyAction {
   public:
-   AcceptAction(size_t round, PLAYER player)
+   AcceptAction(size_t round, Player player)
        : AnyAction(ActionType::ACCEPT, round, player)
    {
    }
@@ -99,27 +99,34 @@ class AcceptAction: public AnyAction {
 class PlayAction: public AnyAction {
    // the actual card that was played
    sptr< Card > card_played;
+   std::optional< size_t > replace_idx;
 
   public:
-   PlayAction(size_t round, PLAYER player, sptr< Card > card_played)
+   PlayAction(
+      size_t round,
+      Player player,
+      sptr< Card > card_played,
+      std::optional< size_t > replace_idx = {})
        : AnyAction(ActionType::PLAY, round, player),
-         card_played(std::move(card_played))
+         card_played(std::move(card_played)),
+         replace_idx(replace_idx)
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(card_played);
+      return _get_action_data(card_played, replace_idx);
    }
    [[nodiscard]] auto get_card_played() const { return card_played; }
+   [[nodiscard]] auto get_replace_idx() const { return replace_idx; }
 };
 
 /*
  * Action for declaring an attack
  */
 class AttackAction: public AnyAction {
-   // the positions on the battlefield the units from the backrow take.
-   // One has a vector naming the position the unit from the backrow
-   // (where it holds the position of its current index in the backrow
+   // the positions on the battlefield the units from the camp take.
+   // One has a vector naming the position the unit from the camp
+   // (where it holds the position of its current index in the camp
    // container) onto the position specified in the vector.
    std::vector< size_t > camp_to_field_vec;
    std::map< size_t, size_t > opp_camp_to_field_map;
@@ -128,7 +135,7 @@ class AttackAction: public AnyAction {
   public:
    AttackAction(
       size_t round,
-      PLAYER player,
+      Player player,
       std::vector< size_t > camp_to_field_vec,
       std::map< size_t, size_t > opp_camp_to_field_map,
       std::optional< std::vector< sptr< Spell > > > potential_spells)
@@ -157,31 +164,31 @@ class AttackAction: public AnyAction {
  * Action for declaring block
  */
 class BlockAction: public AnyAction {
-   // the positions on the battlefield the units from the backrow take.
-   // One has a vector naming the position the unit from the backrow
-   // (where it holds the position of its current index in the backrow
+   // the positions on the battlefield the units from the camp take.
+   // One has a vector naming the position the unit from the camp
+   // (where it holds the position of its current index in the camp
    // container) onto the position specified in the vector.
-   std::vector< size_t > back_to_field_vec;
+   std::vector< size_t > camp_to_field_vec;
    std::optional< std::vector< sptr< Spell > > > potential_spells;
 
   public:
    BlockAction(
       size_t round,
-      PLAYER player,
+      Player player,
       std::vector< size_t > back_to_field_vec,
       std::optional< std::vector< sptr< Spell > > > potential_spells)
        : AnyAction(ActionType::BLOCK, round, player),
-         back_to_field_vec(std::move(back_to_field_vec)),
+         camp_to_field_vec(std::move(back_to_field_vec)),
          potential_spells(std::move(potential_spells))
    {
    }
    [[nodiscard]] auto get_action_data() const
    {
-      return _get_action_data(back_to_field_vec, potential_spells);
+      return _get_action_data(camp_to_field_vec, potential_spells);
    }
    [[nodiscard]] auto get_positions_to_cards() const
    {
-      return back_to_field_vec;
+      return camp_to_field_vec;
    }
 };
 
@@ -195,7 +202,7 @@ class MulliganAction: public AnyAction {
   public:
    MulliganAction(
       size_t round,
-      PLAYER player,
+      Player player,
       std::array< bool, INITIAL_HAND_SIZE > replace)
        : AnyAction(ActionType::MULLIGAN, round, player), replace(replace)
    {

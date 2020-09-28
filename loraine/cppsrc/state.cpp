@@ -3,26 +3,21 @@
 #include "state.h"
 
 #include "action.h"
-#include "event/active_event.h"
 
-sptr< Card > State::draw_card()
-{
-   return sptr< Card >();
-}
 
 void State::_check_terminal()
 {
    if(m_round > MAX_ROUNDS) {
       m_terminal = TIE;
    }
-   if(m_nexus_health[PLAYER::BLUE] < 1) {
-      if(m_nexus_health[PLAYER::RED] < 1) {
+   if(m_nexus_health[Player::BLUE] < 1) {
+      if(m_nexus_health[Player::RED] < 1) {
          m_terminal = TIE;
       }
       m_terminal = RED_WINS_NEXUS;
    }
-   if(m_nexus_health[PLAYER::RED] < 1) {
-      if(m_nexus_health[PLAYER::BLUE] < 1) {
+   if(m_nexus_health[Player::RED] < 1) {
+      if(m_nexus_health[Player::BLUE] < 1) {
          m_terminal = TIE;
       }
       m_terminal = BLUE_WINS_NEXUS;
@@ -31,17 +26,17 @@ void State::_check_terminal()
    m_terminal_checked = true;
 }
 
-void State::_commit_to_history(sptr< AnyAction > action)
+void State::commit_to_history(sptr< AnyAction > action)
 {
-   m_history.emplace_back(std::move(action));
+   m_history[action->get_round()].emplace_back(std::move(action));
 }
 
-sptr< Card > State::draw_card_by_idx(PLAYER player, size_t index)
+sptr< Card > State::draw_card_by_idx(Player player, size_t index)
 {
    return m_deck_cont[player].draw_card_by_index(index);
 }
 std::vector< sptr< Card > > State::draw_n_cards(
-   PLAYER player, size_t n, bool random)
+   Player player, size_t n, bool random)
 {
    std::vector< sptr< Card > > cards;
    cards.reserve(n);
@@ -73,7 +68,48 @@ void State::move_to_graveyard(sptr< Unit > unit) {
    m_graveyard.at(player).at(m_round).emplace_back(unit);
    m_board->remove_dead_unit(unit);
 }
-void State::expand_graveyard() {
-   m_graveyard.at(PLAYER::BLUE).emplace_back(std::vector<sptr<Unit>>());
-   m_graveyard.at(PLAYER::RED).emplace_back(std::vector<sptr<Unit>>());
+State::State(
+   Player starting_player,
+   SymArr< State::HandType > hands,
+   SymArr< DeckContainer > decks,
+   sptr< Board > board,
+   SymArr< int > nexus_health,
+   SymArr< size_t > mana,
+   SymArr< size_t > managems,
+   SymArr< size_t > spell_mana,
+   SymArr< bool > can_attack,
+   SymArr< bool > scout_token,
+   SymArr< bool > can_plunder,
+   SymArr< std::map< size_t, std::vector< sptr< Unit > > > > graveyard,
+   SymArr< std::vector< sptr< Card > > > tossed_cards,
+   std::map< size_t, std::vector< sptr< AnyAction > > > history,
+   std::optional< Player > attacker,
+   size_t round,
+   Player turn,
+   unsigned short pass_count,
+   size_t terminal,
+   bool terminal_checked,
+   std::vector< sptr< Spell > > spell_stack)
+   : m_nexus_health(nexus_health),
+     m_mana(mana),
+     m_managems(managems),
+     m_spell_mana(spell_mana),
+     m_can_attack(can_attack),
+     m_scout_token(scout_token),
+     m_can_plunder(can_plunder),
+     m_hand(std::move(hands)),
+     m_deck_cont(std::move(decks)),
+     m_graveyard(std::move(graveyard)),
+     m_tossed_cards(std::move(tossed_cards)),
+     m_board(std::move(board)),
+     m_history(std::move(history)),
+     m_starting_player(starting_player),
+     m_attacker(attacker),
+     m_round(round),
+     m_turn(turn),
+     m_pass_count(pass_count),
+     m_terminal(terminal),
+     m_terminal_checked(terminal_checked),
+     m_spell_stack(std::move(spell_stack))
+{
 }

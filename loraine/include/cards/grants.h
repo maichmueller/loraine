@@ -2,8 +2,9 @@
 #define LORAINE_GRANTS_H
 
 #include <utility>
-#include "uuid_gen.h"
+
 #include "card.h"
+#include "uuid_gen.h"
 
 enum GrantType { Stats, Mana, Keyword, Effect };
 
@@ -22,7 +23,9 @@ class Grant {
 
    [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
    [[nodiscard]] inline auto is_permanent() const { return m_permanent; }
-   virtual void remove() = 0;
+   virtual void undo() = 0;
+   [[nodiscard]] virtual sptr< Grant > copy_on(
+      const sptr< Card >& card) const = 0;
 
    explicit Grant(
       GrantType grant_type,
@@ -47,11 +50,6 @@ class Grant {
    }
 
   protected:
-   void _deregister()
-   {
-      m_bestowed_card->get_grants_map().erase(this->get_uuid());
-   };
-
   private:
    const GrantType m_grant_type;
    const char* const m_name_of_cause;
@@ -76,26 +74,36 @@ class StatsGrant: public Grant {
       card_to_bestow->change_health(power, permanent);
    }
 
-   void remove() override
+   void undo() override
    {
       // we need to worry only about permanent effect, as temporary ones are
       // automatically removed at the end of a round
       auto unit = std::dynamic_pointer_cast< Unit >(this->get_bestowed_card());
-      if(bool permanent = this->is_permanent(); permanent) {
-         unit->change_power(-m_power_change, permanent);
-         unit->change_health(-m_health_change, permanent);
+      if(this->is_permanent()) {
+         unit->change_power(-m_power_change, true);
+         unit->change_health(-m_health_change, true);
       } else {
-         unit->change_power(-m_power_change, permanent);
+         unit->change_power(-m_power_change, false);
          unit->heal(m_power_change);
-         unit->change_health(-m_power_change, permanent);
+         unit->change_health(-m_power_change, false);
       }
-      _deregister();
    }
 
    [[nodiscard]] inline auto get_power_change() const { return m_power_change; }
+
    [[nodiscard]] inline auto get_health_change() const
    {
       return m_health_change;
+   }
+
+   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+   {
+      return std::make_shared< StatsGrant >(
+         get_name_of_cause(),
+         to_unit(card),
+         is_permanent(),
+         get_power_change(),
+         get_health_change());
    }
 
   private:
@@ -118,13 +126,18 @@ class ManaGrant: public Grant {
       card_to_bestow->reduce_mana_cost(mana_change);
    }
 
-   void remove() override
+   void undo() override
    {
       this->get_bestowed_card()->reduce_mana_cost(-m_mana_change);
-      _deregister();
    }
 
    [[nodiscard]] inline auto get_mana_change() const { return m_mana_change; }
+
+   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+   {
+      return std::make_shared< ManaGrant >(
+         get_name_of_cause(), card, is_permanent(), get_mana_change());
+   }
 
   private:
    const long int m_mana_change;
@@ -146,15 +159,20 @@ class KeywordGrant: public Grant {
       }
    }
 
-   void remove() override
+   void undo() override
    {
       if(! m_superfluous) {
          this->get_bestowed_card()->remove_keyword(m_keyword);
       }
-      _deregister();
    }
 
    [[nodiscard]] inline auto get_keyword() const { return m_keyword; }
+
+   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+   {
+      return std::make_shared< KeywordGrant >(
+         get_name_of_cause(), card, is_permanent(), get_keyword());
+   }
 
   private:
    const enum Keyword m_keyword;
@@ -162,7 +180,7 @@ class KeywordGrant: public Grant {
 };
 
 class EffectGrant: public Grant {
-   static std::optional< EffectContainer > _init_backup(
+   static std::optional< std::vector< EffectContainer > > _init_backup(
       const sptr< Card >& card, events::EventType event_type)
    {
       auto effects_map = card->get_effects_map();
@@ -173,7 +191,7 @@ class EffectGrant: public Grant {
          != effects_map.end()) {
          return effects_map.at(event_type);
       }
-      return std::optional< EffectContainer >();
+      return {};
    }
 
   public:
@@ -185,28 +203,39 @@ class EffectGrant: public Grant {
       events::EventType event_type)
        : Grant(GrantType::Effect, name_of_cause, card_to_bestow, permanent),
          m_effect(std::move(effect)),
-         m_effect_backup(_init_backup(card_to_bestow, event_type)),
-         m_event_type(event_type)
+         m_event_type(event_type),
+         m_effect_backup(_init_backup(card_to_bestow, event_type))
    {
-      card_to_bestow->set_effect(event_type, effect);
+      card_to_bestow->add_effect(event_type, effect);
    }
 
-   void remove() override
+   void undo() override
    {
       if(m_effect_backup.has_value()) {
-         get_bestowed_card()->set_effect(m_event_type, m_effect_backup.value());
+         get_bestowed_card()->set_effect_vec(
+            m_event_type, m_effect_backup.value());
       } else {
-         get_bestowed_card()->remove_effect(m_event_type);
+         get_bestowed_card()->remove_effect(m_event_type, m_effect);
       }
-      _deregister();
    }
 
    [[nodiscard]] inline auto get_effect() const { return m_effect; }
+   [[nodiscard]] inline auto get_event_type() const { return m_event_type; }
+
+   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+   {
+      return std::make_shared< EffectGrant >(
+         get_name_of_cause(),
+         card,
+         is_permanent(),
+         get_effect(),
+         get_event_type());
+   }
 
   private:
    const EffectContainer m_effect;
-   const std::optional< EffectContainer > m_effect_backup;
    const events::EventType m_event_type;
+   const std::optional< std::vector< EffectContainer > > m_effect_backup;
 };
 
 #endif  // LORAINE_GRANTS_H

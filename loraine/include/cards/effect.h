@@ -62,14 +62,14 @@ class EffectContainer {
 //   {
 //   }  // empty effect machine default constructor (only used for placeholders)
 
-   explicit EffectContainer(PLAYER owner)
+   explicit EffectContainer(Player owner)
        : m_effect_func([](Game& state, const events::VariantEvent& event) {}),
          m_owner(owner)
    {
    }  // empty effect machine
 
    EffectContainer(
-      PLAYER owner, EffectFunc effect_func, ConditionFunc condition_func)
+      Player owner, EffectFunc effect_func, ConditionFunc condition_func)
        : m_effect_func(std::move(effect_func)),
          m_condition_func(std::move(condition_func)),
          m_is_null(false),
@@ -77,7 +77,7 @@ class EffectContainer {
    {
    }
    EffectContainer(
-      PLAYER owner,
+      Player owner,
       EffectFunc effect_func,
       ConditionFunc condition_func,
       sptr< Card > card_ptr)
@@ -142,7 +142,7 @@ class EffectContainer {
    size_t m_counter_rnd{0};
    size_t m_counter_total{0};
    sptr< Card > m_assoc_card{};
-   PLAYER m_owner;
+   Player m_owner;
 
    /*
     * Get the address of the function pointer.
