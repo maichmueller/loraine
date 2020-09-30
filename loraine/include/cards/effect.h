@@ -58,7 +58,7 @@ class EffectContainer {
 
 //   EffectContainer()
 //       : m_effect_func([](Game& state, const events::VariantEvent& event) {}),
-//         m_owner(PLAYER::BLUE)
+//         m_owner(BLUE)
 //   {
 //   }  // empty effect machine default constructor (only used for placeholders)
 

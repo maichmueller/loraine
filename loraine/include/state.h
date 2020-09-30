@@ -22,7 +22,7 @@ class State {
   private:
    // player symmetric attributes
 
-   SymArr< Player > m_nexus_ids{Player::BLUE, Player::RED};
+   SymArr< Player > m_nexus_ids{BLUE, RED};
    SymArr< int > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
    SymArr< size_t > m_mana{0, 0};
    SymArr< size_t > m_managems{0, 0};
@@ -48,7 +48,7 @@ class State {
    size_t m_round = 0;
    Player m_turn;
    unsigned short m_pass_count = 0;
-   size_t m_terminal = ONGOING;
+   Status m_terminal = ONGOING;
    bool m_terminal_checked = false;
    std::vector< sptr< Spell > > m_spell_stack;
 

@@ -49,7 +49,7 @@ enum struct Keyword {
 
 // This is intended to be used as lookup table for keywords:
 // Does the card have the keyword 'lifesteal'?
-// -> m_keywords[Keyword::LIFESTEAL] will return the boolean answer
+// -> m_keywords[LIFESTEAL] will return the boolean answer
 using KeywordMap = std::array< bool , static_cast<int>(Keyword::WEAKEST)>;
 
 KeywordMap create_kword_list(std::initializer_list< Keyword > kwords) {

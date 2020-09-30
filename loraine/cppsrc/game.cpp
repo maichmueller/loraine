@@ -14,8 +14,8 @@ bool Game::run_game()
    m_state->set_starting_player(starting_player);
 
    // draw the starting cards for each player and let them _mulligan
-   auto hand_blue = _draw_initial_hand(Player::BLUE);
-   auto hand_red = _draw_initial_hand(Player::RED);
+   auto hand_blue = _draw_initial_hand(BLUE);
+   auto hand_red = _draw_initial_hand(RED);
    _mulligan(hand_blue, hand_red);
 
    // the actual run of the game. We play until the state says it is in a
@@ -175,7 +175,7 @@ void Game::_resolve_battle()
    auto defender = Player(1 - attacker);
    auto& battlefield_att = m_board->get_battlefield(attacker);
    auto& battlefield_def = m_board->get_battlefield(defender);
-   for(auto pos = 0U; pos < BATTLEFIELD_SIZE; ++pos) {
+   for(auto pos = 0U; pos < m_board->count_units(attacker, false); ++pos) {
       auto unit_att_opt = battlefield_att.at(pos);
 
       if(unit_att_opt.has_value()) {
@@ -286,10 +286,6 @@ void Game::kill_unit(
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive
       m_state->move_to_graveyard(killed_unit);
-
-      if(! m_battle_mode) {
-         m_board->reorganize_camp(killed_unit->get_owner());
-      }
    }
 }
 
@@ -317,16 +313,14 @@ void Game::_mulligan(
 {
    std::array< std::vector< sptr< Card > >, 2 > hands{hand_blue, hand_red};
 
-   auto mull_act_blue = m_agents[Player::BLUE]->decide_mulligan(
-      *m_state, hand_blue);
-   auto mull_act_red = m_agents[Player::RED]->decide_mulligan(
-      *m_state, hand_red);
+   auto mull_act_blue = m_agents[BLUE]->decide_mulligan(*m_state, hand_blue);
+   auto mull_act_red = m_agents[RED]->decide_mulligan(*m_state, hand_red);
 
    std::array< std::array< bool, INITIAL_HAND_SIZE >, 2 > replace = {
       mull_act_blue->get_replace_decisions(),
       mull_act_red->get_replace_decisions()};
 
-   for(int p = Player::BLUE; p != Player::RED; ++p) {
+   for(int p = BLUE; p != RED; ++p) {
       auto& curr_hand = hands.at(p);
       State::HandType new_hand;
       auto nr_cards_to_replace = 0;
@@ -372,25 +366,25 @@ void Game::_start_round()
 {
    m_state->incr_round();
 
-   m_state->set_flag_can_plunder(false, Player::BLUE);
-   m_state->set_flag_can_plunder(false, Player::RED);
+   m_state->set_flag_can_plunder(false, BLUE);
+   m_state->set_flag_can_plunder(false, RED);
 
    auto attacker = Player(
       m_state->get_starting_player() + m_state->get_round() % 2);
-   m_state->set_flag_can_attack(attacker == Player::BLUE, Player::BLUE);
-   m_state->set_flag_can_attack(attacker == Player::RED, Player::RED);
-   m_state->set_scout_token(Player::BLUE, false);
-   m_state->set_scout_token(Player::RED, false);
+   m_state->set_flag_can_attack(attacker == BLUE, BLUE);
+   m_state->set_flag_can_attack(attacker == RED, RED);
+   m_state->set_scout_token(BLUE, false);
+   m_state->set_scout_token(RED, false);
 
    _trigger_event(events::RoundStartEvent(m_state->get_round()));
-   for(int player = Player::BLUE; player != Player::RED; ++player) {
+   for(int player = BLUE; player != RED; ++player) {
       incr_managems(Player(player));
    }
-   m_state->fill_mana(Player::BLUE);
-   m_state->fill_mana(Player::RED);
+   m_state->fill_mana(BLUE);
+   m_state->fill_mana(RED);
 
-   draw_card(Player::BLUE);
-   draw_card(Player::RED);
+   draw_card(BLUE);
+   draw_card(RED);
 }
 void Game::incr_managems(Player player, size_t amount)
 {
@@ -414,8 +408,8 @@ void Game::play(const sptr< Unit >& unit, std::optional< size_t > replaces)
    spend_mana(player, unit->get_mana_cost(), false);
    auto& camp = m_board->get_camp(player);
    if(replaces.has_value()) {
-      auto& unit_to_replace = camp.at(replaces.value()).value();
-      obliterate(unit_to_replace);
+      auto& unit_to_replace = camp.at(replaces.value());
+      _obliterate(unit_to_replace);
       camp.at(replaces.value()) = unit;
    } else {
       camp.at(m_board->count_units(player, true) - 1) = unit;
@@ -428,21 +422,32 @@ void Game::retreat_to_camp(Player player)
 
    size_t camp_units_count = m_board->count_units(player, true);
    size_t bf_units_count = m_board->count_units(player, false);
-   // obliterate any remaining extra battling units
+   // obliterate any battling units which won't find space on the board
    auto& bf = m_board->get_battlefield(player);
-   for(size_t i = 0; i < bf_units_count + camp_units_count - CAMP_SIZE; ++i) {
-      auto unit_to_obliterate = bf.at(bf_units_count - i);
-      obliterate(unit_to_obliterate.value());
-      unit_to_obliterate.reset();
+   if(auto nr_units_to_obliterate = bf_units_count + camp_units_count
+                                    - CAMP_SIZE;
+      nr_units_to_obliterate > 0) {
+      size_t last_deleted_idx = BATTLEFIELD_SIZE;
+      for(size_t i = 0; i < nr_units_to_obliterate; ++i) {
+         for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
+            if(auto opt_unit = bf.at(idx); opt_unit.has_value()) {
+               auto unit_to_obliterate = opt_unit.value();
+               _obliterate(unit_to_obliterate);
+               opt_unit.reset();
+               last_deleted_idx = idx;
+            }
+         }
+      }
    }
    // now move back the battlefield units
    size_t curr_idx = camp_units_count - 1;
    auto& camp = m_board->get_camp(player);
    for(auto& opt_unit : bf) {
       if(opt_unit.has_value()) {
-         std::swap(camp.at(curr_idx), opt_unit);
-         curr_idx += 1;
+         camp.at(curr_idx) = opt_unit.value();
+         opt_unit.reset();
       }
+      curr_idx += 1;
    }
 }
 void Game::process_camp_queue(Player player)
@@ -455,7 +460,6 @@ void Game::process_camp_queue(Player player)
    // spell), then any unit of the battlefield as counted from the end, which is
    // no longer fitting into the camp, is obliterated (this is handled in
    // the method 'retreat_to_camp').
-
    size_t camp_units_count = m_board->count_units(player, true);
    size_t bf_units_count = m_board->count_units(
       player, false, [](const sptr< Unit >& unit) {
@@ -469,7 +473,7 @@ void Game::process_camp_queue(Player player)
       size_t curr_idx = camp_units_count - 1;
       for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots);
           ++counter) {
-         camp.at(curr_idx) = queue.back();
+         camp.at(curr_idx) = queue.front();
          queue.pop();
          curr_idx += 1;
       }
@@ -495,7 +499,7 @@ void Game::draw_card(Player player)
       hand->emplace_back(card_drawn);
       _trigger_event(events::DrawCardEvent(player, card_drawn));
    } else {
-      obliterate(card_drawn);
+      _obliterate(card_drawn);
    }
 }
 void Game::cast(const sptr< Spell >& spell)
@@ -528,7 +532,7 @@ void Game::summon_to_battlefield(const sptr< Unit >& unit)
       bf.at(index_to_place) = unit;
       _trigger_event(events::SummonEvent(unit));
    } else {
-      obliterate(unit);
+      _obliterate(unit);
    }
 }
 void Game::summon_exact_copy(const sptr< Unit >& unit)
@@ -552,4 +556,181 @@ std::vector< sptr< Grant > > Game::get_all_grants(
       grants.emplace_back(grant);
    }
    return grants;
+}
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::filter_targets(
+   TargetRange range,
+   const std::function< bool(const sptr< Card >&) >& filter,
+   std::optional< Player > player)
+{
+   switch(range) {
+      case BATTLEFIELD: {
+         return _filter_targets_bf(filter, player);
+      }
+      case CAMP: {
+         return _filter_targets_camp(filter, player);
+      }
+      case BOARD: {
+         return _filter_targets_board(filter, player);
+      }
+      case HAND: {
+         return _filter_targets_hand(filter, player);
+      }
+      case ALL: {
+         return _filter_targets_all(filter, player);
+      }
+   }
+}
+
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::_filter_targets_bf(
+   const std::function< bool(const sptr< Unit >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+      targets;
+
+   auto filter_lambda = [&](Player player) {
+      auto bf = m_board->get_battlefield(player);
+      for(size_t i = 0; i < BATTLEFIELD_SIZE; ++i) {
+         if(const auto& opt_unit = bf.at(i);
+            opt_unit.has_value() && filter(opt_unit.value())) {
+            targets.emplace_back(std::tuple{
+               player, TargetRange::BATTLEFIELD, i, opt_unit.value()});
+         }
+      }
+   };
+   if(opt_player.has_value()) {
+      filter_lambda(opt_player.value());
+   } else {
+      filter_lambda(BLUE);
+      filter_lambda(RED);
+   }
+   return targets;
+}
+
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::_filter_targets_camp(
+   const std::function< bool(const sptr< Unit >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+      targets;
+
+   auto filter_lambda = [&](Player player) {
+      auto camp = m_board->get_camp(player);
+      for(size_t i = 0; i < camp.size(); ++i) {
+         if(auto unit = camp.at(i); filter(unit)) {
+            targets.emplace_back(
+               std::tuple{player, TargetRange::CAMP, i, unit});
+         }
+      }
+   };
+   if(opt_player.has_value()) {
+      filter_lambda(opt_player.value());
+   } else {
+      filter_lambda(BLUE);
+      filter_lambda(RED);
+   }
+   return targets;
+}
+
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::_filter_targets_hand(
+   const std::function< bool(const sptr< Card >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+      targets;
+
+   auto filter_lambda = [&](Player player) {
+      auto* hand = m_state->get_hand(player);
+      for(size_t i = 0; i < hand->size(); ++i) {
+         if(auto card = hand->at(i); filter(card)) {
+            targets.emplace_back(
+               std::tuple{player, TargetRange::HAND, i, card});
+         }
+      }
+   };
+   if(opt_player.has_value()) {
+      filter_lambda(opt_player.value());
+   } else {
+      filter_lambda(BLUE);
+      filter_lambda(RED);
+   }
+   return targets;
+}
+
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::_filter_targets_board(
+   const std::function< bool(const sptr< Unit >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+      targets;
+
+   if(opt_player.has_value()) {
+      Player& player = opt_player.value();
+      for(auto&& card : _filter_targets_bf(filter, player)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, player)) {
+         targets.emplace_back(std::move(card));
+      }
+   } else {
+      for(auto&& card : _filter_targets_bf(filter, BLUE)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, BLUE)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_bf(filter, RED)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, RED)) {
+         targets.emplace_back(std::move(card));
+      }
+   }
+}
+
+std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+Game::_filter_targets_all(
+   const std::function< bool(const sptr< Card >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
+      targets;
+
+   if(opt_player.has_value()) {
+      Player& player = opt_player.value();
+      for(auto&& card : _filter_targets_bf(filter, player)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, player)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_hand(filter, player)) {
+         targets.emplace_back(std::move(card));
+      }
+   } else {
+      for(auto&& card : _filter_targets_bf(filter, BLUE)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, BLUE)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_hand(filter, BLUE)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_bf(filter, RED)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_camp(filter, RED)) {
+         targets.emplace_back(std::move(card));
+      }
+      for(auto&& card : _filter_targets_hand(filter, RED)) {
+         targets.emplace_back(std::move(card));
+      }
+   }
+   return targets;
 }

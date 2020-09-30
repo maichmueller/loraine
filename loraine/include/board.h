@@ -3,6 +3,7 @@
 #define LORAINE_BOARD_H
 
 #include <queue>
+#include <utility>
 
 #include "cards/card.h"
 #include "cards/grants.h"
@@ -10,10 +11,10 @@
 #include "types.h"
 
 class Board {
-   using OptCardPtr = std::optional< sptr< Unit > >;
-   using Battlefield = std::array< OptCardPtr, BATTLEFIELD_SIZE >;
-   using Camp = std::array< OptCardPtr, CAMP_SIZE >;
-   using CampQueue = std::queue< OptCardPtr, std::vector< OptCardPtr > >;
+   using Battlefield = std::
+      array< std::optional< sptr< Unit > >, BATTLEFIELD_SIZE >;
+   using Camp = std::vector< sptr< Unit > >;
+   using CampQueue = std::queue< sptr< Unit > >;
 
    // the container holding battling units
    SymArr< Battlefield > m_battlefield;
@@ -22,7 +23,30 @@ class Board {
    SymArr< Camp > m_camp;
    SymArr< CampQueue > m_camp_queue;
 
+   inline bool _check_boundaries(Player player, bool in_camp)
+   {
+      return in_camp ? m_camp[player].size() < CAMP_SIZE
+                     : m_battlefield[player].size() < BATTLEFIELD_SIZE;
+   }
+   void _reserve_space()
+   {
+      m_camp[RED].reserve(CAMP_SIZE);
+      m_camp[BLUE].reserve(CAMP_SIZE);
+   }
+
   public:
+   Board() : m_battlefield(), m_camp(), m_camp_queue() { _reserve_space(); }
+   Board(
+      SymArr< Battlefield > bfs,
+      SymArr< Camp > camps,
+      SymArr< CampQueue > queues)
+       : m_battlefield(std::move(bfs)),
+         m_camp(std::move(camps)),
+         m_camp_queue(std::move(queues))
+   {
+      _reserve_space();
+   }
+
    void move_to_battlefield(
       const std::vector< size_t >& field_positions, Player player);
    void move_to_battlefield(
@@ -32,26 +56,36 @@ class Board {
    std::pair< bool, Battlefield ::iterator > find_on_battlefield(
       const sptr< Unit >& unit);
 
-   void remove_dead_unit(const sptr< Unit >& unit);
+   void remove_dead_units(const std::vector< sptr< Unit > >& units);
+   void remove_dead_units(
+      Player player, std::vector< size_t > indices, bool in_camp);
 
    /*
     * Counts the units in the camp or the battlefield, subject to a filter on
     * the unit ptr, if desired.
     *
     */
-   size_t count_units(
+   [[nodiscard]] size_t count_units(
       Player player,
       bool in_camp,
-      const std::function< bool(const sptr< Unit >&) >& filter =
-         [](const sptr< Unit >& /*unused*/) { return true; });
+      const std::function< bool(const sptr< Unit >&) >& filter) const;
+
+   [[nodiscard]] size_t count_units(Player player, bool in_camp) const;
 
    auto& get_battlefield(Player player) { return m_battlefield[player]; }
+   [[nodiscard]] auto& get_battlefield(Player player) const
+   {
+      return m_battlefield[player];
+   }
    auto& get_camp(Player player) { return m_camp[player]; }
+   [[nodiscard]] auto& get_camp(Player player) const { return m_camp[player]; }
    auto& get_camp_queue(Player player) { return m_camp_queue.at(player); }
+   [[nodiscard]] auto& get_camp_queue(Player player) const
+   {
+      return m_camp_queue.at(player);
+   }
 
-   void reorganize_camp(Player player, size_t start_from_idx = 0);
-
-   inline void add_to_queue(sptr< Unit > unit)
+   inline void add_to_queue(const sptr< Unit >& unit)
    {
       m_camp_queue[unit->get_owner()].emplace(unit);
    }

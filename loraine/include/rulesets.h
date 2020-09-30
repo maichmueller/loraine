@@ -1,41 +1,33 @@
 #ifndef LORAINE_RULESETS_H
 #define LORAINE_RULESETS_H
 
+enum Player { BLUE = 0, RED };
 
-enum Player {
-   BLUE = 0,
-   RED
+constexpr const size_t MAX_CARD_COPIES_IN_DECK = 3;
+constexpr const size_t DECK_CARDS_LIMIT = 40;
+constexpr const size_t CHAMPIONS_LIMIT = 6;
+constexpr const size_t REGIONS_LIMIT = 2;
+
+constexpr const size_t BATTLEFIELD_SIZE = 6;
+constexpr const size_t CAMP_SIZE = 6;
+
+constexpr const size_t HAND_CARDS_LIMIT = 10;
+constexpr const size_t START_NEXUS_HEALTH = 20;
+constexpr const size_t SPELL_STACK_LIMIT = 10;
+constexpr const size_t MAX_MANA = 10;
+constexpr const size_t MAX_SPELL_MANA = 3;
+constexpr const size_t INITIAL_HAND_SIZE = 4;
+constexpr const size_t MAX_ROUNDS = 40;
+
+enum Status {
+   TIE = 100,
+   ONGOING,
+   BLUE_WINS_NEXUS,
+   BLUE_WINS_DRAW,
+   BLUE_WINS_CARD,
+   RED_WINS_NEXUS,
+   RED_WINS_DRAW,
+   RED_WINS_CARD
 };
-
-#define INDIVIDUAL_CARD_LIMIT 3u
-#define DECK_CARDS_LIMIT 40u
-#define CHAMPIONS_LIMIT 6u
-#define REGIONS_LIMIT 2u
-#define INITIAL_HAND_SIZE 4u
-
-#define ROUND_LIMIT 40u  // after this many rounds it is an auto-tie
-
-#define BATTLEFIELD_SIZE 6u
-#define CAMP_SIZE 6u
-
-#define HAND_CARDS_LIMIT 10u
-#define BOARD_CARDS_LIMIT 6u
-
-#define START_NEXUS_HEALTH 20u
-
-#define SPELL_STACK_LIMIT 10u
-#define MAX_MANA 10u
-#define MAX_SPELL_MANA 3u
-
-#define MAX_ROUNDS 40u
-
-#define ONGOING 404u
-#define TIE 0u
-#define BLUE_WINS_NEXUS 1u
-#define BLUE_WINS_DRAW 2u
-#define BLUE_WINS_CARD 3u
-#define RED_WINS_NEXUS 4u
-#define RED_WINS_DRAW 5u
-#define RED_WINS_CARD 6u
 
 #endif  // LORAINE_RULESETS_H

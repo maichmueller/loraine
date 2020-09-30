@@ -347,7 +347,7 @@ class Unit: public Card {
    }
    inline void die(Game& game)
    {
-      if(has_keyword(Keyword::LAST_BREATH)) {
+      if(has_keyword(LAST_BREATH)) {
          m_last_breath(game);
       }
       m_alive = false;

@@ -16,12 +16,8 @@ void EventListener::register_card(const sptr< Card >& card)
    }
 }
 
-void EventListener::on_event(const events::VariantEvent& e)
+void EventListener::on_event(Game& game, const events::VariantEvent& e)
 {
-   if(! _state_is_set()) {
-      return;
-   }
-
    const events::EventType eve_type = events::get_event_type(e);
    auto cards_with_effect = (*this)[eve_type];
    size_t n_effects = cards_with_effect.size();
@@ -35,7 +31,7 @@ void EventListener::on_event(const events::VariantEvent& e)
          rng::rng_def_engine);
    }
    for(auto& card_sptr : cards_with_effect) {
-      (*card_sptr)(*m_game_ref, e);
+      (*card_sptr)(game, e);
    }
 }
 void EventListener::unregister_card(const sptr< Card >& card)

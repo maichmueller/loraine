@@ -10,14 +10,14 @@ void State::_check_terminal()
    if(m_round > MAX_ROUNDS) {
       m_terminal = TIE;
    }
-   if(m_nexus_health[Player::BLUE] < 1) {
-      if(m_nexus_health[Player::RED] < 1) {
+   if(m_nexus_health[BLUE] < 1) {
+      if(m_nexus_health[RED] < 1) {
          m_terminal = TIE;
       }
       m_terminal = RED_WINS_NEXUS;
    }
-   if(m_nexus_health[Player::RED] < 1) {
-      if(m_nexus_health[Player::BLUE] < 1) {
+   if(m_nexus_health[RED] < 1) {
+      if(m_nexus_health[BLUE] < 1) {
          m_terminal = TIE;
       }
       m_terminal = BLUE_WINS_NEXUS;
@@ -66,7 +66,7 @@ std::vector< sptr< Card > > State::draw_n_cards(
 void State::move_to_graveyard(sptr< Unit > unit) {
    auto player = unit->get_owner();
    m_graveyard.at(player).at(m_round).emplace_back(unit);
-   m_board->remove_dead_unit(unit);
+   m_board->remove_dead_units(unit);
 }
 State::State(
    Player starting_player,
