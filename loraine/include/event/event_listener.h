@@ -18,13 +18,6 @@ class EventListener {
    using ListenerType = std::vector< sptr<Card> >;
 
   private:
-   /*
-    * The event listeners in one container. The respective event type listener
-    * is accessed via listeners[event_type].
-    *
-    * we can use an array instead of map<EventType, value>, because EventType is
-    * an Enum and thus provides the same access capability as a map
-    */
    std::array< ListenerType, sizeof(events::EventType) > m_listeners;
 
 

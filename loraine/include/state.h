@@ -48,7 +48,7 @@ class State {
    size_t m_round = 0;
    Player m_turn;
    unsigned short m_pass_count = 0;
-   Status m_terminal = ONGOING;
+   Status m_terminal = Status::ONGOING;
    bool m_terminal_checked = false;
    std::vector< sptr< Spell > > m_spell_stack;
 

@@ -6,6 +6,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/state.cpp
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/board.cpp
+        ${LORAINE_SRC_DIR}/target.cpp
 
         ${LORAINE_INCLUDE_DIR}/all.h
 
@@ -23,7 +24,10 @@ set(LIBRARY_SOURCES
         ${LORAINE_INCLUDE_DIR}/cards/effect.h
         ${LORAINE_INCLUDE_DIR}/rng_machine.h
         ${LORAINE_INCLUDE_DIR}/game.h
-        ${LORAINE_INCLUDE_DIR}/event/active_event.h include/cards/common_effects.h include/cards/grants.h
+        ${LORAINE_INCLUDE_DIR}/event/active_event.h
+        ${LORAINE_INCLUDE_DIR}/cards/common_effects.h
+        ${LORAINE_INCLUDE_DIR}/cards/grant.h
+        ${LORAINE_INCLUDE_DIR}/cards/target.h
         ${LORAINE_INCLUDE_DIR}/utils.h)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")

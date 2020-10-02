@@ -1,5 +1,5 @@
-#ifndef LORAINE_GRANTS_H
-#define LORAINE_GRANTS_H
+#ifndef LORAINE_GRANT_H
+#define LORAINE_GRANT_H
 
 #include <utility>
 
@@ -238,4 +238,4 @@ class EffectGrant: public Grant {
    const std::optional< std::vector< EffectContainer > > m_effect_backup;
 };
 
-#endif  // LORAINE_GRANTS_H
+#endif  // LORAINE_GRANT_H

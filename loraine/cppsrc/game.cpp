@@ -3,8 +3,9 @@
 
 #include <utility>
 
-#include "cards/grants.h"
+#include "cards/grant.h"
 #include "rulesets.h"
+#include "utils.h"
 
 bool Game::run_game()
 {
@@ -409,11 +410,12 @@ void Game::play(const sptr< Unit >& unit, std::optional< size_t > replaces)
    auto& camp = m_board->get_camp(player);
    if(replaces.has_value()) {
       auto& unit_to_replace = camp.at(replaces.value());
-      _obliterate(unit_to_replace);
+      obliterate(unit_to_replace);
       camp.at(replaces.value()) = unit;
    } else {
       camp.at(m_board->count_units(player, true) - 1) = unit;
    }
+   m_event_listener.register_card(unit);
    _trigger_event(events::PlayEvent(unit));
 }
 void Game::retreat_to_camp(Player player)
@@ -432,7 +434,7 @@ void Game::retreat_to_camp(Player player)
          for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
             if(auto opt_unit = bf.at(idx); opt_unit.has_value()) {
                auto unit_to_obliterate = opt_unit.value();
-               _obliterate(unit_to_obliterate);
+               obliterate(unit_to_obliterate);
                opt_unit.reset();
                last_deleted_idx = idx;
             }
@@ -499,26 +501,35 @@ void Game::draw_card(Player player)
       hand->emplace_back(card_drawn);
       _trigger_event(events::DrawCardEvent(player, card_drawn));
    } else {
-      _obliterate(card_drawn);
+      obliterate(card_drawn);
    }
 }
 void Game::cast(const sptr< Spell >& spell)
 {
    // spells dont react to events particularly, so they are passed a None-
    // event
+
    (*spell)(*this, events::AnyEvent());
    _trigger_event(events::CastEvent(spell));
 }
 
 void Game::play(const sptr< Spell >& spell)
 {
-   spend_mana(spell->get_owner(), spell->get_mana_cost(), true);
+   Player player = spell->get_owner();
+   for(auto& effect :
+       spell->get_effects_map().at(events::AnyEvent::event_type)) {
+      effect.choose_targets(*this, player);
+   }
+   spend_mana(player, spell->get_mana_cost(), true);
    m_state->get_spell_stack().emplace_back(spell);
+   _trigger_event(events::PlayEvent(spell));
 }
+
 void Game::summon(const sptr< Unit >& unit)
 {
    m_board->add_to_queue(unit);
    process_camp_queue(unit->get_owner());
+   m_event_listener.register_card(unit);
    _trigger_event(events::SummonEvent(unit));
 }
 void Game::summon_to_battlefield(const sptr< Unit >& unit)
@@ -530,9 +541,10 @@ void Game::summon_to_battlefield(const sptr< Unit >& unit)
       auto index_to_place = std::max(
          static_cast< long >(curr_unit_count - 1), 0L);
       bf.at(index_to_place) = unit;
+      m_event_listener.register_card(unit);
       _trigger_event(events::SummonEvent(unit));
    } else {
-      _obliterate(unit);
+      obliterate(unit);
    }
 }
 void Game::summon_exact_copy(const sptr< Unit >& unit)
@@ -542,6 +554,7 @@ void Game::summon_exact_copy(const sptr< Unit >& unit)
    m_board->add_to_queue(unit);
    process_camp_queue(player);
    copy_grant(get_all_grants(unit), copied_unit);
+   m_event_listener.register_card(copied_unit);
    _trigger_event(events::SummonEvent(unit));
 }
 std::vector< sptr< Grant > > Game::get_all_grants(
@@ -557,46 +570,46 @@ std::vector< sptr< Grant > > Game::get_all_grants(
    }
    return grants;
 }
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::filter_targets(
-   TargetRange range,
+std::vector< Target > Game::filter_targets(
+   Location range,
    const std::function< bool(const sptr< Card >&) >& filter,
    std::optional< Player > player)
 {
    switch(range) {
-      case BATTLEFIELD: {
-         return _filter_targets_bf(filter, player);
+      case Location::BATTLEFIELD: {
+         return filter_targets_bf(filter, player);
       }
-      case CAMP: {
-         return _filter_targets_camp(filter, player);
+      case Location::CAMP: {
+         return filter_targets_camp(filter, player);
       }
-      case BOARD: {
-         return _filter_targets_board(filter, player);
+      case Location::BOARD: {
+         return filter_targets_board(filter, player);
       }
-      case HAND: {
-         return _filter_targets_hand(filter, player);
+      case Location::HAND: {
+         return filter_targets_hand(filter, player);
       }
-      case ALL: {
-         return _filter_targets_all(filter, player);
+      case Location::DECK: {
+         return filter_targets_deck(filter, player);
+      }
+      case Location::EVERYWHERE: {
+         return filter_targets_everywhere(filter, player);
       }
    }
 }
 
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::_filter_targets_bf(
+std::vector< Target > Game::filter_targets_bf(
    const std::function< bool(const sptr< Unit >&) >& filter,
    std::optional< Player > opt_player)
 {
-   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-      targets;
+   std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
       auto bf = m_board->get_battlefield(player);
       for(size_t i = 0; i < BATTLEFIELD_SIZE; ++i) {
          if(const auto& opt_unit = bf.at(i);
             opt_unit.has_value() && filter(opt_unit.value())) {
-            targets.emplace_back(std::tuple{
-               player, TargetRange::BATTLEFIELD, i, opt_unit.value()});
+            targets.emplace_back(Target{
+               false, player, Location::BATTLEFIELD, i, opt_unit.value()});
          }
       }
    };
@@ -609,20 +622,18 @@ Game::_filter_targets_bf(
    return targets;
 }
 
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::_filter_targets_camp(
+std::vector< Target > Game::filter_targets_camp(
    const std::function< bool(const sptr< Unit >&) >& filter,
    std::optional< Player > opt_player)
 {
-   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-      targets;
+   std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
       auto camp = m_board->get_camp(player);
       for(size_t i = 0; i < camp.size(); ++i) {
          if(auto unit = camp.at(i); filter(unit)) {
             targets.emplace_back(
-               std::tuple{player, TargetRange::CAMP, i, unit});
+               Target{false, player, Location::CAMP, i, unit});
          }
       }
    };
@@ -635,20 +646,18 @@ Game::_filter_targets_camp(
    return targets;
 }
 
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::_filter_targets_hand(
+std::vector< Target > Game::filter_targets_hand(
    const std::function< bool(const sptr< Card >&) >& filter,
    std::optional< Player > opt_player)
 {
-   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-      targets;
+   std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
       auto* hand = m_state->get_hand(player);
       for(size_t i = 0; i < hand->size(); ++i) {
          if(auto card = hand->at(i); filter(card)) {
             targets.emplace_back(
-               std::tuple{player, TargetRange::HAND, i, card});
+               Target{false, player, Location::HAND, i, card});
          }
       }
    };
@@ -660,77 +669,67 @@ Game::_filter_targets_hand(
    }
    return targets;
 }
-
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::_filter_targets_board(
-   const std::function< bool(const sptr< Unit >&) >& filter,
-   std::optional< Player > opt_player)
-{
-   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-      targets;
-
-   if(opt_player.has_value()) {
-      Player& player = opt_player.value();
-      for(auto&& card : _filter_targets_bf(filter, player)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, player)) {
-         targets.emplace_back(std::move(card));
-      }
-   } else {
-      for(auto&& card : _filter_targets_bf(filter, BLUE)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, BLUE)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_bf(filter, RED)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, RED)) {
-         targets.emplace_back(std::move(card));
-      }
-   }
-}
-
-std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-Game::_filter_targets_all(
+std::vector< Target > Game::filter_targets_deck(
    const std::function< bool(const sptr< Card >&) >& filter,
    std::optional< Player > opt_player)
 {
-   std::vector< std::tuple< Player, TargetRange, size_t, sptr< Card > > >
-      targets;
+   std::vector< Target > targets;
+
+   auto filter_lambda = [&](Player player) {
+     auto* deck = m_state->get_deck(player);
+     for(size_t i = 0; i < deck->size(); ++i) {
+        if(auto card = deck->at(i); filter(card)) {
+           targets.emplace_back(
+              Target{false, player, Location::DECK, i, card});
+        }
+     }
+   };
+   if(opt_player.has_value()) {
+      filter_lambda(opt_player.value());
+   } else {
+      filter_lambda(BLUE);
+      filter_lambda(RED);
+   }
+   return targets;
+}
+
+std::vector< Target > Game::filter_targets_board(
+   const std::function< bool(const sptr< Unit >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< Target > targets;
 
    if(opt_player.has_value()) {
       Player& player = opt_player.value();
-      for(auto&& card : _filter_targets_bf(filter, player)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, player)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_hand(filter, player)) {
-         targets.emplace_back(std::move(card));
-      }
+      targets = targets + filter_targets_bf(filter, player)
+                + filter_targets_camp(filter, player);
    } else {
-      for(auto&& card : _filter_targets_bf(filter, BLUE)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, BLUE)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_hand(filter, BLUE)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_bf(filter, RED)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_camp(filter, RED)) {
-         targets.emplace_back(std::move(card));
-      }
-      for(auto&& card : _filter_targets_hand(filter, RED)) {
-         targets.emplace_back(std::move(card));
-      }
+      targets = targets + filter_targets_bf(filter, BLUE)
+                + filter_targets_camp(filter, BLUE)
+                + filter_targets_bf(filter, RED)
+                + filter_targets_camp(filter, RED);
+   }
+}
+
+std::vector< Target > Game::filter_targets_everywhere(
+   const std::function< bool(const sptr< Card >&) >& filter,
+   std::optional< Player > opt_player)
+{
+   std::vector< Target > targets;
+
+   if(opt_player.has_value()) {
+      Player& player = opt_player.value();
+
+      targets = targets + filter_targets_bf(filter, player)
+                + filter_targets_camp(filter, player)
+                + filter_targets_hand(filter, player);
+   } else {
+      targets = targets + filter_targets_bf(filter, BLUE)
+                + filter_targets_camp(filter, BLUE)
+                + filter_targets_hand(filter, BLUE)
+                + filter_targets_bf(filter, RED)
+                + filter_targets_camp(filter, RED)
+                + filter_targets_hand(filter, RED);
    }
    return targets;
 }

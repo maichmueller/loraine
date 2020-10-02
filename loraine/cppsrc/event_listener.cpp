@@ -9,10 +9,8 @@ EventListener event_listener;
 
 void EventListener::register_card(const sptr< Card >& card)
 {
-   for(const auto& [eve_type, effect] : card->get_effects_map()) {
-      if(! effect.is_null()) {
-         (*this)[eve_type].emplace_back(card);
-      }
+   for(const auto& [eve_type, _] : card->get_effects_map()) {
+      (*this)[eve_type].emplace_back(card);
    }
 }
 
@@ -43,22 +41,10 @@ void EventListener::unregister_card(const sptr< Card >& card)
          listener.erase(pos_it);
    }
 }
-void EventListener::register_game(Game& game, bool clear)
-{
-   m_game_ref = &game;
-   if(clear) {
-      clear_registers();
-   }
-}
-void EventListener::unregister_state()
-{
-   m_game_ref = nullptr;
-   clear_registers();
-}
 void EventListener::clear_registers()
 {
    for(auto& listener : m_listeners) {
-      listener = ListenerType();
+      listener.clear();
    }
 }
 

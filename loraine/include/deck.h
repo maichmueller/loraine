@@ -54,9 +54,15 @@ class DeckContainer {
       m_cards = std::move(cards);
    }
 
-   auto& get_cards() { return m_cards; }
+   [[nodiscard]] inline const auto & at(size_t idx) const {
+      return m_cards.at(idx);
+   }
+   [[nodiscard]] inline auto & at(size_t idx) {
+      return m_cards.at(idx);
+   }
+   inline auto& get_cards() { return m_cards; }
 
-   [[nodiscard]] const auto& get_cards() const { return m_cards; }
+   [[nodiscard]] inline const auto& get_cards() const { return m_cards; }
 
    /*
     * Method to filter out specific spells

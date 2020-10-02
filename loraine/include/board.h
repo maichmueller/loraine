@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "cards/grants.h"
+#include "cards/grant.h"
 #include "rulesets.h"
 #include "types.h"
 

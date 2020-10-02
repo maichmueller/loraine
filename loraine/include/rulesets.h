@@ -30,4 +30,13 @@ enum Status {
    RED_WINS_CARD
 };
 
+enum class Location {
+   EVERYWHERE = 0,
+   BOARD,  // Board = Camp + Battlefield
+   HAND,
+   CAMP,
+   DECK,
+   BATTLEFIELD,
+};
+
 #endif  // LORAINE_RULESETS_H

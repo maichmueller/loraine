@@ -305,11 +305,11 @@ class NightfallEvent: public AnyEvent {
    }
 };
 class PlayEvent: public AnyEvent {
-   sptr< Unit > m_card;
+   sptr< Card > m_card;
 
   public:
    static const EventType event_type = EventType::PLAY_UNIT;
-   PlayEvent(sptr< Unit > card)
+   PlayEvent(sptr< Card > card)
        : m_card(std::move(card))
    {
    }

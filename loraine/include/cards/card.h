@@ -124,6 +124,7 @@ class Card {
    }
    [[nodiscard]] const auto& get_keywords() const { return m_keywords; }
    [[nodiscard]] auto& get_keywords() { return m_keywords; }
+   [[nodiscard]] auto& get_effects_map() { return m_effects; }
    [[nodiscard]] const auto& get_effects_map() const { return m_effects; }
    [[nodiscard]] auto get_id() const { return m_id; }
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
