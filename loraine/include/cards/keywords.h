@@ -5,6 +5,8 @@
 #ifndef LORAINE_KEYWORDS_H
 #define LORAINE_KEYWORDS_H
 
+#include <array>
+
 enum struct Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
    ATTUNE,
@@ -52,13 +54,6 @@ enum struct Keyword {
 // -> m_keywords[LIFESTEAL] will return the boolean answer
 using KeywordMap = std::array< bool , static_cast<int>(Keyword::WEAKEST)>;
 
-KeywordMap create_kword_list(std::initializer_list< Keyword > kwords) {
-   KeywordMap kword_list;
-   std::fill(kword_list.begin(), kword_list.end(), false);
-   for(auto kword : kwords) {
-      kword_list[static_cast<int>(kword)] = true;
-   }
-   return kword_list;
-}
+KeywordMap create_kword_list(std::initializer_list< Keyword > kwords);
 
 #endif  // LORAINE_KEYWORDS_H

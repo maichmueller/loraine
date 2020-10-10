@@ -11,23 +11,25 @@ enum GrantType { Stats, Mana, Keyword, Effect };
 class Grant {
   public:
    [[nodiscard]] inline auto get_grant_type() const { return m_grant_type; }
-
-   [[nodiscard]] inline auto get_bestowed_card() const
-   {
-      return m_bestowed_card;
-   }
-   [[nodiscard]] inline auto get_name_of_cause() const
-   {
-      return m_name_of_cause;
-   }
-
-   [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
+   [[nodiscard]] inline auto get_bestowed_card() const { return m_bestowed_card; }
+   [[nodiscard]] inline auto get_name_of_cause() const { return m_name_of_cause; }
    [[nodiscard]] inline auto is_permanent() const { return m_permanent; }
-   virtual void undo() = 0;
-   [[nodiscard]] virtual sptr< Grant > copy_on(
-      const sptr< Card >& card) const = 0;
+   [[nodiscard]] inline auto get_card_filter() const { return m_card_filter; }
+   [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
 
-   explicit Grant(
+   virtual void undo() = 0;
+
+   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const
+   {
+      if(m_card_filter(card)) {
+         return _copy_on(card);
+      }
+      return nullptr;
+   };
+
+   virtual ~Grant() = default;
+
+   Grant(
       GrantType grant_type,
       const char* const name_of_cause,
       sptr< Card > card_to_bestow,
@@ -40,14 +42,43 @@ class Grant {
    {
    }
 
+   Grant(
+      GrantType grant_type,
+      const char* const name_of_cause,
+      sptr< Card > card_to_bestow,
+      bool permanent,
+      std::function< bool(const sptr< Card >&) > card_filter)
+       : m_grant_type(grant_type),
+         m_name_of_cause(name_of_cause),
+         m_bestowed_card(std::move(card_to_bestow)),
+         m_permanent(permanent),
+         m_card_filter(std::move(card_filter)),
+         m_uuid(new_uuid())
+   {
+   }
    Grant(const Grant& grant)
        : m_grant_type(grant.get_grant_type()),
          m_name_of_cause(grant.get_name_of_cause()),
          m_bestowed_card(grant.get_bestowed_card()),
          m_permanent(grant.is_permanent()),
+         m_card_filter(grant.get_card_filter()),
          m_uuid(new_uuid())
    {
    }
+   Grant(Grant&& grant) noexcept
+       : m_grant_type(grant.m_grant_type),
+         m_name_of_cause(grant.m_name_of_cause),
+         m_bestowed_card(grant.m_bestowed_card),
+         m_permanent(grant.m_permanent),
+         m_card_filter(grant.m_card_filter),
+         m_uuid(grant.m_uuid)
+   {
+   }
+   Grant& operator=(Grant&& rhs) = delete;
+   Grant& operator=(const Grant& rhs) = delete;
+   bool operator==(const Grant& rhs) { return m_uuid == rhs.get_uuid(); }
+
+   bool operator!=(const Grant& rhs) { return m_uuid != rhs.get_uuid(); }
 
   protected:
   private:
@@ -55,7 +86,11 @@ class Grant {
    const char* const m_name_of_cause;
    const sptr< Card > m_bestowed_card;
    const bool m_permanent;
+   const std::function< bool(const sptr< Card >&) > m_card_filter =
+      [](const sptr< Card >& /*unused*/) { return true; };
    const UUID m_uuid;
+
+   [[nodiscard]] virtual sptr< Grant > _copy_on(const sptr< Card >& card) const = 0;
 };
 
 class StatsGrant: public Grant {
@@ -66,7 +101,12 @@ class StatsGrant: public Grant {
       bool permanent,
       long int power,
       size_t health)
-       : Grant(GrantType::Stats, name_of_cause, card_to_bestow, permanent),
+       : Grant(
+          GrantType::Stats,
+          name_of_cause,
+          card_to_bestow,
+          permanent,
+          [](const sptr< Card >& card) { return card->is_unit(); }),
          m_power_change(power),
          m_health_change(health)
    {
@@ -78,7 +118,7 @@ class StatsGrant: public Grant {
    {
       // we need to worry only about permanent effect, as temporary ones are
       // automatically removed at the end of a round
-      auto unit = std::dynamic_pointer_cast< Unit >(this->get_bestowed_card());
+      auto unit = to_unit(this->get_bestowed_card());
       if(this->is_permanent()) {
          unit->change_power(-m_power_change, true);
          unit->change_health(-m_health_change, true);
@@ -91,12 +131,15 @@ class StatsGrant: public Grant {
 
    [[nodiscard]] inline auto get_power_change() const { return m_power_change; }
 
-   [[nodiscard]] inline auto get_health_change() const
-   {
-      return m_health_change;
-   }
+   [[nodiscard]] inline auto get_health_change() const { return m_health_change; }
 
-   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+  private:
+   const long int m_power_change;
+   // health can only be granted. Otherwise the unit is meant to take damage,
+   // which is not a StatsGrant!
+   const size_t m_health_change;
+
+   [[nodiscard]] sptr< Grant > _copy_on(const sptr< Card >& card) const override
    {
       return std::make_shared< StatsGrant >(
          get_name_of_cause(),
@@ -105,12 +148,6 @@ class StatsGrant: public Grant {
          get_power_change(),
          get_health_change());
    }
-
-  private:
-   const long int m_power_change;
-   // health can only be granted. Otherwise the unit is meant to take damage,
-   // which is not a StatsGrant!
-   const size_t m_health_change;
 };
 
 class ManaGrant: public Grant {
@@ -126,21 +163,18 @@ class ManaGrant: public Grant {
       card_to_bestow->reduce_mana_cost(mana_change);
    }
 
-   void undo() override
-   {
-      this->get_bestowed_card()->reduce_mana_cost(-m_mana_change);
-   }
+   void undo() override { this->get_bestowed_card()->reduce_mana_cost(-m_mana_change); }
 
    [[nodiscard]] inline auto get_mana_change() const { return m_mana_change; }
 
-   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+  private:
+   const long int m_mana_change;
+
+   [[nodiscard]] sptr< Grant > _copy_on(const sptr< Card >& card) const override
    {
       return std::make_shared< ManaGrant >(
          get_name_of_cause(), card, is_permanent(), get_mana_change());
    }
-
-  private:
-   const long int m_mana_change;
 };
 
 class KeywordGrant: public Grant {
@@ -150,7 +184,7 @@ class KeywordGrant: public Grant {
       const sptr< Card >& card_to_bestow,
       bool permanent,
       enum Keyword kword)
-       : Grant(GrantType::Mana, name_of_cause, card_to_bestow, permanent),
+       : Grant(GrantType::Keyword, name_of_cause, card_to_bestow, permanent),
          m_keyword(kword),
          m_superfluous(card_to_bestow->has_keyword(kword))
    {
@@ -168,15 +202,15 @@ class KeywordGrant: public Grant {
 
    [[nodiscard]] inline auto get_keyword() const { return m_keyword; }
 
-   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
+  private:
+   const enum Keyword m_keyword;
+   const bool m_superfluous;
+
+   [[nodiscard]] sptr< Grant > _copy_on(const sptr< Card >& card) const override
    {
       return std::make_shared< KeywordGrant >(
          get_name_of_cause(), card, is_permanent(), get_keyword());
    }
-
-  private:
-   const enum Keyword m_keyword;
-   const bool m_superfluous;
 };
 
 class EffectGrant: public Grant {
@@ -212,8 +246,7 @@ class EffectGrant: public Grant {
    void undo() override
    {
       if(m_effect_backup.has_value()) {
-         get_bestowed_card()->set_effect_vec(
-            m_event_type, m_effect_backup.value());
+         get_bestowed_card()->set_effect_vec(m_event_type, m_effect_backup.value());
       } else {
          get_bestowed_card()->remove_effect(m_event_type, m_effect);
       }
@@ -222,20 +255,16 @@ class EffectGrant: public Grant {
    [[nodiscard]] inline auto get_effect() const { return m_effect; }
    [[nodiscard]] inline auto get_event_type() const { return m_event_type; }
 
-   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const override
-   {
-      return std::make_shared< EffectGrant >(
-         get_name_of_cause(),
-         card,
-         is_permanent(),
-         get_effect(),
-         get_event_type());
-   }
-
   private:
    const EffectContainer m_effect;
    const events::EventType m_event_type;
    const std::optional< std::vector< EffectContainer > > m_effect_backup;
+
+   [[nodiscard]] sptr< Grant > _copy_on(const sptr< Card >& card) const override
+   {
+      return std::make_shared< EffectGrant >(
+         get_name_of_cause(), card, is_permanent(), get_effect(), get_event_type());
+   }
 };
 
 #endif  // LORAINE_GRANT_H

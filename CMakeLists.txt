@@ -5,7 +5,9 @@ include(cmake/StandardProjectSettings.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
+if(APPLE)
+    set(CMAKE_CXX_COMPILER /usr/bin/g++)
+endif()
 message("C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message("C++ Compiler Info: ${CMAKE_CXX_COMPILER_ID}, version ${CMAKE_CXX_COMPILER_VERSION}")
 message("CURRENT CMAKE BINARY DIR: ${CMAKE_CURRENT_BINARY_DIR}")
@@ -83,25 +85,23 @@ include(cmake/Conan.cmake)
 run_conan()
 include(${PROJECT_BINARY_DIR}/conanbuildinfo.cmake)
 
-if(ENABLE_TESTING)
-    enable_testing()
-    message(
-            "Building Tests. Be sure to check out test/constexpr_tests for constexpr testing"
-    )
-    add_subdirectory(test)
-endif()
-
-
 set(LORAINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/loraine")
 set(LORAINE_SRC_DIR "${LORAINE_DIR}/cppsrc")
 set(LORAINE_INCLUDE_DIR ${LORAINE_DIR}/include)
+
+if(ENABLE_TESTING)
+    enable_testing()
+    message(
+            "Building Tests."
+    )
+    add_subdirectory(test)
+endif()
 
 message(STATUS "loraine project directory: ${LORAINE_DIR}")
 message(STATUS "loraine include directory: ${LORAINE_INCLUDE_DIR}")
 message(STATUS "loraine src directory: ${LORAINE_SRC_DIR}")
 
+add_library(loraine STATIC ${LIBRARY_SOURCES})
 add_subdirectory(loraine)
-
-set(LORAINE_LIBRARY ${CMAKE_SOURCE_DIR}/build/debug/${LORAINE_DIR}/libloraine.a)
 
 

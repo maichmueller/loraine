@@ -28,8 +28,8 @@ class EventListener {
    }
 
    void on_event(Game& game, const events::VariantEvent& e);
-   inline void register_card(const sptr< Card >& card);
-   inline void unregister_card(const sptr< Card >& card);
+   void register_card(const sptr< Card >& card);
+   void unregister_card(const sptr< Card >& card);
 
    void clear_registers();
 };

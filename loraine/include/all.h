@@ -9,7 +9,6 @@
 #include "cards/card.h"
 #include "cards/grant.h"
 #include "cards/keywords.h"
-#include "cards/target.h"
 #include "game.h"
 #include "region.h"
 #include "rng_machine.h"

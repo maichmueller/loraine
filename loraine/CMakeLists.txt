@@ -4,47 +4,37 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
+        ${LORAINE_SRC_DIR}/card.cpp
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/board.cpp
-        ${LORAINE_SRC_DIR}/target.cpp
+        ${LORAINE_SRC_DIR}/specific_effects.cpp
+        ${LORAINE_SRC_DIR}/card_filters.cpp
+        ${LORAINE_SRC_DIR}/keywords.cpp
 
-        ${LORAINE_INCLUDE_DIR}/all.h
+        )
 
-        ${LORAINE_INCLUDE_DIR}/types.h
-        ${LORAINE_INCLUDE_DIR}/cards/card.h
-        ${LORAINE_INCLUDE_DIR}/agent.h
-        ${LORAINE_INCLUDE_DIR}/board.h
-        ${LORAINE_INCLUDE_DIR}/deck.h
-        ${LORAINE_INCLUDE_DIR}/event/event.h
-        ${LORAINE_INCLUDE_DIR}/event/event_listener.h
-        ${LORAINE_INCLUDE_DIR}/cards/keywords.h
-        ${LORAINE_INCLUDE_DIR}/region.h
-        ${LORAINE_INCLUDE_DIR}/uuid_gen.h
-        ${LORAINE_INCLUDE_DIR}/action.h
-        ${LORAINE_INCLUDE_DIR}/cards/effect.h
-        ${LORAINE_INCLUDE_DIR}/rng_machine.h
-        ${LORAINE_INCLUDE_DIR}/game.h
-        ${LORAINE_INCLUDE_DIR}/event/active_event.h
-        ${LORAINE_INCLUDE_DIR}/cards/common_effects.h
-        ${LORAINE_INCLUDE_DIR}/cards/grant.h
-        ${LORAINE_INCLUDE_DIR}/cards/target.h
-        ${LORAINE_INCLUDE_DIR}/utils.h)
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-add_library(loraine STATIC ${LIBRARY_SOURCES})
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+target_sources(loraine PRIVATE ${LIBRARY_SOURCES})
 
 target_include_directories(loraine
-        PUBLIC
+        PRIVATE
         ${LORAINE_INCLUDE_DIR}
-        ${CONAN_INCLUDE_DIRS_BOOST}
+        ${CONAN_INCLUDE_DIRS_STDUUID}
+        ${CONAN_INCLUDE_DIRS_MS-GSL}
+        )
+target_include_directories(loraine
+        SYSTEM INTERFACE
+        ${LORAINE_INCLUDE_DIR}
+        ${CONAN_INCLUDE_DIRS_STDUUID}
+        ${CONAN_INCLUDE_DIRS_MS-GSL}
         )
 
 set_target_properties(loraine PROPERTIES
         CXX_STANDARD 17
         )
-
 target_compile_features(loraine PRIVATE cxx_std_17)
 
+target_link_libraries(loraine PUBLIC project_options)
 # set(SANITIZE_OPTIONS -fsanitize=address -fsanitize=undefined)
 #set(SANITIZE_OPTIONS )
 #add_compile_options(${SANITIZE_OPTIONS})
@@ -52,6 +42,15 @@ target_compile_features(loraine PRIVATE cxx_std_17)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 # add_link_options(--verbose)
 
-add_executable(makeitraine ${LORAINE_DIR}/app/exec.cpp)
-target_include_directories(makeitraine PRIVATE ${LORAINE_INCLUDE_DIR} PUBLIC ${CONAN_INCLUDE_DIRS_BOOST})
-target_link_libraries(makeitraine loraine)
+add_executable(makeitraine ${LORAINE_DIR}/app/makeitraine.cpp)
+target_include_directories(makeitraine
+        PRIVATE
+        ${LORAINE_INCLUDE_DIR}
+        ${CONAN_INCLUDE_DIRS_STDUUID}
+        ${CONAN_INCLUDE_DIRS_MS-GSL}
+        )
+set_target_properties(makeitraine PROPERTIES
+        CXX_STANDARD 17
+        )
+target_compile_features(makeitraine PRIVATE cxx_std_17)
+target_link_libraries(makeitraine PRIVATE loraine project_options)

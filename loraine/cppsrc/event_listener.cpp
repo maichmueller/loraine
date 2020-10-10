@@ -37,8 +37,9 @@ void EventListener::unregister_card(const sptr< Card >& card)
    for(auto& listener : m_listeners) {
       auto end = listener.end();
       auto pos_it = std::find(listener.begin(), end, card);
-      if(pos_it != end)
+      if(pos_it != end) {
          listener.erase(pos_it);
+      }
    }
 }
 void EventListener::clear_registers()

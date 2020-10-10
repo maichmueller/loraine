@@ -28,7 +28,7 @@ class Board {
       return in_camp ? m_camp[player].size() < CAMP_SIZE
                      : m_battlefield[player].size() < BATTLEFIELD_SIZE;
    }
-   void _reserve_space()
+   inline void _reserve_space()
    {
       m_camp[RED].reserve(CAMP_SIZE);
       m_camp[BLUE].reserve(CAMP_SIZE);

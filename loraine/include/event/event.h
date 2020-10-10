@@ -22,6 +22,7 @@ enum class EventType {
    ATTACK,  // declaring attacker
    //   BATTLE,  // battle commences
    BEHOLD,  // the player has an 8+ mana unit in hand or in play
+   CAPTURE, // A unit has captured another unit
    CAST,  // casting spells/skills (activation event, not committing event)
    BLOCK,  // declaring blockers
    DAYBREAK,  // the played card is the first to be played in this round
@@ -90,6 +91,11 @@ struct AnyEvent {
    AnyEvent() = default;
 };
 
+class NoneEvent : public AnyEvent {
+  public:
+   static const EventType event_type = EventType::NONE;
+};
+
 class AttackEvent: public AnyEvent {
    Player m_player;
    std::vector< size_t > m_positions;
@@ -134,6 +140,21 @@ class BlockEvent: public AnyEvent {
    [[nodiscard]] auto get_event_data() const
    {
       return _get_event_data(m_player, m_positions);
+   }
+};
+class CaptureEvent: public AnyEvent {
+   sptr< Unit > m_captor;
+   sptr< Unit > m_captee;
+
+  public:
+   static const EventType event_type = EventType::CAPTURE;
+   CaptureEvent(sptr< Unit > captor, sptr< Unit > captee)
+      : m_captor(std::move(captor)), m_captee(std::move(captee))
+   {
+   }
+   [[nodiscard]] auto get_event_data() const
+   {
+      return _get_event_data(m_captor, m_captee);
    }
 };
 class CastEvent: public AnyEvent {
@@ -276,7 +297,7 @@ class NexusStrikeEvent: public AnyEvent {
        : m_attacked_nexus(attacked_nexus),
          m_attacking_player(attacking_player),
          m_attacking_card(std::move(attacking_card)),
-         m_damage(std::move(damage)))
+         m_damage(std::move(damage))
    {
    }
    [[nodiscard]] auto get_event_data() const
@@ -284,7 +305,6 @@ class NexusStrikeEvent: public AnyEvent {
       return _get_event_data(
          m_attacked_nexus,
          m_attacking_player,
-         m_direct_strike,
          m_damage,
          m_attacking_card);
    }
@@ -439,9 +459,11 @@ class UnitTakeDamageEvent: public AnyEvent {
 // The most recent happening event
 using VariantEvent = std::variant<
    AnyEvent,
+   NoneEvent,
    //   BattleEvent,
    AttackEvent,
    BeholdEvent,
+   CaptureEvent,
    CastEvent,
    BlockEvent,
    DaybreakEvent,
@@ -480,7 +502,7 @@ struct VisitorEventData {
    }
 };
 
-EventType get_event_type(const VariantEvent& event)
+inline EventType get_event_type(const VariantEvent& event)
 {
    return std::visit(VisitorEventType{}, event);
 }

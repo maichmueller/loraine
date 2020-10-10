@@ -31,7 +31,7 @@ std::pair< bool, Board::Camp::iterator > Board::find_in_camp(
 {
    auto& camp = m_camp.at(unit->get_owner());
    auto end = camp.end();
-   auto found = std::find(camp.begin(), camp.end(), *unit);
+   auto found = std::find(camp.begin(), camp.end(), unit);
    return std::pair< bool, Camp::iterator >(found == end, found);
 }
 std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(
@@ -39,7 +39,7 @@ std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(
 {
    auto& battlefield = m_battlefield.at(unit->get_owner());
    auto* end = battlefield.end();
-   auto* found = std::find(battlefield.begin(), end, *unit);
+   auto* found = std::find(battlefield.begin(), end, unit);
    return std::pair< bool, Battlefield::iterator >(found == end, found);
 }
 void Board::remove_dead_units(const std::vector< sptr< Unit > >& units)

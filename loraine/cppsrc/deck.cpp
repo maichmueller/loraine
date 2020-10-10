@@ -36,7 +36,7 @@ std::vector< sptr< Card > > DeckContainer::find_units(
       return card->get_card_type() == CardType::UNIT && filter(card);
    });
 }
-sptr< Card > DeckContainer::draw_specific_card(SID card_sid)
+sptr< Card > DeckContainer::draw_specific_card(const char * card_sid)
 {
    auto indices = _find_indices([&card_sid](const sptr< Card >& card) {
       return card->get_id() == card_sid;

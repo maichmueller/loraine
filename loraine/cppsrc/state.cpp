@@ -66,7 +66,7 @@ std::vector< sptr< Card > > State::draw_n_cards(
 void State::move_to_graveyard(sptr< Unit > unit) {
    auto player = unit->get_owner();
    m_graveyard.at(player).at(m_round).emplace_back(unit);
-   m_board->remove_dead_units(unit);
+   m_board->remove_dead_units({unit});
 }
 State::State(
    Player starting_player,
@@ -87,7 +87,7 @@ State::State(
    size_t round,
    Player turn,
    unsigned short pass_count,
-   size_t terminal,
+   Status terminal,
    bool terminal_checked,
    std::vector< sptr< Spell > > spell_stack)
    : m_nexus_health(nexus_health),

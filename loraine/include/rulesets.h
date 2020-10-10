@@ -1,6 +1,8 @@
 #ifndef LORAINE_RULESETS_H
 #define LORAINE_RULESETS_H
 
+#include <stddef.h>
+
 enum Player { BLUE = 0, RED };
 
 constexpr const size_t MAX_CARD_COPIES_IN_DECK = 3;

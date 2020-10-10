@@ -1,3 +1,10 @@
 
 .idea/*
 build/
+**/.DS_store
+
+
+meta/sets/*
+!meta/sets/set1-en_us/en_us/data/set1-en_us.json
+!meta/sets/set1-en_us/en_us/data/set2-en_us.json
+!meta/sets/set1-en_us/en_us/data/set3-en_us.json

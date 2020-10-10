@@ -6,7 +6,6 @@
 
 #include "agent.h"
 #include "cards/card.h"
-#include "cards/target.h"
 #include "rulesets.h"
 #include "state.h"
 #include "types.h"
@@ -27,18 +26,14 @@ class Game {
    void summon_exact_copy(const sptr< Unit >& unit);
 
    long int deal_damage_to_unit(
-      const sptr< Card >& cause,
-      sptr< Unit >& unit,
-      const sptr< size_t >& damage);
+      const sptr< Card >& cause, sptr< Unit >& unit, const sptr< size_t >& damage);
 
    void nexus_strike(
       Player attacked_nexus,
       const sptr< size_t >& damage,
       const std::shared_ptr< Card >& responsible_card);
 
-   long int strike(
-      const std::shared_ptr< Unit >& unit_att,
-      std::shared_ptr< Unit >& unit_def);
+   long int strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def);
 
    void kill_unit(
       Player killer,
@@ -52,8 +47,7 @@ class Game {
 
    [[nodiscard]] const auto& get_active_event() const { return m_active_event; }
    [[nodiscard]] auto get_state() const { return m_state; }
-   [[nodiscard]] std::vector< sptr< Grant > > get_all_grants(
-      const sptr< Card >& card) const;
+   [[nodiscard]] std::vector< sptr< Grant > > get_all_grants(const sptr< Card >& card) const;
 
    void retreat_to_camp(Player player);
    void process_camp_queue(Player player);
@@ -71,42 +65,55 @@ class Game {
       m_grants_temp.erase(uuid);
    }
 
+//   void level_up_champion(sptr< Champion > champ);
    /*
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
     */
    std::vector< Target > filter_targets_bf(
-      const std::function< bool(const sptr< Unit >&) >& filter,
-      std::optional< Player > opt_player);
+      const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
    std::vector< Target > filter_targets_camp(
-      const std::function< bool(const sptr< Unit >&) >& filter,
-      std::optional< Player > opt_player);
+      const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
    std::vector< Target > filter_targets_board(
-      const std::function< bool(const sptr< Unit >&) >& filter,
-      std::optional< Player > opt_player);
+      const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
    std::vector< Target > filter_targets_hand(
-      const std::function< bool(const sptr< Card >&) >& filter,
-      std::optional< Player > opt_player);
+      const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    std::vector< Target > filter_targets_deck(
       const std::function< bool(const sptr< Card >&) >& function,
       std::optional< Player > anOptional);
 
    std::vector< Target > filter_targets_everywhere(
-      const std::function< bool(const sptr< Card >&) >& filter,
-      std::optional< Player > opt_player);
+      const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
+
+   template < typename... Params >
+   inline void grant(GrantType grant_type, Params&&... params)
+   {
+      switch(grant_type) {
+         case Stats: {
+            store_grant(std::make_shared< StatsGrant >(std::forward<Params...>(params...)));
+         }
+         case Mana: {
+            store_grant(std::make_shared< ManaGrant >(std::forward<Params...>(params...)));
+         }
+         case Keyword: {
+            store_grant(std::make_shared< KeywordGrant >(std::forward<Params...>(params...)));
+         }
+         case Effect: {
+            store_grant(std::make_shared< EffectGrant >(std::forward<Params...>(params...)));
+         }
+      }
+   }
 
    inline void store_grant(const sptr< Grant >& grant)
    {
       if(grant->is_permanent()) {
-         m_grants_perm[grant->get_bestowed_card()->get_uuid()].emplace_back(
-            grant);
+         m_grants_perm[grant->get_bestowed_card()->get_uuid()].emplace_back(grant);
       } else {
-         m_grants_temp[grant->get_bestowed_card()->get_uuid()].emplace_back(
-            grant);
+         m_grants_temp[grant->get_bestowed_card()->get_uuid()].emplace_back(grant);
       }
    }
 
@@ -117,15 +124,13 @@ class Game {
       }
    }
 
-   inline void copy_grant(
-      const sptr< Grant >& grant, const sptr< Card >& card_to_bestow)
+   inline void copy_grant(const sptr< Grant >& grant, const sptr< Card >& card_to_bestow)
    {
       store_grant(grant->copy_on(card_to_bestow));
    }
 
    inline void copy_grant(
-      const std::vector< sptr< Grant > >& grants,
-      const sptr< Card >& card_to_bestow)
+      const std::vector< sptr< Grant > >& grants, const sptr< Card >& card_to_bestow)
    {
       for(const auto& grant : grants) {
          store_grant(grant->copy_on(card_to_bestow));
@@ -149,8 +154,7 @@ class Game {
    }
 
    void _mulligan(
-      const std::vector< sptr< Card > >& hand_blue,
-      const std::vector< sptr< Card > >& hand_red);
+      const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);
 
    std::vector< sptr< Card > > _draw_initial_hand(Player player);
    bool _do_action(const sptr< AnyAction >& action);
@@ -164,8 +168,7 @@ class Game {
    void _start_round();
    void _end_round();
 
-   void _activate_battlemode(
-      Player attack_player, std::vector< size_t > positions);
+   void _activate_battlemode(Player attack_player, std::vector< size_t > positions);
 
    void _deactivate_battlemode();
 

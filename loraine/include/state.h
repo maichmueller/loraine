@@ -88,7 +88,7 @@ class State {
       size_t round,
       Player turn,
       unsigned short pass_count,
-      size_t terminal,
+      Status terminal,
       bool terminal_checked,
       std::vector< sptr< Spell > > spell_stack);
    inline void set_nexus_health(long int value, Player player)

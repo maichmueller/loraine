@@ -108,7 +108,7 @@ class DeckContainer {
    /*
     * Drawing randomly one of the cards that matches the given ID.
     */
-   sptr< Card > draw_specific_card(SID card_sid);
+   sptr< Card > draw_specific_card(const char * card_sid);
 
    [[nodiscard]] auto size() const {
       return m_cards.size();

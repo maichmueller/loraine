@@ -1,13 +1,10 @@
-//
-// Created by michael on 22.05.20.
-//
 
 #ifndef LORAINE_TYPES_H
 #define LORAINE_TYPES_H
 
 #include <cinttypes>
 #include <memory>
-#include <boost/uuid/uuid.hpp>
+#include <uuid.h>
 
 
 using i8 = int8_t;
@@ -19,7 +16,7 @@ using SID = size_t;
 //
 using CardID = size_t;
 // unique universal identifier type
-using UUID = boost::uuids::uuid;
+using UUID = uuids::uuid;
 // short handles for most common pointer types
 template < typename T >
 using uptr = std::unique_ptr< T >;

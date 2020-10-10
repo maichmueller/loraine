@@ -509,7 +509,7 @@ void Game::cast(const sptr< Spell >& spell)
    // spells dont react to events particularly, so they are passed a None-
    // event
 
-   (*spell)(*this, events::AnyEvent());
+   (*spell)(*this, events::NoneEvent());
    _trigger_event(events::CastEvent(spell));
 }
 
@@ -517,7 +517,7 @@ void Game::play(const sptr< Spell >& spell)
 {
    Player player = spell->get_owner();
    for(auto& effect :
-       spell->get_effects_map().at(events::AnyEvent::event_type)) {
+       spell->get_effects_map().at(events::NoneEvent::event_type)) {
       effect.choose_targets(*this, player);
    }
    spend_mana(player, spell->get_mana_cost(), true);
@@ -709,6 +709,7 @@ std::vector< Target > Game::filter_targets_board(
                 + filter_targets_bf(filter, RED)
                 + filter_targets_camp(filter, RED);
    }
+   return targets;
 }
 
 std::vector< Target > Game::filter_targets_everywhere(
@@ -733,3 +734,10 @@ std::vector< Target > Game::filter_targets_everywhere(
    }
    return targets;
 }
+//void Game::level_up_champion(sptr<Champion> champ)
+//{
+//   auto curr_uuid = champ->get_uuid();
+//   auto grants = get_all_grants(champ);
+//   auto damage = champ->get_damage();
+//
+//}

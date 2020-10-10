@@ -3,13 +3,14 @@
 #define LORAINE_REGION_H
 
 enum struct Region {
+   BILGEWATER,
    DEMACIA,
    FRELJORD,
    IONIA,
    NOXUS,
    PILTOVER_ZAUN,
    SHADOW_ISLES,
-   BILGEWATER,
+   TARGON
 };
 
 #endif  // LORAINE_REGION_H
