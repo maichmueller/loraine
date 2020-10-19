@@ -14,6 +14,7 @@
 #include "rng_machine.h"
 #include "rulesets.h"
 #include "state.h"
+#include "targeting.h"
 #include "types.h"
 #include "utils.h"
 #include "uuid_gen.h"

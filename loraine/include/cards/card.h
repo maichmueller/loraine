@@ -9,6 +9,7 @@
 
 #include "effect.h"
 #include "event/event.h"
+#include "event/event_types.h"
 #include "keywords.h"
 #include "region.h"
 #include "types.h"
@@ -23,6 +24,7 @@ enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
 
 enum struct Group {
    NONE,
+   DRAGON,
    ELITE,
    ELNUK,
    PORO,
@@ -33,7 +35,7 @@ enum struct Group {
    YETI,
 };
 
-enum struct CardType { SPELL, UNIT };
+enum struct CardType { SPELL, UNIT, LANDMARK };
 
 enum struct CardSuperType { NONE, SKILL, CHAMPION };
 
@@ -91,17 +93,16 @@ class Card {
    [[nodiscard]] virtual bool _check_play_condition(const Game& game) const = 0;
 
   public:
-   inline void operator()(
-      Game& game, const events::VariantEvent& event, events::EventType event_type)
+   inline bool operator()(Game& game, const events::AnyEvent& event)
    {
-      for(auto& effect : m_effects.at(event_type)) {
-         effect(game, event);
+      bool all_consumed = true;
+      for(auto& effect : m_effects.at(event.get_event_type())) {
+         if(not effect.is_consumed()) {
+            effect(game, event);
+            all_consumed = false;
+         }
       }
-   }
-   // convenience operator of the above
-   inline void operator()(Game& game, const events::VariantEvent& event)
-   {
-      (*this)(game, event, get_event_type(event));
+      return all_consumed;
    }
 
    [[nodiscard]] inline auto get_name() const { return m_name; }
@@ -134,12 +135,13 @@ class Card {
    [[nodiscard]] virtual bool is_spell() const { return false; }
    [[nodiscard]] virtual bool is_skill() const { return false; }
    [[nodiscard]] virtual bool is_champion() const { return false; }
+   [[nodiscard]] virtual bool is_landmark() const { return false; }
    [[nodiscard]] virtual bool is_follower() const { return false; }
 
    inline void reduce_mana_cost(long int amount) { m_mana_cost_delta += amount; }
    inline void set_mana_cost(size_t mana_cost)
    {
-      m_mana_cost_delta = static_cast< long int >(mana_cost - m_mana_cost_base);
+      m_mana_cost_delta = static_cast< long int >(mana_cost) - m_mana_cost_base;
    }
 
    inline void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
@@ -175,7 +177,7 @@ class Card {
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
-   virtual ~Card() = default;
+   virtual ~Card() = 0;
 
    /*
     *  Basic constructor
@@ -194,8 +196,7 @@ class Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects,
-      long int mana_cost_delta = 0);
+      std::map< events::EventType, std::vector< EffectContainer > > effects);
 
    /*
     * Copy Constructor
@@ -222,6 +223,7 @@ class Unit: public Card {
   private:
    // unit cards based attributes
    bool m_alive = true;
+   bool m_stunned = false;
 
    // the fixed reference damage the unit deals.
    const size_t m_power_ref;
@@ -247,6 +249,7 @@ class Unit: public Card {
 
   public:
    [[nodiscard]] bool is_unit() const override { return true; }
+   inline void set_stunned(bool value) { m_stunned = value;}
    void set_power(size_t power, bool as_delta = true);
    void set_health(size_t health);
    void die(Game& game);
@@ -258,11 +261,13 @@ class Unit: public Card {
    [[nodiscard]] inline auto get_power_delta() const { return m_power_delta; }
    [[nodiscard]] inline auto get_power() const
    {
-      return std::max(size_t(0), m_power_base + m_power_delta);
+      return std::max(size_t(0), m_power_base + static_cast< size_t >(m_power_delta));
    }
    [[nodiscard]] inline auto get_health() const
    {
-      return static_cast< long int >(m_health_base + m_health_delta - m_damage);
+      long health_base = static_cast< long int >(m_health_base);
+      long damage = static_cast< long >(m_damage);
+      return std::max(long(0), health_base + m_health_delta - damage);
    }
    [[nodiscard]] inline auto get_health_ref() const { return m_health_ref; }
    [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
@@ -318,10 +323,28 @@ class Spell: public Card {
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects,
-      int mana_cost_delta = 0);
+      std::map< events::EventType, std::vector< EffectContainer > > effects);
 };
 
+class Landmark: public Card {
+  public:
+   Landmark(
+      Player owner,
+      const char* const code,
+      const char* const name,
+      const char* const effect_desc,
+      const char* const lore,
+      Region region,
+      Group group,
+      Rarity rarity,
+      bool is_collectible,
+      size_t mana_cost,
+      std::initializer_list< Keyword > keyword_list,
+      std::map< events::EventType, std::vector< EffectContainer > > effects);
+
+   [[nodiscard]] bool is_landmark() const override { return true;}
+
+};
 
 inline sptr< Unit > to_unit(const sptr< Card >& card)
 {
@@ -331,6 +354,22 @@ inline sptr< Spell > to_spell(const sptr< Card >& card)
 {
    return std::dynamic_pointer_cast< Spell >(card);
 }
+inline sptr< Landmark > to_landmark(const sptr< Card >& card)
+{
+   return std::dynamic_pointer_cast< Landmark >(card);
+}
+
+// hash specializations
+namespace std {
+template <>
+struct hash< Card > {
+   size_t operator()(const Card& x) const { return std::hash< UUID >()(x.get_uuid()); }
+};
+template <>
+struct hash< sptr< Card > > {
+   size_t operator()(const sptr< Card >& x) const { return std::hash< Card >()(*x); }
+};
+}  // namespace std
 
 // using VariantCard = std::variant <Follower, Champion, Spell>;
 

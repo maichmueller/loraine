@@ -23,7 +23,7 @@ class State {
    // player symmetric attributes
 
    SymArr< Player > m_nexus_ids{BLUE, RED};
-   SymArr< int > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
+   SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
    SymArr< size_t > m_mana{0, 0};
    SymArr< size_t > m_managems{0, 0};
    SymArr< size_t > m_spell_mana{0, 0};
@@ -31,6 +31,8 @@ class State {
    SymArr< bool > m_can_attack{false, false};
    SymArr< bool > m_scout_token{false, false};
    SymArr< bool > m_can_plunder{false, false};
+   SymArr< bool > m_can_daybreak{true, true};
+   SymArr< bool > m_can_nightfall{false, false};
 
    // the cards in hand (short: the player's 'hand')
    SymArr< HandType > m_hand;
@@ -47,7 +49,7 @@ class State {
    std::optional< Player > m_attacker;
    size_t m_round = 0;
    Player m_turn;
-   unsigned short m_pass_count = 0;
+   bool m_can_endround = false;
    Status m_terminal = Status::ONGOING;
    bool m_terminal_checked = false;
    std::vector< sptr< Spell > > m_spell_stack;
@@ -74,7 +76,7 @@ class State {
       SymArr< HandType > hands,
       SymArr< DeckContainer > decks,
       sptr< Board > board,
-      SymArr< int > nexus_health,
+      SymArr< long > nexus_health,
       SymArr< size_t > mana,
       SymArr< size_t > managems,
       SymArr< size_t > spell_mana,
@@ -91,53 +93,35 @@ class State {
       Status terminal,
       bool terminal_checked,
       std::vector< sptr< Spell > > spell_stack);
-   inline void set_nexus_health(long int value, Player player)
-   {
-      m_nexus_health[player] = value;
-   }
-   inline void damage_nexus(size_t amount, Player player)
-   {
-      m_nexus_health[player] -= amount;
-   }
+   inline void set_nexus_health(long int value, Player player) { m_nexus_health[player] = value; }
+   inline void damage_nexus(size_t amount, Player player) { m_nexus_health[player] -= amount; }
    inline void heal_nexus(size_t amount, Player player)
    {
       m_nexus_health[player] = std::min(
-         m_nexus_health[player] + amount, size_t(START_NEXUS_HEALTH));
+         m_nexus_health[player] + long(amount), long(START_NEXUS_HEALTH));
    }
    inline void set_mana(size_t value, Player player)
    {
-      m_mana[player] = std::max(
-         std::min(static_cast< size_t >(MAX_MANA), value), size_t(0));
+      m_mana[player] = std::max(std::min(static_cast< size_t >(MAX_MANA), value), size_t(0));
    }
 
-   inline void set_mana_gems(size_t value, Player player)
-   {
-      m_managems[player] = value;
-   }
+   inline void set_mana_gems(size_t value, Player player) { m_managems[player] = value; }
    inline void set_spell_mana(size_t value, Player player)
    {
       m_spell_mana[player] = std::max(
          std::min(static_cast< size_t >(MAX_SPELL_MANA), value), size_t(0));
    }
-   inline void set_hand(HandType hand, Player player)
-   {
-      m_hand[player] = std::move(hand);
-   }
+   inline void set_hand(HandType hand, Player player) { m_hand[player] = std::move(hand); }
    inline void set_deck(DeckContainer deck, Player player)
    {
       m_deck_cont[player] = std::move(deck);
    }
 
-   inline void set_flag_can_attack(bool value, Player player)
-   {
-      m_can_attack[player] = value;
-   }
-   inline void set_flag_can_plunder(bool value, Player player)
-   {
-      m_can_plunder[player] = value;
-   }
-   inline void set_graveyard(
-      std::map< size_t, std::vector< sptr< Unit > > > value, Player player)
+   inline void set_flag_attack(bool value, Player player) { m_can_attack[player] = value; }
+   inline void set_flag_plunder(bool value, Player player) { m_can_plunder[player] = value; }
+   inline void set_flag_daybreak(bool value, Player player) { m_can_daybreak[player] = value;}
+   inline void set_flag_nightfall(bool value, Player player) { m_can_nightfall[player] = value;}
+   inline void set_graveyard(std::map< size_t, std::vector< sptr< Unit > > > value, Player player)
    {
       m_graveyard[player] = std::move(value);
    }
@@ -147,8 +131,7 @@ class State {
    }
 
    inline void set_board(sptr< Board > value) { m_board = std::move(value); }
-   inline void set_history(
-      std::map< size_t, std::vector< sptr< AnyAction > > > history)
+   inline void set_history(std::map< size_t, std::vector< sptr< AnyAction > > > history)
    {
       m_history = std::move(history);
    }
@@ -156,16 +139,13 @@ class State {
    inline void set_starting_player(Player player)
    {
       m_starting_player = player;
-      set_flag_can_attack(true, player);
+      set_flag_attack(true, player);
       set_turn(player);
    }
 
    inline void set_turn(Player player) { m_turn = player; }
 
-   inline void set_scout_token(Player player, bool value)
-   {
-      m_scout_token.at(player) = value;
-   }
+   inline void set_scout_token(Player player, bool value) { m_scout_token.at(player) = value; }
 
    inline void set_attacker(Player player) { m_attacker = player; }
    inline void reset_attacker() { m_attacker.reset(); }
@@ -179,54 +159,35 @@ class State {
    {
       return m_nexus_health[player];
    }
-   [[nodiscard]] inline auto get_mana(Player player) const
-   {
-      return m_mana[player];
-   }
-   [[nodiscard]] inline auto get_mana_gems(Player player) const
-   {
-      return m_managems[player];
-   }
-   [[nodiscard]] inline auto get_spell_mana(Player player) const
-   {
-      return m_spell_mana[player];
-   }
-   [[nodiscard]] inline auto* get_hand(Player player) const
-   {
-      return &m_hand[player];
-   }
-   [[nodiscard]] inline auto* get_hand(Player player)
-   {
-      return &m_hand[player];
-   }
-   [[nodiscard]] inline auto* get_deck(Player player) const
-   {
-      return &m_deck_cont[player];
-   }
-   [[nodiscard]] inline auto* get_deck(Player player)
-   {
-      return &m_deck_cont[player];
-   }
-   [[nodiscard]] inline auto get_flag_can_attack(Player player) const
+   [[nodiscard]] inline auto get_mana(Player player) const { return m_mana[player]; }
+   [[nodiscard]] inline auto get_mana_gems(Player player) const { return m_managems[player]; }
+   [[nodiscard]] inline auto get_spell_mana(Player player) const { return m_spell_mana[player]; }
+   [[nodiscard]] inline auto* get_hand(Player player) const { return &m_hand[player]; }
+   [[nodiscard]] inline auto* get_hand(Player player) { return &m_hand[player]; }
+   [[nodiscard]] inline auto* get_deck(Player player) const { return &m_deck_cont[player]; }
+   [[nodiscard]] inline auto* get_deck(Player player) { return &m_deck_cont[player]; }
+   [[nodiscard]] inline auto get_flag_attack(Player player) const
    {
       return m_can_attack[player];
    }
-   [[nodiscard]] inline auto get_scout_token(Player player) const
-   {
-      return m_scout_token[player];
-   }
+   [[nodiscard]] inline auto get_scout_token(Player player) const { return m_scout_token[player]; }
    [[nodiscard]] inline auto is_enlightened(Player player) const
    {
       return m_managems[player] == MAX_MANA;
    }
-   [[nodiscard]] inline auto get_flag_can_plunder(Player player) const
+   [[nodiscard]] inline auto get_flag_plunder(Player player) const
    {
       return m_can_plunder[player];
    }
-   [[nodiscard]] inline auto get_graveyard(Player player) const
+   [[nodiscard]] inline auto get_flag_daybreak(Player player) const
    {
-      return m_graveyard[player];
+      return m_can_daybreak[player];
    }
+   [[nodiscard]] inline auto get_flag_nightfall(Player player) const
+   {
+      return m_can_nightfall[player];
+   }
+   [[nodiscard]] inline auto get_graveyard(Player player) const { return m_graveyard[player]; }
    [[nodiscard]] inline auto get_tossed_cards(Player player) const
    {
       return m_tossed_cards[player];
@@ -236,31 +197,27 @@ class State {
    [[nodiscard]] inline auto get_round() const { return m_round; }
    [[nodiscard]] inline auto get_turn() const { return m_turn; }
    [[nodiscard]] inline auto get_attacker() const { return m_attacker; }
-   [[nodiscard]] inline auto get_starting_player() const
-   {
-      return m_starting_player;
-   }
-   [[nodiscard]] inline auto get_pass_count() const { return m_pass_count; }
+   [[nodiscard]] inline auto get_starting_player() const { return m_starting_player; }
+   [[nodiscard]] inline auto get_pass_count() const { return m_can_endround; }
    [[nodiscard]] inline auto& get_spell_stack() { return m_spell_stack; }
 
    inline void incr_managems(Player player, size_t amount = 1)
    {
-      set_mana_gems(
-         std::min(m_managems[player] + amount, size_t(MAX_MANA)), player);
+      set_mana_gems(std::min(m_managems[player] + amount, size_t(MAX_MANA)), player);
    }
    inline void decr_managems(Player player, size_t amount = 1)
    {
       set_mana_gems(std::max(m_managems[player] - amount, size_t(1)), player);
    }
    inline void fill_mana(Player player) { m_mana[player] = m_managems[player]; }
-   inline void incr_turn() { m_turn = Player((m_turn + 1) % 2); }
+   inline void incr_turn() { m_turn = Player(1 - m_turn); }
    inline void incr_round() { m_round += 1; }
 
    inline void shuffle_card_into_deck(const sptr< Card >& card, Player player)
    {
       auto& deck = m_deck_cont[player].get_cards();
       std::uniform_int_distribution< size_t > dist(0, deck.size());
-      auto pos = deck.begin() + dist(rng::rng_def_engine);
+      auto pos = deck.begin() + static_cast< long >(dist(rng::rng_def_engine));
       deck.insert(pos, card);
    }
 
@@ -281,18 +238,13 @@ class State {
 
    sptr< Card > draw_card_by_idx(Player player, size_t index);
 
-   std::vector< sptr< Card > > draw_n_cards(
-      Player player, size_t n, bool random = true);
-
-   void play_unit(const sptr< Unit >& unit);
-
-   void play_spell(const sptr< Spell >& spell);
+   std::vector< sptr< Card > > draw_n_cards(Player player, size_t n, bool random = true);
 
    void move_to_graveyard(sptr< Unit > unit);
    void move_to_tossed(sptr< Card > card);
 
-   inline void incr_pass_count() { m_pass_count += 1; }
-   inline void reset_pass_count() { m_pass_count = 0; }
+   inline void enable_endround() { m_can_endround = true; }
+   inline void disable_endround() { m_can_endround = false; }
 
    void shuffle_deck(Player player);
 };

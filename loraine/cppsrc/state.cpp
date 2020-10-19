@@ -73,7 +73,7 @@ State::State(
    SymArr< State::HandType > hands,
    SymArr< DeckContainer > decks,
    sptr< Board > board,
-   SymArr< int > nexus_health,
+   SymArr< long > nexus_health,
    SymArr< size_t > mana,
    SymArr< size_t > managems,
    SymArr< size_t > spell_mana,
@@ -107,7 +107,7 @@ State::State(
      m_attacker(attacker),
      m_round(round),
      m_turn(turn),
-     m_pass_count(pass_count),
+      m_can_endround(pass_count),
      m_terminal(terminal),
      m_terminal_checked(terminal_checked),
      m_spell_stack(std::move(spell_stack))

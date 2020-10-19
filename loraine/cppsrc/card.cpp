@@ -3,6 +3,7 @@
 
 #include "cards/keywords.h"
 #include "game.h"
+#include "utils.h"
 
 Card::Card(
    Player owner,
@@ -18,8 +19,7 @@ Card::Card(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects,
-   long int mana_cost_delta)
+   std::map< events::EventType, std::vector< EffectContainer > > effects)
     : m_name(name),
       m_effect_desc(effect_desc),
       m_lore(lore),
@@ -33,7 +33,7 @@ Card::Card(
       m_uuid(new_uuid()),
       m_mana_cost_ref(mana_cost),
       m_mana_cost_base(mana_cost),
-      m_mana_cost_delta(mana_cost_delta),
+      m_mana_cost_delta(0),
       m_keywords(create_kword_list(keyword_list)),
       m_effects(std::move(effects)),
       m_owner(owner)
@@ -59,13 +59,10 @@ Card::Card(const Card& card)
       m_owner(card.get_owner())
 {
 }
-void Card::remove_effect(
-   events::EventType e_type, const EffectContainer& effect)
+void Card::remove_effect(events::EventType e_type, const EffectContainer& effect)
 {
    if(auto eff_vec_iter = std::find_if(
-         m_effects.begin(),
-         m_effects.end(),
-         [&](const auto& val) { return val.first == e_type; });
+         m_effects.begin(), m_effects.end(), [&](const auto& val) { return val.first == e_type; });
       eff_vec_iter != m_effects.end()) {
       auto& eff_vec = (*eff_vec_iter).second;
       auto position = std::find(eff_vec.begin(), eff_vec.end(), effect);
@@ -78,7 +75,8 @@ void Card::remove_effect(
       }
    }
 }
-void Card::add_effect(events::EventType e_type, EffectContainer effect) {
+void Card::add_effect(events::EventType e_type, EffectContainer effect)
+{
    // if the key is already found in the effects map, delete the previous
    // effect. This essentially implies we overwrite preexisting effects
    if(m_effects.find(e_type) != m_effects.end()) {
@@ -86,8 +84,7 @@ void Card::add_effect(events::EventType e_type, EffectContainer effect) {
    }
    m_effects[e_type].emplace_back(std::move(effect));
 }
-void Card::set_effect_vec(
-   events::EventType e_type, std::vector< EffectContainer > effects)
+void Card::set_effect_vec(events::EventType e_type, std::vector< EffectContainer > effects)
 {
    auto& curr_vec = m_effects[e_type];
    for(auto&& eff : effects) {
@@ -134,14 +131,12 @@ void Unit::die(Game& game)
 }
 void Unit::set_health(size_t health)
 {
-   m_health_delta = static_cast< decltype(m_health_delta) >(
-      health - m_health_base);
+   m_health_delta = static_cast< decltype(m_health_delta) >(health - m_health_base);
 }
 void Unit::set_power(size_t power, bool as_delta)
 {
    if(as_delta) {
-      m_power_delta = static_cast< decltype(m_power_delta) >(
-         power - m_power_base);
+      m_power_delta = static_cast< decltype(m_power_delta) >(power - m_power_base);
    } else {
       m_power_base = power;
       m_power_delta = 0;
@@ -210,8 +205,7 @@ Spell::Spell(
    bool is_collectible,
    size_t mana_cost,
    const std::initializer_list< enum Keyword >& keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects,
-   int mana_cost_delta)
+   std::map< events::EventType, std::vector< EffectContainer > > effects)
     : Card(
        owner,
        code,
@@ -226,17 +220,16 @@ Spell::Spell(
        is_collectible,
        mana_cost,
        keyword_list,
-       std::move(effects),
-       mana_cost_delta)
+       std::move(effects))
 {
 }
 bool Spell::_check_play_condition(const Game& game) const
 {
    // If any of the sub-effects of the spell are playable then this is the generally accepted case.
    // Any specific spell can choose to override this in its inheritance.
-   for(const auto & event_effect : get_effects_map()) {
-      const auto & effect_vec = event_effect.second;
-      for(const auto & effect : effect_vec) {
+   for(const auto& event_effect : get_effects_map()) {
+      const auto& effect_vec = event_effect.second;
+      for(const auto& effect : effect_vec) {
          if(effect.check_cast_condition(game, events::NoneEvent())) {
             return true;
          }
@@ -245,3 +238,34 @@ bool Spell::_check_play_condition(const Game& game) const
    return false;
 }
 
+Landmark::Landmark(
+   Player owner,
+   const char* const code,
+   const char* const name,
+   const char* const effect_desc,
+   const char* const lore,
+   Region region,
+   Group group,
+   Rarity rarity,
+   bool is_collectible,
+   size_t mana_cost,
+   std::initializer_list< enum Keyword > keyword_list,
+   std::map< events::EventType, std::vector< EffectContainer > > effects)
+    : Card(
+       owner,
+       code,
+       name,
+       effect_desc,
+       lore,
+       region,
+       group,
+       CardSuperType::NONE,
+       rarity,
+       CardType::LANDMARK,
+       is_collectible,
+       mana_cost,
+       keyword_list,
+       effects)
+{
+   add_keyword(Keyword::LANDMARK);
+}

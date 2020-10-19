@@ -7,7 +7,7 @@
 
 #include <array>
 
-enum struct Keyword {
+enum class Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
    ATTUNE,
    BARRIER,
@@ -28,6 +28,7 @@ enum struct Keyword {
    NEXUS_STRIKE,
    OBLITERATE,
    IMMOBILE,
+   LANDMARK,
    LAST_BREATH,
    LIFESTEAL,
    OVERWHELM,
@@ -46,8 +47,10 @@ enum struct Keyword {
    TOUGH,
    TRAP,
    VULNERABLE,
-   WEAKEST
+   WEAKEST,
 };
+
+constexpr const static size_t n_keywords = static_cast<size_t>(Keyword::WEAKEST);
 
 // This is intended to be used as lookup table for keywords:
 // Does the card have the keyword 'lifesteal'?

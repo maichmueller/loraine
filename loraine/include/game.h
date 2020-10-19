@@ -2,16 +2,18 @@
 #ifndef LORAINE_GAME_H
 #define LORAINE_GAME_H
 
-#include <event/event_listener.h>
-
 #include "agent.h"
 #include "cards/card.h"
+#include "event/event_listener.h"
 #include "rulesets.h"
 #include "state.h"
 #include "types.h"
 
 class Game {
   public:
+   [[nodiscard]] auto& get_board() const { return m_board; }
+   [[nodiscard]] auto& get_agent(Player player) const { return m_agents[player]; }
+
    bool run_game();
 
    void incr_managems(Player player, size_t amount = 1);
@@ -26,19 +28,17 @@ class Game {
    void summon_exact_copy(const sptr< Unit >& unit);
 
    long int deal_damage_to_unit(
-      const sptr< Card >& cause, sptr< Unit >& unit, const sptr< size_t >& damage);
+      const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
+
+   void heal(Player player, const sptr< Unit >& unit, long amount);
 
    void nexus_strike(
-      Player attacked_nexus,
-      const sptr< size_t >& damage,
-      const std::shared_ptr< Card >& responsible_card);
+      Player attacked_nexus, const sptr< long >& damage, const sptr< Card >& responsible_card);
 
    long int strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def);
 
    void kill_unit(
-      Player killer,
-      const std::shared_ptr< Unit >& killed_unit,
-      const std::optional< std::shared_ptr< Card > >& cause = {});
+      Player killer, const std::shared_ptr< Unit >& killed_unit, const sptr< Card >& cause = {});
 
    std::vector< Target > filter_targets(
       Location range,
@@ -65,7 +65,7 @@ class Game {
       m_grants_temp.erase(uuid);
    }
 
-//   void level_up_champion(sptr< Champion > champ);
+   //   void level_up_champion(sptr< Champion > champ);
    /*
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
@@ -94,16 +94,16 @@ class Game {
    {
       switch(grant_type) {
          case Stats: {
-            store_grant(std::make_shared< StatsGrant >(std::forward<Params...>(params...)));
+            store_grant(std::make_shared< StatsGrant >(std::forward< Params... >(params...)));
          }
          case Mana: {
-            store_grant(std::make_shared< ManaGrant >(std::forward<Params...>(params...)));
+            store_grant(std::make_shared< ManaGrant >(std::forward< Params... >(params...)));
          }
          case Keyword: {
-            store_grant(std::make_shared< KeywordGrant >(std::forward<Params...>(params...)));
+            store_grant(std::make_shared< KeywordGrant >(std::forward< Params... >(params...)));
          }
          case Effect: {
-            store_grant(std::make_shared< EffectGrant >(std::forward<Params...>(params...)));
+            store_grant(std::make_shared< EffectGrant >(std::forward< Params... >(params...)));
          }
       }
    }
@@ -142,16 +142,19 @@ class Game {
    sptr< Board > m_board;
    SymArr< sptr< Agent > > m_agents;
    events::EventListener m_event_listener;
-   events::VariantEvent m_active_event;
+   sptr< events::AnyEvent > m_active_event;
    bool m_battle_mode = false;
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_perm;
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_temp;
 
    inline void _trigger_event(events::AnyEvent&& event)
    {
-      m_active_event = std::move(event);
-      m_event_listener.on_event(*this, m_active_event);
+      m_active_event = std::make_shared< events::AnyEvent >(std::move(event));
+      m_event_listener.on_event(*this, m_state->get_turn(), *m_active_event);
    }
+
+   void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
+   void _move_units_opp(const std::map< size_t, size_t >& positions, Player player, bool to_bf);
 
    void _mulligan(
       const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);
@@ -168,13 +171,13 @@ class Game {
    void _start_round();
    void _end_round();
 
-   void _activate_battlemode(Player attack_player, std::vector< size_t > positions);
+   void _activate_battlemode(Player attack_player);
 
    void _deactivate_battlemode();
 
    void _resolve_battle();
 
-   void _resolve_spell_stack();
+   void _resolve_spell_stack(bool burst);
 
    void _check_enlightenment(Player player);
 };

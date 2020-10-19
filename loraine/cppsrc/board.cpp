@@ -4,38 +4,7 @@
 
 #include "utils.h"
 
-void Board::move_to_battlefield(
-   const std::map< size_t, size_t >& units, Player player)
-{
-   auto& battlefield = get_battlefield(player);
-   auto& camp = get_camp(player);
-   for(auto camp_pos_to_field_pos : units) {
-      auto camp_pos = camp_pos_to_field_pos.first;
-      auto field_pos = camp_pos_to_field_pos.second;
-      auto& unit = camp.at(camp_pos);
-      battlefield.at(field_pos) = unit;
-   }
-}
-void Board::move_to_battlefield(
-   const std::vector< size_t >& field_positions, Player player)
-{
-   std::map< size_t, size_t > unit_map;
-   for(size_t i = 0; i < field_positions.size(); ++i) {
-      size_t field_pos = field_positions.at(i);
-      unit_map.emplace(i, field_pos);
-   }
-   move_to_battlefield(unit_map, player);
-}
-std::pair< bool, Board::Camp::iterator > Board::find_in_camp(
-   const sptr< Unit >& unit)
-{
-   auto& camp = m_camp.at(unit->get_owner());
-   auto end = camp.end();
-   auto found = std::find(camp.begin(), camp.end(), unit);
-   return std::pair< bool, Camp::iterator >(found == end, found);
-}
-std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(
-   const sptr< Unit >& unit)
+std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(const sptr< Unit >& unit)
 {
    auto& battlefield = m_battlefield.at(unit->get_owner());
    auto* end = battlefield.end();
@@ -54,8 +23,7 @@ void Board::remove_dead_units(const std::vector< sptr< Unit > >& units)
       }
    }
 }
-void Board::remove_dead_units(
-   Player player, std::vector< size_t > indices, bool in_camp)
+void Board::remove_dead_units(Player player, std::vector< size_t > indices, bool in_camp)
 {
    std::set< size_t > sorted_indices(indices.begin(), indices.end());
    size_t reduction = 0;
@@ -74,9 +42,7 @@ void Board::remove_dead_units(
 }
 
 size_t Board::count_units(
-   Player player,
-   bool in_camp,
-   const std::function< bool(const sptr< Unit >&) >& filter) const
+   Player player, bool in_camp, const std::function< bool(const sptr< Unit >&) >& filter) const
 {
    size_t sum = 0;
    if(in_camp) {
@@ -101,7 +67,5 @@ size_t Board::count_units(
 size_t Board::count_units(Player player, bool in_camp) const
 {
    return in_camp ? m_camp[player].size()
-                  : count_units(player, false, [](const auto& /*unused*/) {
-                       return true;
-                    });
+                  : count_units(player, false, [](const auto& /*unused*/) { return true; });
 }
