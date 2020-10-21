@@ -24,7 +24,9 @@ set(LORAINE_USE_IMGUI FALSE)
 set(CMAKE_CONFIG_FOLDER "cmake")
 
 # Set this path if the conan install is not in the standard directory
-set(CONAN_PATH "~/anaconda3/bin/conan")
+# This doesn't work due to a conan internal error when conan is not found in the standard directory (/usr/bin on linux)
+# It doesn't work in general when CONAN_COMMAND is set it seems.
+#execute_process(COMMAND which conan OUTPUT_VARIABLE CONAN_PATH)
 
 
 # Link this 'library' to set the c++ standard / compile-time options requested

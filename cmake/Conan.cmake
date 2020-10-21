@@ -15,6 +15,7 @@ conan_add_remote(NAME bincrafters URL
 
 conan_cmake_run(
   CONANFILE deps/conanfile.txt
+  CONAN_COMMAND ${CONAN_PATH}
   ${CONAN_EXTRA_REQUIRES}
   OPTIONS
   ${CONAN_EXTRA_OPTIONS}

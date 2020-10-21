@@ -5,9 +5,9 @@
 #include <functional>
 #include <utility>
 
-#include "utils.h"
 #include "rulesets.h"
 #include "types.h"
+#include "utils.h"
 
 // forward-declarations
 class Game;
@@ -51,15 +51,26 @@ class EffectContainer {
 
    inline void operator()(Game& game, const events::AnyEvent& event)
    {
-      m_effect_func(game, event, *this);
+      if(check_cast_condition(game, event)) {
+         if(m_effect_type != EffectType::AOE) {
+            if(verify_targets(game, m_owner)) {
+               m_effect_func(game, event, *this);
+            }
+         } else {
+            // AOE effects need to redo their targeting to adapt to any changes inbetween playing
+            // and casting the effect
+            choose_targets(game, m_owner);
+            m_effect_func(game, event, *this);
+         }
+      }
    }
-   inline void set_targets(std::vector<Target> targets) {m_targets = targets;}
+   inline void set_targets(std::vector< Target > targets) { m_targets = targets; }
 
    void choose_targets(const Game& game, Player player) { m_target_func(game, player, *this); }
 
    [[nodiscard]] inline bool verify_targets(
       const Game& game,
-      Player player,
+      Player player,  // the player who owns this precise effect (m_owner)
       const std::optional< std::vector< Target > >& opt_targets = {})
    {
       if(opt_targets.has_value()) {

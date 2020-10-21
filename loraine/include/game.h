@@ -11,8 +11,20 @@
 
 class Game {
   public:
-   [[nodiscard]] auto& get_board() const { return m_board; }
-   [[nodiscard]] auto& get_agent(Player player) const { return m_agents[player]; }
+   [[nodiscard]] inline auto& get_board() const { return m_board; }
+   [[nodiscard]] inline auto& get_agent(Player player) const { return m_agents[player]; }
+
+   [[nodiscard]] inline bool check_daybreak(Player player) const
+   {
+      return m_daybreak_checker(*this, player);
+   }
+   [[nodiscard]] inline bool check_nightfall(Player player) const
+   {
+      return m_nightfall_checker(*this, player);
+   }
+
+   bool default_daybreak(Player player) const;
+   bool default_nightfall(Player player) const;
 
    bool run_game();
 
@@ -56,11 +68,16 @@ class Game {
    void spend_mana(Player player, size_t cost, bool spell_mana);
 
    // inline methods
-
    inline void obliterate(const sptr< Card >& card)
    {
-      auto uuid = card->get_uuid();
+      uncover_card(card);
+      remove(card);
+   }
+   static inline void uncover_card(const sptr< Card >& card) { card->set_flag_hidden(false); }
+   inline void remove(const sptr< Card >& card)
+   {
       m_event_listener.unregister_card(card);
+      auto uuid = card->get_uuid();
       m_grants_perm.erase(uuid);
       m_grants_temp.erase(uuid);
    }
@@ -147,6 +164,11 @@ class Game {
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_perm;
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_temp;
 
+   // e.g. the unit "RAHVUN, DAYLIGHT'S SPEAR" changes the check for when it is daybreak, so the
+   // check needs to be dynamically adaptable. The same is expected to happen to NIGHTFALL.
+   std::function< bool(const Game&, Player) > m_daybreak_checker = &Game::default_daybreak;
+   std::function< bool(const Game&, Player) > m_nightfall_checker = &Game::default_nightfall;
+
    inline void _trigger_event(events::AnyEvent&& event)
    {
       m_active_event = std::make_shared< events::AnyEvent >(std::move(event));
@@ -180,6 +202,7 @@ class Game {
    void _resolve_spell_stack(bool burst);
 
    void _check_enlightenment(Player player);
+   void play_event_triggers(const sptr< Card >& card, const Player& player);
 };
 
 #endif  // LORAINE_GAME_H

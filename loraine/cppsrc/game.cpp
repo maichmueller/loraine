@@ -96,7 +96,6 @@ bool Game::run_game()
 
 bool Game::_do_action(const sptr< AnyAction >& action)
 {
-   m_state->commit_to_history(action);
    auto action_type = action->get_action_type();
    bool pass_initiative = true;
    if(action_type == ActionType::PASS) {
@@ -126,7 +125,6 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          case MOVE_UNIT: {
             auto cast_action = std::dynamic_pointer_cast< MoveUnitAction >(action);
             auto player = cast_action->get_player();
-            auto round = cast_action->get_round();
             auto to_bf = cast_action->towards_bf();
 
             auto positions_own = cast_action->get_indices_vec();
@@ -140,13 +138,11 @@ bool Game::_do_action(const sptr< AnyAction >& action)
             auto player = cast_action->get_player();
             auto round = cast_action->get_round();
             auto spell = cast_action->get_spell();
-
          }
 
          case ATTACK: {
             auto cast_action = std::dynamic_pointer_cast< AttackAction >(action);
             auto player = cast_action->get_player();
-            auto round = cast_action->get_round();
             auto opt_spells = cast_action->get_potential_spells();
 
             if(opt_spells.has_value()) {
@@ -161,7 +157,6 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          case BLOCK: {
             auto cast_action = std::dynamic_pointer_cast< BlockAction >(action);
             auto player = cast_action->get_player();
-            auto round = cast_action->get_round();
             auto opt_spells = cast_action->get_potential_spells();
 
             if(opt_spells.has_value()) {
@@ -188,6 +183,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          default: break;
       }
    }
+   m_state->commit_to_history(action);
    return pass_initiative;
 }
 void Game::_activate_battlemode(Player attack_player)
@@ -337,12 +333,12 @@ long int Game::deal_damage_to_unit(
 }
 void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 {
-   killed_unit->die(*this);
+   killed_unit->die();
    _trigger_event(events::DieEvent(
       killer, {false, killed_unit->get_owner(), Location::BOARD, 0, killed_unit}, cause));
-   if(! killed_unit->is_alive()) {
+   if(not killed_unit->is_alive()) {
       // we need to check for the card being truly dead, in case it had an
-      // e.g. last breath effect, which kept it alive
+      // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->move_to_graveyard(killed_unit);
    }
 }
@@ -501,17 +497,16 @@ void Game::play(const sptr< Unit >& unit, std::optional< size_t > replaces)
    Player player = unit->get_owner();
    spend_mana(player, unit->get_mana_cost(), false);
    auto& camp = m_board->get_camp(player);
+   uncover_card(unit);
    if(replaces.has_value()) {
       auto& unit_to_replace = camp.at(replaces.value());
-      obliterate(unit_to_replace);
+      remove(unit_to_replace);
       camp.at(replaces.value()) = unit;
    } else {
       camp.at(m_board->count_units(player, true) - 1) = unit;
    }
    m_event_listener.register_card(unit);
-   _trigger_event(events::PlayEvent(player, unit));
-   if(m_state->get_flag_daybreak())
-   _trigger_event(events::PlayEvent(player, unit));
+   play_event_triggers(unit, player);
 }
 void Game::play(const sptr< Spell >& spell)
 {
@@ -521,12 +516,23 @@ void Game::play(const sptr< Spell >& spell)
    }
    spend_mana(player, spell->get_mana_cost(), true);
    m_state->get_spell_stack().emplace_back(spell);
-   _trigger_event(events::PlayEvent(player, spell));
+   play_event_triggers(spell, player);
+}
+void Game::play_event_triggers(const sptr< Card >& card, const Player& player)
+{
+   _trigger_event(events::PlayEvent(player, card));
+   if(check_daybreak(player)) {
+      _trigger_event(events::DaybreakEvent(player, card));
+   }
+   if(check_nightfall(player)) {
+      _trigger_event(events::NightfallEvent(player, card));
+   }
 }
 void Game::cast(const sptr< Spell >& spell)
 {
    // spells dont react to events particularly, so they are passed a None-
    // event
+   uncover_card(spell);
    (*spell)(*this, events::NoneEvent());
    _trigger_event(events::CastEvent(spell->get_owner(), spell));
 }
@@ -576,7 +582,7 @@ void Game::draw_card(Player player)
       hand->emplace_back(card_drawn);
       _trigger_event(events::DrawCardEvent(player, card_drawn));
    } else {
-      obliterate(card_drawn);
+      remove(card_drawn);
    }
 }
 
@@ -599,7 +605,7 @@ void Game::summon_to_battlefield(const sptr< Unit >& unit)
       m_event_listener.register_card(unit);
       _trigger_event(events::SummonEvent(player, unit));
    } else {
-      obliterate(unit);
+      remove(unit);
    }
 }
 void Game::summon_exact_copy(const sptr< Unit >& unit)
@@ -646,6 +652,10 @@ std::vector< Target > Game::filter_targets(
          return filter_targets_deck(filter, player);
       }
       case Location::EVERYWHERE: {
+         return filter_targets_everywhere(filter, player);
+      }
+      // to silence the warning, a default is provided
+      default: {
          return filter_targets_everywhere(filter, player);
       }
    }
@@ -774,6 +784,32 @@ void Game::heal(Player player, const sptr< Unit >& unit, long amount)
 {
    unit->heal(amount);
    _trigger_event(events::HealUnitEvent(player, unit, std::make_shared< long >(amount)));
+}
+bool Game::default_daybreak(Player player) const
+{
+   const auto& history = m_state->get_history()->at(player).at(m_state->get_round());
+   // if no play action is found in the history (actions are committed to history only
+   // after having been processed), then daybreak is happening.
+   return std::find_if(
+             history.begin(),
+             history.end(),
+             [](const sptr< AnyAction >& action) {
+                return action->get_action_type() == ActionType::PLAY;
+             })
+          == history.end();
+}
+bool Game::default_nightfall(Player player) const
+{
+   const auto& history = m_state->get_history()->at(player).at(m_state->get_round());
+   // if any play action is found in the current history (actions are committed to history only
+   // after having been processed), then nightfall is happening.
+   return std::find_if(
+             history.begin(),
+             history.end(),
+             [](const sptr< AnyAction >& action) {
+                return action->get_action_type() == ActionType::PLAY;
+             })
+          != history.end();
 }
 
 // void Game::level_up_champion(sptr<Champion> champ)

@@ -20,12 +20,14 @@ target_include_directories(loraine
         PRIVATE
         ${LORAINE_INCLUDE_DIR}
         ${CONAN_INCLUDE_DIRS_STDUUID}
+        ${CONAN_INCLUDE_DIRS_LIBUUID}
         ${CONAN_INCLUDE_DIRS_MS-GSL}
         )
 target_include_directories(loraine
         SYSTEM INTERFACE
         ${LORAINE_INCLUDE_DIR}
         ${CONAN_INCLUDE_DIRS_STDUUID}
+        ${CONAN_INCLUDE_DIRS_LIBUUID}
         ${CONAN_INCLUDE_DIRS_MS-GSL}
         )
 

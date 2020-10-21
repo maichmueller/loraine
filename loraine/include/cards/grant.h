@@ -33,21 +33,9 @@ class Grant {
       GrantType grant_type,
       const char* const name_of_cause,
       sptr< Card > card_to_bestow,
-      bool permanent)
-       : m_grant_type(grant_type),
-         m_name_of_cause(name_of_cause),
-         m_bestowed_card(std::move(card_to_bestow)),
-         m_permanent(permanent),
-         m_uuid(new_uuid())
-   {
-   }
-
-   Grant(
-      GrantType grant_type,
-      const char* const name_of_cause,
-      sptr< Card > card_to_bestow,
       bool permanent,
-      std::function< bool(const sptr< Card >&) > card_filter)
+      std::function< bool(const sptr< Card >&) > card_filter =
+         [](const sptr< Card >& /*unused*/) { return true; })
        : m_grant_type(grant_type),
          m_name_of_cause(name_of_cause),
          m_bestowed_card(std::move(card_to_bestow)),
@@ -86,8 +74,7 @@ class Grant {
    const char* const m_name_of_cause;
    const sptr< Card > m_bestowed_card;
    const bool m_permanent;
-   const std::function< bool(const sptr< Card >&) > m_card_filter =
-      [](const sptr< Card >& /*unused*/) { return true; };
+   const std::function< bool(const sptr< Card >&) > m_card_filter;
    const UUID m_uuid;
 
    [[nodiscard]] virtual sptr< Grant > _copy_on(const sptr< Card >& card) const = 0;

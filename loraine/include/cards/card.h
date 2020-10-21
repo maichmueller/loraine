@@ -71,10 +71,11 @@ class Card {
    // the card code
    const char* const m_code;
    // the unique id used to identify this specific instance of a card
-   UUID m_uuid;
+   const UUID m_uuid;
 
    // variable attributes of the cards
 
+   bool m_hidden;
    // the mana it costs to play the cards (as default)
    const size_t m_mana_cost_ref;
    // when effects move the base cost to a new permanent value
@@ -86,6 +87,11 @@ class Card {
 
    // all possible effects
    std::map< events::EventType, std::vector< EffectContainer > > m_effects;
+
+   // all permanent grants
+   std::vector< sptr< Grant > > m_grants;
+   // all temporary grants
+   std::vector< sptr< Grant > > m_grants_temp;
 
    // the player whose card this is
    Player m_owner;
@@ -127,9 +133,12 @@ class Card {
    [[nodiscard]] inline auto get_id() const { return m_code; }
    [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
    [[nodiscard]] inline Player get_owner() const { return m_owner; }
+   [[nodiscard]] inline auto& get_grants() const { return m_grants; }
+   [[nodiscard]] inline auto& get_grants_temp() const { return m_grants_temp; }
 
    // status requests
 
+   [[nodiscard]] inline auto is_hidden() const { return m_hidden; }
    [[nodiscard]] inline auto is_collectible() const { return m_is_collectible; }
    [[nodiscard]] virtual bool is_unit() const { return false; }
    [[nodiscard]] virtual bool is_spell() const { return false; }
@@ -143,8 +152,10 @@ class Card {
    {
       m_mana_cost_delta = static_cast< long int >(mana_cost) - m_mana_cost_base;
    }
-
+   inline void set_flag_hidden(bool value) { m_hidden = value; }
    inline void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
+
+   // manipulations
 
    void set_effect_vec(events::EventType e_type, std::vector< EffectContainer > effects);
 
@@ -164,6 +175,7 @@ class Card {
    {
       m_keywords[static_cast< unsigned long >(kword)] = false;
    }
+
    /*
     * This function returns the boolean indicator for whether the current card has a play condition
     * that can be fulfilled at the present moment.
@@ -243,18 +255,15 @@ class Unit: public Card {
    // the damage the unit has taken
    size_t m_damage = 0;
 
-   std::function< void(Game&) > m_last_breath;
-
    [[nodiscard]] bool _check_play_condition(const Game& game) const override;
 
   public:
    [[nodiscard]] bool is_unit() const override { return true; }
-   inline void set_stunned(bool value) { m_stunned = value;}
+   inline void set_stunned(bool value) { m_stunned = value; }
    void set_power(size_t power, bool as_delta = true);
    void set_health(size_t health);
-   void die(Game& game);
+   inline void die() { m_alive = false; }
    inline void revive() { m_alive = true; }
-   inline void set_last_breath(std::function< void(Game&) > lb) { m_last_breath = std::move(lb); }
    [[nodiscard]] inline auto is_damaged() const { return m_damage > 0; }
    [[nodiscard]] inline auto get_power_ref() const { return m_power_ref; }
    [[nodiscard]] inline auto get_power_base() const { return m_power_base; }
@@ -273,7 +282,6 @@ class Unit: public Card {
    [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
    [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
    [[nodiscard]] inline auto get_damage() const { return m_damage; }
-   [[nodiscard]] inline auto get_last_breath() const { return m_last_breath; }
    [[nodiscard]] inline bool is_alive() const { return m_alive; }
 
    inline void take_damage(size_t amount) { m_damage += amount; }
@@ -297,8 +305,7 @@ class Unit: public Card {
       size_t power_ref,
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects,
-      std::function< void(Game&) > last_breath = [](Game& g) {});
+      std::map< events::EventType, std::vector< EffectContainer > > effects);
 
    Unit(const Unit& card);
    Unit& operator=(const Unit& unit) = delete;
@@ -342,8 +349,7 @@ class Landmark: public Card {
       std::initializer_list< Keyword > keyword_list,
       std::map< events::EventType, std::vector< EffectContainer > > effects);
 
-   [[nodiscard]] bool is_landmark() const override { return true;}
-
+   [[nodiscard]] bool is_landmark() const override { return true; }
 };
 
 inline sptr< Unit > to_unit(const sptr< Card >& card)

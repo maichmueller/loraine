@@ -122,13 +122,6 @@ void Unit::change_health(long amount, bool permanent)
       m_health_delta += amount;
    }
 }
-void Unit::die(Game& game)
-{
-   if(has_keyword(Keyword::LAST_BREATH)) {
-      m_last_breath(game);
-   }
-   m_alive = false;
-}
 void Unit::set_health(size_t health)
 {
    m_health_delta = static_cast< decltype(m_health_delta) >(health - m_health_base);
@@ -157,8 +150,7 @@ Unit::Unit(
    size_t power_ref,
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects,
-   std::function< void(Game&) > last_breath)
+   std::map< events::EventType, std::vector< EffectContainer > > effects)
     : Card(
        owner,
        code,
@@ -177,8 +169,7 @@ Unit::Unit(
       m_power_ref(power_ref),
       m_power_base(power_ref),
       m_health_ref(health_ref),
-      m_health_base(health_ref),
-      m_last_breath(std::move(last_breath))
+      m_health_base(health_ref)
 {
 }
 Unit::Unit(const Unit& card)
@@ -189,8 +180,7 @@ Unit::Unit(const Unit& card)
       m_health_base(card.get_health_base()),
       m_power_delta(card.get_power_delta()),
       m_health_delta(card.get_health_delta()),
-      m_damage(card.get_damage()),
-      m_last_breath(card.get_last_breath())
+      m_damage(card.get_damage())
 {
 }
 Spell::Spell(

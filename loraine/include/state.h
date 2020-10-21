@@ -42,7 +42,7 @@ class State {
    SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
    sptr< Board > m_board = std::make_shared< Board >();
 
-   std::map< size_t, std::vector< sptr< AnyAction > > > m_history;
+   SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > m_history;
 
    // state attributes
    Player m_starting_player;
@@ -85,7 +85,7 @@ class State {
       SymArr< bool > can_plunder,
       SymArr< std::map< size_t, std::vector< sptr< Unit > > > > graveyard,
       SymArr< std::vector< sptr< Card > > > tossed_cards,
-      std::map< size_t, std::vector< sptr< AnyAction > > > history,
+      SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > history,
       std::optional< Player > attacker,
       size_t round,
       Player turn,
@@ -119,8 +119,8 @@ class State {
 
    inline void set_flag_attack(bool value, Player player) { m_can_attack[player] = value; }
    inline void set_flag_plunder(bool value, Player player) { m_can_plunder[player] = value; }
-   inline void set_flag_daybreak(bool value, Player player) { m_can_daybreak[player] = value;}
-   inline void set_flag_nightfall(bool value, Player player) { m_can_nightfall[player] = value;}
+   inline void set_flag_daybreak(bool value, Player player) { m_can_daybreak[player] = value; }
+   inline void set_flag_nightfall(bool value, Player player) { m_can_nightfall[player] = value; }
    inline void set_graveyard(std::map< size_t, std::vector< sptr< Unit > > > value, Player player)
    {
       m_graveyard[player] = std::move(value);
@@ -131,7 +131,7 @@ class State {
    }
 
    inline void set_board(sptr< Board > value) { m_board = std::move(value); }
-   inline void set_history(std::map< size_t, std::vector< sptr< AnyAction > > > history)
+   inline void set_history(SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > history)
    {
       m_history = std::move(history);
    }
@@ -166,19 +166,13 @@ class State {
    [[nodiscard]] inline auto* get_hand(Player player) { return &m_hand[player]; }
    [[nodiscard]] inline auto* get_deck(Player player) const { return &m_deck_cont[player]; }
    [[nodiscard]] inline auto* get_deck(Player player) { return &m_deck_cont[player]; }
-   [[nodiscard]] inline auto get_flag_attack(Player player) const
-   {
-      return m_can_attack[player];
-   }
+   [[nodiscard]] inline auto get_flag_attack(Player player) const { return m_can_attack[player]; }
    [[nodiscard]] inline auto get_scout_token(Player player) const { return m_scout_token[player]; }
    [[nodiscard]] inline auto is_enlightened(Player player) const
    {
       return m_managems[player] == MAX_MANA;
    }
-   [[nodiscard]] inline auto get_flag_plunder(Player player) const
-   {
-      return m_can_plunder[player];
-   }
+   [[nodiscard]] inline auto get_flag_plunder(Player player) const { return m_can_plunder[player]; }
    [[nodiscard]] inline auto get_flag_daybreak(Player player) const
    {
       return m_can_daybreak[player];
