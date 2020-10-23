@@ -8,7 +8,6 @@ namespace events {
 enum class EventType {
    NONE = 0,
    ATTACK,  // declaring attacker
-   //   BATTLE,  // battle commences
    BEHOLD,  // the player has an 8+ mana unit in hand or in play
    CAPTURE,  // A unit has captured another unit
    CAST,  // casting spells/skills (activation event, not committing event)

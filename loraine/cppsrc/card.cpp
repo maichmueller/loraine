@@ -1,6 +1,8 @@
 
 #include "cards/card.h"
 
+#include <utility>
+
 #include "cards/keywords.h"
 #include "game.h"
 #include "utils.h"
@@ -19,7 +21,8 @@ Card::Card(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects)
+   std::map< events::EventType, std::vector< EffectContainer > >  effects,
+   bool is_hidden)
     : m_name(name),
       m_effect_desc(effect_desc),
       m_lore(lore),
@@ -29,6 +32,7 @@ Card::Card(
       m_rarity(rarity),
       m_card_type(card_type),
       m_is_collectible(is_collectible),
+      m_hidden(is_hidden),
       m_code(code),
       m_uuid(new_uuid()),
       m_mana_cost_ref(mana_cost),
@@ -50,6 +54,7 @@ Card::Card(const Card& card)
       m_card_type(card.get_card_type()),
       m_is_collectible(card.is_collectible()),
       m_code(card.get_id()),
+      m_hidden(card.is_hidden()),
       m_uuid(new_uuid()),
       m_mana_cost_ref(card.get_mana_cost_ref()),
       m_mana_cost_base(card.get_mana_cost_base()),
@@ -105,7 +110,7 @@ bool Unit::_check_play_condition(const Game& game) const
 {
    return game.get_state()->get_mana(get_owner()) >= get_mana_cost();
 }
-void Unit::change_power(long amount, bool permanent)
+void Unit::add_power(long amount, bool permanent)
 {
    if(permanent) {
       m_power_base += amount;
@@ -113,7 +118,7 @@ void Unit::change_power(long amount, bool permanent)
       m_power_delta += amount;
    }
 }
-void Unit::change_health(long amount, bool permanent)
+void Unit::add_health(long amount, bool permanent)
 {
    if(permanent) {
       m_health_base += amount;
@@ -150,7 +155,8 @@ Unit::Unit(
    size_t power_ref,
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects)
+   const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+   CardType card_type)
     : Card(
        owner,
        code,
@@ -161,11 +167,11 @@ Unit::Unit(
        group,
        super_type,
        rarity,
-       CardType::UNIT,
+       card_type,
        is_collectible,
        mana_cost_ref,
        keyword_list,
-       std::move(effects)),
+       effects),
       m_power_ref(power_ref),
       m_power_base(power_ref),
       m_health_ref(health_ref),
@@ -191,11 +197,12 @@ Spell::Spell(
    const char* const lore,
    Region region,
    Group group,
+   CardSuperType super_type,
    Rarity rarity,
    bool is_collectible,
    size_t mana_cost,
    const std::initializer_list< enum Keyword >& keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects)
+   const std::map< events::EventType, std::vector< EffectContainer > >& effects)
     : Card(
        owner,
        code,
@@ -204,7 +211,7 @@ Spell::Spell(
        lore,
        region,
        group,
-       CardSuperType::NONE,
+       super_type,
        rarity,
        CardType::SPELL,
        is_collectible,
@@ -240,8 +247,8 @@ Landmark::Landmark(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects)
-    : Card(
+   const std::map< events::EventType, std::vector< EffectContainer > >& effects)
+    : Unit(
        owner,
        code,
        name,
@@ -251,11 +258,13 @@ Landmark::Landmark(
        group,
        CardSuperType::NONE,
        rarity,
-       CardType::LANDMARK,
        is_collectible,
        mana_cost,
+       -1,
+       -1,
        keyword_list,
-       effects)
+       effects,
+       CardType::LANDMARK)
 {
    add_keyword(Keyword::LANDMARK);
 }

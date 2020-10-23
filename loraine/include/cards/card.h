@@ -148,9 +148,13 @@ class Card {
    [[nodiscard]] virtual bool is_follower() const { return false; }
 
    inline void reduce_mana_cost(long int amount) { m_mana_cost_delta += amount; }
-   inline void set_mana_cost(size_t mana_cost)
+   inline void add_mana_cost(long int amount, bool permanent)
    {
-      m_mana_cost_delta = static_cast< long int >(mana_cost) - m_mana_cost_base;
+      if(permanent) {
+         m_mana_cost_base += amount;
+      } else {
+         m_mana_cost_delta += amount;
+      }
    }
    inline void set_flag_hidden(bool value) { m_hidden = value; }
    inline void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
@@ -189,7 +193,7 @@ class Card {
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
-   virtual ~Card() = 0;
+   virtual ~Card() = default;
 
    /*
     *  Basic constructor
@@ -208,7 +212,8 @@ class Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects);
+      std::map< events::EventType, std::vector< EffectContainer > > effects,
+      bool is_hidden = true);
 
    /*
     * Copy Constructor
@@ -259,6 +264,7 @@ class Unit: public Card {
 
   public:
    [[nodiscard]] bool is_unit() const override { return true; }
+
    inline void set_stunned(bool value) { m_stunned = value; }
    void set_power(size_t power, bool as_delta = true);
    void set_health(size_t health);
@@ -272,12 +278,13 @@ class Unit: public Card {
    {
       return std::max(size_t(0), m_power_base + static_cast< size_t >(m_power_delta));
    }
-   [[nodiscard]] inline auto get_health() const
+   [[nodiscard]] inline auto get_health_raw() const
    {
       long health_base = static_cast< long int >(m_health_base);
       long damage = static_cast< long >(m_damage);
-      return std::max(long(0), health_base + m_health_delta - damage);
+      return health_base + m_health_delta - damage;
    }
+   [[nodiscard]] inline auto get_health() const { return std::max(long(0), get_health_raw()); }
    [[nodiscard]] inline auto get_health_ref() const { return m_health_ref; }
    [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
    [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
@@ -285,10 +292,9 @@ class Unit: public Card {
    [[nodiscard]] inline bool is_alive() const { return m_alive; }
 
    inline void take_damage(size_t amount) { m_damage += amount; }
-   inline void heal(size_t amount) { m_damage = std::max(size_t(0), m_damage - amount); }
-   inline void regenerate() { m_damage = 0; }
-   void change_health(long int amount, bool permanent);
-   void change_power(long int amount, bool permanent);
+   inline void heal(size_t amount) { m_damage -= std::min(m_damage, amount); }
+   void add_health(long int amount, bool permanent);
+   void add_power(long int amount, bool permanent);
 
    Unit(
       Player owner,
@@ -305,7 +311,8 @@ class Unit: public Card {
       size_t power_ref,
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects);
+      const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+      CardType card_type = CardType::UNIT);
 
    Unit(const Unit& card);
    Unit& operator=(const Unit& unit) = delete;
@@ -326,14 +333,17 @@ class Spell: public Card {
       const char* const lore,
       Region region,
       Group group,
+      CardSuperType super_type,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects);
+      const std::map< events::EventType, std::vector< EffectContainer > >& effects);
+
+   [[nodiscard]] bool is_spell() const override { return true; }
 };
 
-class Landmark: public Card {
+class Landmark: public Unit {
   public:
    Landmark(
       Player owner,
@@ -347,9 +357,10 @@ class Landmark: public Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects);
+      const std::map< events::EventType, std::vector< EffectContainer > >& effects);
 
    [[nodiscard]] bool is_landmark() const override { return true; }
+   [[nodiscard]] bool is_unit() const override { return false; }
 };
 
 inline sptr< Unit > to_unit(const sptr< Card >& card)

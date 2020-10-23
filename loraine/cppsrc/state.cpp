@@ -65,7 +65,7 @@ void State::move_to_graveyard(sptr< Unit > unit)
 {
    auto player = unit->get_owner();
    m_graveyard.at(player).at(m_round).emplace_back(unit);
-   m_board->remove_dead_units({unit});
+   m_board->remove_units({unit});
 }
 State::State(
    Player starting_player,

@@ -11,11 +11,11 @@ find_package("GTest")
 set(TEST_SOURCES
         tests.cpp
         test_board.cpp
-        test_cards.h)
+        test_cards.h test_cards.cpp)
 
 add_executable(tests ${TEST_SOURCES})
 target_include_directories(tests
-        PRIVATE ${LORAINE_INCLUDE_DIR})
+        SYSTEM PRIVATE loraine)
 #target_include_directories(tests
 #        SYSTEM PRIVATE ${CONAN_INCLUDE_DIRS_STDUUID} ${CONAN_INCLUDE_DIRS_MS-GSL}
 #        )
@@ -24,5 +24,5 @@ target_include_directories(tests PRIVATE ${GTEST_INCLUDE_DIRS})
 
 
 target_link_libraries(tests PRIVATE project_warnings project_options
-                            SYSTEM PRIVATE CONAN_PKG::gtest loraine ${CONAN_LIBRARY_DIRS_MS-GSL})
+                            CONAN_PKG::gtest loraine ${CONAN_LIBRARY_DIRS_MS-GSL})
 

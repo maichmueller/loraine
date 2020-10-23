@@ -4,14 +4,21 @@
 
 #include "utils.h"
 
+std::pair< bool, Board::Camp::iterator > Board::find_in_camp(const sptr< Unit >& unit)
+{
+   auto& battlefield = m_camp.at(unit->get_owner());
+   auto end = battlefield.end();
+   auto found = std::find(battlefield.begin(), end, unit);
+   return {found != end, found};
+}
 std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(const sptr< Unit >& unit)
 {
    auto& battlefield = m_battlefield.at(unit->get_owner());
    auto* end = battlefield.end();
    auto* found = std::find(battlefield.begin(), end, unit);
-   return std::pair< bool, Battlefield::iterator >(found == end, found);
+   return {found != end, found};
 }
-void Board::remove_dead_units(const std::vector< sptr< Unit > >& units)
+void Board::remove_units(const std::vector< sptr< Unit > >& units)
 {
    for(const auto& unit : units) {
       if(auto [found, unit_iter] = find_in_camp(unit); found) {
@@ -23,7 +30,8 @@ void Board::remove_dead_units(const std::vector< sptr< Unit > >& units)
       }
    }
 }
-void Board::remove_dead_units(Player player, std::vector< size_t > indices, bool in_camp)
+
+void Board::remove_units(Player player, std::vector< size_t > indices, bool in_camp)
 {
    std::set< size_t > sorted_indices(indices.begin(), indices.end());
    size_t reduction = 0;
@@ -40,7 +48,6 @@ void Board::remove_dead_units(Player player, std::vector< size_t > indices, bool
       }
    }
 }
-
 size_t Board::count_units(
    Player player, bool in_camp, const std::function< bool(const sptr< Unit >&) >& filter) const
 {

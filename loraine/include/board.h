@@ -44,8 +44,8 @@ class Board {
    std::pair< bool, Camp::iterator > find_in_camp(const sptr< Unit >& unit);
    std::pair< bool, Battlefield ::iterator > find_on_battlefield(const sptr< Unit >& unit);
 
-   void remove_dead_units(const std::vector< sptr< Unit > >& units);
-   void remove_dead_units(Player player, std::vector< size_t > indices, bool in_camp);
+   void remove_units(const std::vector< sptr< Unit > >& units);
+   void remove_units(Player player, std::vector< size_t > indices, bool in_camp);
 
    /*
     * Counts the units in the camp or the battlefield, subject to a filter on

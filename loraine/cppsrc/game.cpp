@@ -258,9 +258,8 @@ void Game::_resolve_battle()
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
                bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
 
-               int health_def_after = 0;
-
-               sptr< size_t > def_power = std::make_shared< size_t >(unit_def->get_power());
+               long health_def_after = 0;
+               long attack_power = unit_att->get_power();
 
                if(quick_attacks || double_attacks) {
                   strike(unit_att, unit_def);
@@ -271,6 +270,7 @@ void Game::_resolve_battle()
                      if(double_attacks) {
                         // a double attacking unit attacks again after a quick
                         // attack
+
                         strike(unit_att, unit_def);
                      }
                      strike(unit_def, unit_att);
@@ -282,19 +282,12 @@ void Game::_resolve_battle()
                }
 
                // check whether to kill the attacking unit
-               if(unit_att->get_health() < 1) {
+               if(unit_att->get_health() == 0) {
                   kill_unit(defender, unit_att, unit_att);
                }
-               // check whether to kill defending unit and do overwhelm
-               // damage
-               if(unit_def->get_health() < 1) {
+               // check whether to kill defending unit
+               if(unit_def->get_health() == 0) {
                   kill_unit(attacker, unit_def, unit_att);
-
-                  if(unit_att->has_keyword(Keyword::OVERWHELM)) {
-                     sptr< long > overwhelm_dmg = std::make_shared< long >(-health_def_after);
-
-                     nexus_strike(defender, overwhelm_dmg, unit_att);
-                  }
                }
             }
          } else {
@@ -312,24 +305,26 @@ void Game::_resolve_battle()
       m_battle_mode = false;
    }
 }
-long int Game::strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def)
+void Game::strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def)
 {
-   Player attacker = unit_att->get_owner();
-   sptr< long > att_power = std::make_shared< long >(unit_att->get_power());
-
-   if(*att_power > 0) {
-      _trigger_event(events::StrikeEvent(attacker, unit_att));
-      return deal_damage_to_unit(unit_att, unit_def, att_power);
+   sptr< long > damage = std::make_shared< long >(unit_att->get_power());
+   if(*damage > 0) {
+      _trigger_event(events::StrikeEvent(unit_att->get_owner(), unit_att));
+      deal_damage_to_unit(unit_att, unit_def, damage);
    }
-   return unit_def->get_health();
+   if(unit_att->has_keyword(Keyword::OVERWHELM)) {
+      nexus_strike(unit_def->get_owner(), damage, unit_att);
+   }
 }
-long int Game::deal_damage_to_unit(
+void Game::deal_damage_to_unit(
    const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage)
 {
+   long health_def = unit->get_health();
    _trigger_event(events::UnitTakeDamageEvent(
       cause->get_owner(), cause, {false, unit->get_owner(), Location::BOARD, 0, unit}, damage));
    unit->take_damage(*damage);
-   return unit->get_health();
+   // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
+   *damage += -health_def;
 }
 void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 {
@@ -341,6 +336,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->move_to_graveyard(killed_unit);
    }
+   remove(killed_unit);
 }
 
 void Game::nexus_strike(
@@ -397,15 +393,23 @@ void Game::_mulligan(
 void Game::_end_round()
 {
    // first let all effects trigger that state an effect with the "Round End" keyword
+   auto active_player = m_state->get_turn();
+   auto passive_player = Player(1 - active_player);
    _trigger_event(
-      events::RoundEndEvent(m_state->get_turn(), std::make_shared< long >(m_state->get_round())));
+      events::RoundEndEvent(active_player, std::make_shared< long >(m_state->get_round())));
 
-   // kill ephemeral units
-   // TODO: kill ephemerals
-
-   // remove temporary grants
-   for(int p = 0; p != 1; ++p) {
-      auto player = Player(p);
+   SymArr< std::vector< sptr< Unit > > > regenerators;
+   auto end_round_procedure = [&](Player player) {
+      // kill ephemeral units
+      for(auto& unit : m_board->get_camp(player)) {
+         if(unit->has_keyword(Keyword::EPHEMERAL)) {
+            kill_unit(player, unit);
+         }
+         if(unit->has_keyword(Keyword::REGENERATION)) {
+            regenerators[player].emplace_back(unit);
+         }
+      }
+      // remove temporary grants
       // undo temporary buffs/nerfs and possibly heal the units if applicable
       for(auto&& key_grantvec_pair : m_grants_temp) {
          for(auto&& grant : key_grantvec_pair.second) {
@@ -413,10 +417,24 @@ void Game::_end_round()
          }
       }
       m_grants_temp.clear();
+
       // float spell mana if available
-      auto remaining_mana = m_state->get_mana(player);
-      m_state->set_spell_mana(m_state->get_spell_mana(player) + remaining_mana, player);
-   }
+      m_state->set_spell_mana(m_state->get_spell_mana(player) + m_state->get_mana(player), player);
+   };
+
+   auto regeneration_func = [&](Player player) {
+      // regenerate the units with regeneration
+      for(auto& unit : regenerators[player]) {
+         if(unit->is_alive()) {
+            heal(unit->get_owner(), unit, unit->get_damage());
+         }
+      }
+   };
+   end_round_procedure(active_player);
+   end_round_procedure(passive_player);
+
+   regeneration_func(active_player);
+   regeneration_func(passive_player);
 }
 void Game::_start_round()
 {
@@ -630,36 +648,7 @@ std::vector< sptr< Grant > > Game::get_all_grants(const sptr< Card >& card) cons
    }
    return grants;
 }
-std::vector< Target > Game::filter_targets(
-   Location range,
-   const std::function< bool(const sptr< Card >&) >& filter,
-   std::optional< Player > player)
-{
-   switch(range) {
-      case Location::BATTLEFIELD: {
-         return filter_targets_bf(filter, player);
-      }
-      case Location::CAMP: {
-         return filter_targets_camp(filter, player);
-      }
-      case Location::BOARD: {
-         return filter_targets_board(filter, player);
-      }
-      case Location::HAND: {
-         return filter_targets_hand(filter, player);
-      }
-      case Location::DECK: {
-         return filter_targets_deck(filter, player);
-      }
-      case Location::EVERYWHERE: {
-         return filter_targets_everywhere(filter, player);
-      }
-      // to silence the warning, a default is provided
-      default: {
-         return filter_targets_everywhere(filter, player);
-      }
-   }
-}
+
 
 std::vector< Target > Game::filter_targets_bf(
    const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
@@ -782,10 +771,12 @@ std::vector< Target > Game::filter_targets_everywhere(
 }
 void Game::heal(Player player, const sptr< Unit >& unit, long amount)
 {
-   unit->heal(amount);
-   _trigger_event(events::HealUnitEvent(player, unit, std::make_shared< long >(amount)));
+   if(amount > 0) {
+      unit->heal(amount);
+      _trigger_event(events::HealUnitEvent(player, unit, std::make_shared< long >(amount)));
+   }
 }
-bool Game::default_daybreak(Player player) const
+bool Game::check_daybreak(Player player) const
 {
    const auto& history = m_state->get_history()->at(player).at(m_state->get_round());
    // if no play action is found in the history (actions are committed to history only
@@ -798,7 +789,7 @@ bool Game::default_daybreak(Player player) const
              })
           == history.end();
 }
-bool Game::default_nightfall(Player player) const
+bool Game::check_nightfall(Player player) const
 {
    const auto& history = m_state->get_history()->at(player).at(m_state->get_round());
    // if any play action is found in the current history (actions are committed to history only
