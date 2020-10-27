@@ -71,15 +71,10 @@ class Game {
       remove(card);
    }
    static inline void uncover_card(const sptr< Card >& card) { card->set_flag_hidden(false); }
-   inline void remove(const sptr< Card >& card)
-   {
-      m_event_listener.unregister_card(card);
-      auto uuid = card->get_uuid();
-      m_grants_perm.erase(uuid);
-      m_grants_temp.erase(uuid);
-   }
+   void remove(const sptr< Card >& card);
 
    //   void level_up_champion(sptr< Champion > champ);
+
    /*
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered

@@ -15,9 +15,9 @@ Card::Card(
    const char* const lore,
    Region region,
    Group group,
-   CardSuperType super_type,
+   SuperType super_type,
    Rarity rarity,
-   CardType card_type,
+   Type card_type,
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
@@ -148,7 +148,7 @@ Unit::Unit(
    const char* const lore,
    Region region,
    Group group,
-   CardSuperType super_type,
+   SuperType super_type,
    Rarity rarity,
    bool is_collectible,
    size_t mana_cost_ref,
@@ -156,7 +156,7 @@ Unit::Unit(
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
    const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-   CardType card_type)
+   Type card_type)
     : Card(
        owner,
        code,
@@ -197,7 +197,7 @@ Spell::Spell(
    const char* const lore,
    Region region,
    Group group,
-   CardSuperType super_type,
+   SuperType super_type,
    Rarity rarity,
    bool is_collectible,
    size_t mana_cost,
@@ -213,7 +213,7 @@ Spell::Spell(
        group,
        super_type,
        rarity,
-       CardType::SPELL,
+       Type::SPELL,
        is_collectible,
        mana_cost,
        keyword_list,
@@ -256,7 +256,7 @@ Landmark::Landmark(
        lore,
        region,
        group,
-       CardSuperType::NONE,
+       SuperType::NONE,
        rarity,
        is_collectible,
        mana_cost,
@@ -264,7 +264,7 @@ Landmark::Landmark(
        -1,
        keyword_list,
        effects,
-       CardType::LANDMARK)
+       Type::LANDMARK)
 {
    add_keyword(Keyword::LANDMARK);
 }

@@ -103,7 +103,7 @@ message(STATUS "loraine project directory: ${LORAINE_DIR}")
 message(STATUS "loraine include directory: ${LORAINE_INCLUDE_DIR}")
 message(STATUS "loraine src directory: ${LORAINE_SRC_DIR}")
 
-add_library(loraine STATIC ${LIBRARY_SOURCES})
+add_library(loraine STATIC)
 add_subdirectory(loraine)
 
 

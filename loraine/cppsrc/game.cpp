@@ -108,10 +108,11 @@ bool Game::_do_action(const sptr< AnyAction >& action)
       m_state->disable_endround();
 
       switch(action_type) {
+
          case PLAY: {
             auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
             auto card = cast_action->get_card_played();
-            if(card->get_card_type() == CardType::SPELL) {
+            if(card->get_card_type() == Card::Type::SPELL) {
                auto spell = std::dynamic_pointer_cast< Spell >(card);
                play(spell);
                if(spell->has_keyword(Keyword::BURST)) {
@@ -122,6 +123,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                play(to_unit(card), cast_action->get_replace_idx());
             }
          }
+
          case MOVE_UNIT: {
             auto cast_action = std::dynamic_pointer_cast< MoveUnitAction >(action);
             auto player = cast_action->get_player();
@@ -334,7 +336,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
    if(not killed_unit->is_alive()) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
-      m_state->move_to_graveyard(killed_unit);
+      m_state->add_to_graveyard(killed_unit);
    }
    remove(killed_unit);
 }
@@ -342,11 +344,12 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
 void Game::nexus_strike(
    Player attacked_nexus, const sptr< long >& damage, const sptr< Card >& responsible_card)
 {
-   _trigger_event(events::NexusStrikeEvent(
-      responsible_card->get_owner(), responsible_card, attacked_nexus, damage));
-
-   m_state->damage_nexus(*damage, attacked_nexus);
    if(*damage > 0) {
+      _trigger_event(events::NexusStrikeEvent(
+         responsible_card->get_owner(), responsible_card, attacked_nexus, damage));
+
+      m_state->damage_nexus(*damage, attacked_nexus);
+
       m_state->set_flag_plunder(true, Player(1 - attacked_nexus));
    }
 }
@@ -649,7 +652,6 @@ std::vector< sptr< Grant > > Game::get_all_grants(const sptr< Card >& card) cons
    return grants;
 }
 
-
 std::vector< Target > Game::filter_targets_bf(
    const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
 {
@@ -801,6 +803,16 @@ bool Game::check_nightfall(Player player) const
                 return action->get_action_type() == ActionType::PLAY;
              })
           != history.end();
+}
+void Game::remove(const sptr< Card >& card)
+{
+   m_event_listener.unregister_card(card);
+   auto uuid = card->get_uuid();
+   m_grants_perm.erase(uuid);
+   m_grants_temp.erase(uuid);
+   if(card->is_unit() || card->is_landmark()) {
+      m_board->remove_units({to_unit(card)});
+   }
 }
 
 // void Game::level_up_champion(sptr<Champion> champ)

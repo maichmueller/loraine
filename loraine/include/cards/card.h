@@ -20,85 +20,27 @@ class State;
 class Grant;
 class Game;
 
-enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
-
-enum struct Group {
-   NONE,
-   DRAGON,
-   ELITE,
-   ELNUK,
-   PORO,
-   SEA_MONSTER,
-   SPIDER,
-   TECH,
-   TREASURE,
-   YETI,
-};
-
-enum struct CardType { SPELL, UNIT, LANDMARK };
-
-enum struct CardSuperType { NONE, SKILL, CHAMPION };
-
 /*
  * Abstract base class (abc) for LOR cards.
  */
 class Card {
-   // effects need to have access to members to compute their conditions
-   friend EffectContainer;
-
-  private:
-   // fixed attributes of the cards
-
-   // the cards' name
-   const char* const m_name;
-   // the description text of the cards
-   const char* const m_effect_desc;
-   // text of the cards in context of the lol universe
-   const char* const m_lore;
-   // the region the cards is from
-   const Region m_region;
-   // the subgroup the cards belongs to
-   const Group m_group;
-   // the super type (champion, skill, none)
-   const CardSuperType m_super_type;
-   // the rarity of the cards
-   const Rarity m_rarity;
-   // whether the cards is a spell or a unit
-   const CardType m_card_type;
-   // whether a card is collectible (i.e. can be added to a deck)
-   const bool m_is_collectible;
-
-   // the card code
-   const char* const m_code;
-   // the unique id used to identify this specific instance of a card
-   const UUID m_uuid;
-
-   // variable attributes of the cards
-
-   bool m_hidden;
-   // the mana it costs to play the cards (as default)
-   const size_t m_mana_cost_ref;
-   // when effects move the base cost to a new permanent value
-   long int m_mana_cost_base;
-   // the current change to the mana cost of the card
-   long int m_mana_cost_delta;
-   // all the keywords pertaining to the cards
-   KeywordMap m_keywords;
-
-   // all possible effects
-   std::map< events::EventType, std::vector< EffectContainer > > m_effects;
-
-   // all permanent grants
-   std::vector< sptr< Grant > > m_grants;
-   // all temporary grants
-   std::vector< sptr< Grant > > m_grants_temp;
-
-   // the player whose card this is
-   Player m_owner;
-
-   [[nodiscard]] virtual bool _check_play_condition(const Game& game) const = 0;
-
   public:
+   enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
+   enum struct Group {
+      NONE,
+      DRAGON,
+      ELITE,
+      ELNUK,
+      PORO,
+      SEA_MONSTER,
+      SPIDER,
+      TECH,
+      TREASURE,
+      YETI,
+   };
+   enum struct Type { SPELL, UNIT, LANDMARK };
+   enum struct SuperType { NONE, SKILL, CHAMPION };
+
    inline bool operator()(Game& game, const events::AnyEvent& event)
    {
       bool all_consumed = true;
@@ -185,11 +127,13 @@ class Card {
     * that can be fulfilled at the present moment.
     */
    [[nodiscard]] bool check_play_condition(const Game& game) const;
+
    /*
     * The play condition function represents a potential 'cost' the player has to pay to play this
     * card (e.g. discarding another card in hand)
     */
-   virtual void play_condition(Game& game) {}
+   virtual void play_condition(Game& /*unused*/) {}
+
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
@@ -206,9 +150,9 @@ class Card {
       const char* const lore,
       Region region,
       Group group,
-      CardSuperType super_type,
+      SuperType super_type,
       Rarity rarity,
-      CardType card_type,
+      Type card_type,
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
@@ -234,6 +178,58 @@ class Card {
     * Move constructor.
     */
    Card(Card&& card) = delete;
+
+  private:
+   // fixed attributes of the cards
+
+   // the cards' name
+   const char* const m_name;
+   // the description text of the cards
+   const char* const m_effect_desc;
+   // text of the cards in context of the lol universe
+   const char* const m_lore;
+   // the region the cards is from
+   const Region m_region;
+   // the subgroup the cards belongs to
+   const Group m_group;
+   // the super type (champion, skill, none)
+   const SuperType m_super_type;
+   // the rarity of the cards
+   const Rarity m_rarity;
+   // whether the cards is a spell or a unit
+   const Type m_card_type;
+   // whether a card is collectible (i.e. can be added to a deck)
+   const bool m_is_collectible;
+
+   // the card code
+   const char* const m_code;
+   // the unique id used to identify this specific instance of a card
+   const UUID m_uuid;
+
+   // variable attributes of the cards
+
+   bool m_hidden;
+   // the mana it costs to play the cards (as default)
+   const size_t m_mana_cost_ref;
+   // when effects move the base cost to a new permanent value
+   long int m_mana_cost_base;
+   // the current change to the mana cost of the card
+   long int m_mana_cost_delta;
+   // all the keywords pertaining to the cards
+   KeywordMap m_keywords;
+
+   // all possible effects
+   std::map< events::EventType, std::vector< EffectContainer > > m_effects;
+
+   // all permanent grants
+   std::vector< sptr< Grant > > m_grants;
+   // all temporary grants
+   std::vector< sptr< Grant > > m_grants_temp;
+
+   // the player whose card this is
+   Player m_owner;
+
+   [[nodiscard]] virtual bool _check_play_condition(const Game& game) const = 0;
 };
 
 class Unit: public Card {
@@ -263,21 +259,31 @@ class Unit: public Card {
    [[nodiscard]] bool _check_play_condition(const Game& game) const override;
 
   public:
-   [[nodiscard]] bool is_unit() const override { return true; }
-
    inline void set_stunned(bool value) { m_stunned = value; }
-   void set_power(size_t power, bool as_delta = true);
-   void set_health(size_t health);
    inline void die() { m_alive = false; }
    inline void revive() { m_alive = true; }
+   void set_power(size_t power, bool as_delta = true);
+   void set_health(size_t health);
+   void add_power(long int amount, bool permanent);
+   void add_health(long int amount, bool permanent);
+   inline void take_damage(size_t amount) { m_damage += amount; }
+   inline void heal(size_t amount) { m_damage -= std::min(m_damage, amount); }
+
+   // status requests
+
+   [[nodiscard]] bool is_unit() const override { return true; }
+
    [[nodiscard]] inline auto is_damaged() const { return m_damage > 0; }
+
+   [[nodiscard]] inline auto get_power_raw() const
+   {
+      return m_power_base + static_cast< size_t >(m_power_delta);
+   }
+   [[nodiscard]] inline auto get_power() const { return std::max(size_t(0), get_power_raw()); }
    [[nodiscard]] inline auto get_power_ref() const { return m_power_ref; }
    [[nodiscard]] inline auto get_power_base() const { return m_power_base; }
    [[nodiscard]] inline auto get_power_delta() const { return m_power_delta; }
-   [[nodiscard]] inline auto get_power() const
-   {
-      return std::max(size_t(0), m_power_base + static_cast< size_t >(m_power_delta));
-   }
+
    [[nodiscard]] inline auto get_health_raw() const
    {
       long health_base = static_cast< long int >(m_health_base);
@@ -288,13 +294,9 @@ class Unit: public Card {
    [[nodiscard]] inline auto get_health_ref() const { return m_health_ref; }
    [[nodiscard]] inline auto get_health_base() const { return m_health_base; }
    [[nodiscard]] inline auto get_health_delta() const { return m_health_delta; }
+
    [[nodiscard]] inline auto get_damage() const { return m_damage; }
    [[nodiscard]] inline bool is_alive() const { return m_alive; }
-
-   inline void take_damage(size_t amount) { m_damage += amount; }
-   inline void heal(size_t amount) { m_damage -= std::min(m_damage, amount); }
-   void add_health(long int amount, bool permanent);
-   void add_power(long int amount, bool permanent);
 
    Unit(
       Player owner,
@@ -304,7 +306,7 @@ class Unit: public Card {
       const char* const lore,
       Region region,
       Group group,
-      CardSuperType super_type,
+      SuperType super_type,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost_ref,
@@ -312,7 +314,7 @@ class Unit: public Card {
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
       const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-      CardType card_type = CardType::UNIT);
+      Type card_type = Card::Type::UNIT);
 
    Unit(const Unit& card);
    Unit& operator=(const Unit& unit) = delete;
@@ -333,7 +335,7 @@ class Spell: public Card {
       const char* const lore,
       Region region,
       Group group,
-      CardSuperType super_type,
+      SuperType super_type,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost,

@@ -234,7 +234,7 @@ class State {
 
    std::vector< sptr< Card > > draw_n_cards(Player player, size_t n, bool random = true);
 
-   void move_to_graveyard(sptr< Unit > unit);
+   void add_to_graveyard(const sptr< Unit >& unit);
    void move_to_tossed(sptr< Card > card);
 
    inline void enable_endround() { m_can_endround = true; }
