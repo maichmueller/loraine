@@ -18,10 +18,10 @@ namespace events {
 class AnyEvent;
 }
 
-enum class EffectType { AOE = 0, TARGETED, NEXUS, OTHER };
-
 class EffectContainer {
   public:
+   enum class Type { AOE = 0, TARGETED, NEXUS, OTHER };
+
    using EffectFunc = std::function< void(Game&, const events::AnyEvent&, EffectContainer&) >;
    using ConditionFunc = std::function< bool(
       const Game&, const events::AnyEvent&, const EffectContainer&) >;
@@ -52,7 +52,7 @@ class EffectContainer {
    inline void operator()(Game& game, const events::AnyEvent& event)
    {
       if(check_cast_condition(game, event)) {
-         if(m_effect_type != EffectType::AOE) {
+         if(m_effect_type != Type::AOE) {
             if(verify_targets(game, m_owner)) {
                m_effect_func(game, event, *this);
             }
@@ -100,7 +100,7 @@ class EffectContainer {
       EffectFunc effect_func,
       ConditionFunc cast_condition_func,
       Location location,
-      EffectType effect_type,
+      Type effect_type,
       sptr< Card > card_ptr,
       size_t nr_buffers = 0,
       TargetFunc target_func =
@@ -173,7 +173,7 @@ class EffectContainer {
    TargetFunc m_target_func;
    TargetVerificationFunc m_target_verify_func;
    Location m_location;
-   EffectType m_effect_type;
+   Type m_effect_type;
    bool m_is_null = false;
    bool m_consumed = false;
    Player m_owner;

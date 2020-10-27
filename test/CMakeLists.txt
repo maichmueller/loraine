@@ -23,6 +23,6 @@ target_include_directories(tests PRIVATE ${GTEST_INCLUDE_DIRS})
   #  target_link_libraries(enough ${GTEST_LIBRARIES})
 
 
-target_link_libraries(tests PRIVATE project_warnings project_options
+target_link_libraries(tests PRIVATE project_options
                             CONAN_PKG::gtest loraine ${CONAN_LIBRARY_DIRS_MS-GSL})
 
