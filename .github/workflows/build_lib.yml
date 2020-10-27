@@ -1,4 +1,4 @@
-name: build
+name: linux
 
 on: [push]
 
@@ -8,25 +8,24 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
 #
-#      - name: Setup cmake
-#        uses: jwlawson/actions-setup-cmake@v1.0
-#        with:
-#          cmake-version: '3.17.x'
-#          github-api-token: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - uses: actions/checkout@v2
-#      - uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.x'
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.0
+        with:
+          cmake-version: '3.17.x'
+          github-api-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
       - name: Use cmake
         run: cmake --version
@@ -64,15 +63,19 @@ jobs:
           source ~/.profile
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
+      - name: Cmake create build files
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake .
+
       - name: Build
         working-directory: ${{runner.workspace}}/build
         shell: bash
-        # Execute the build.  You can specify a specific target with "--target <NAME>"
-        run: cmake --build . --config $BUILD_TYPE
+        run: make
 
       - name: Test
         working-directory: ${{runner.workspace}}/build
         shell: bash
         # Execute tests defined by the CMake configuration.
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest -C $BUILD_TYPE
+        run: ./test/tests -C $BUILD_TYPE
