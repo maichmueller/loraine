@@ -81,4 +81,5 @@ jobs:
           cd ..
           ls
           pwd
+          ls ..
           ./bin/tests
