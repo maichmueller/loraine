@@ -77,6 +77,5 @@ jobs:
         working-directory: ${{runner.workspace}}/build
         shell: bash
         # Execute tests defined by the CMake configuration.
-        run: |
-          ls bin
+        run: | 
           ./bin/tests
