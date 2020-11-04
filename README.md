@@ -1,8 +1,6 @@
-[![Actions Status](https://github.com/maichmueller/loraine/workflows/build/badge.svg)](https://github.com/maichmueller/loraine/actions)
+![linux](https://github.com/maichmueller/loraine/workflows/linux/badge.svg)
 
-
-
-## Dependencies
+LoRaine is intended to provide a simulator for the card game Legends of Runeterra with the goal of enabling reinforcement learning to study powerful AI solutions.
 
 ### Necessary Dependencies
 1. A C++ compiler that supports C++17. 
