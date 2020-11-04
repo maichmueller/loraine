@@ -2,12 +2,14 @@
 #ifndef LORAINE_EFFECT_H
 #define LORAINE_EFFECT_H
 
+#include <any>
 #include <functional>
 #include <utility>
 
 #include "rulesets.h"
 #include "types.h"
 #include "utils.h"
+#include "uuid_gen.h"
 
 // forward-declarations
 class Game;
@@ -86,10 +88,12 @@ class EffectContainer {
    }
    bool operator==(const EffectContainer& effect) const
    {
-      return m_is_null == effect.is_null() && m_value_buffers == effect.get_value_buffers()
+      return m_is_null == effect.is_null() && m_owner == effect.get_owner()
+             && m_effect_type == effect.get_effect_type() && m_location == effect.get_location()
              && get_address(m_effect_func) == get_address(effect.get_effect_func())
              && get_address(m_cast_con_func) == get_address(effect.get_cast_con_func())
-             && m_assoc_card == effect.get_associated_card();
+             && get_address(m_target_func) == get_address(effect.get_target_func())
+             && get_address(m_target_verify_func) == get_address(effect.get_target_verify_func());
    }
    inline bool operator!=(const EffectContainer& effect) const { return ! (*this == effect); }
 
@@ -165,7 +169,7 @@ class EffectContainer {
       }
       return *this;
    }
-   EffectContainer& operator=(const EffectContainer& rhs) = delete;
+   EffectContainer& operator=(const EffectContainer& rhs) = default;
 
   private:
    EffectFunc m_effect_func;
@@ -178,7 +182,7 @@ class EffectContainer {
    bool m_consumed = false;
    Player m_owner;
    std::optional< std::vector< Target > > m_targets{};
-   std::vector< long > m_value_buffers;
+   std::vector< std::any > m_value_buffers;
    sptr< Card > m_assoc_card;
 };
 

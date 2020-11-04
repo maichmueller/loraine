@@ -4,6 +4,7 @@
 
 #include "agent.h"
 #include "cards/card.h"
+#include "cards/grant.h"
 #include "event/event_listener.h"
 #include "rulesets.h"
 #include "state.h"
@@ -13,6 +14,7 @@ class Game {
   public:
    [[nodiscard]] inline auto& get_board() const { return m_board; }
    [[nodiscard]] inline auto& get_agent(Player player) const { return m_agents[player]; }
+   [[nodiscard]] inline auto& get_grantfactory(Player player) const { return m_grant_factory[player]; }
 
    [[nodiscard]] bool check_daybreak(Player player) const;
    [[nodiscard]] bool check_nightfall(Player player) const;
@@ -99,17 +101,9 @@ class Game {
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    template < GrantType grant_type, typename... Params >
-   inline void grant(Params&&... params)
+   inline void grant(Player player, Params&&... params)
    {
-      if constexpr(grant_type == Stats) {
-         store_grant(std::make_shared< StatsGrant >(std::forward< Params... >(params...)));
-      } else if constexpr(grant_type == Mana) {
-         store_grant(std::make_shared< ManaGrant >(std::forward< Params... >(params...)));
-      } else if constexpr(grant_type == Keyword) {
-         store_grant(std::make_shared< KeywordGrant >(std::forward< Params... >(params...)));
-      } else if constexpr(grant_type == Effect) {
-         store_grant(std::make_shared< EffectGrant >(std::forward< Params... >(params...)));
-      }
+      store_grant(m_grant_factory[player]->grant(std::forward<Params...>(params...)));
    }
 
    inline void store_grant(const sptr< Grant >& grant)
@@ -150,6 +144,8 @@ class Game {
    bool m_battle_mode = false;
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_perm;
    std::map< UUID, std::vector< sptr< Grant > > > m_grants_temp;
+
+   SymArr<sptr<GrantFactory>> m_grant_factory;
 
    inline void _trigger_event(events::AnyEvent&& event)
    {

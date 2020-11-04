@@ -31,7 +31,7 @@ class Grant {
 
    Grant(
       GrantType grant_type,
-      sptr<Card> bestowing_card,
+      sptr< Card > bestowing_card,
       sptr< Card > card_to_bestow,
       bool permanent,
       std::function< bool(const sptr< Card >&) > card_filter =
@@ -71,7 +71,7 @@ class Grant {
   protected:
   private:
    const GrantType m_grant_type;
-   const sptr<Card> m_bestowing_card;
+   const sptr< Card > m_bestowing_card;
    const sptr< Card > m_bestowed_card;
    const bool m_permanent;
    const std::function< bool(const sptr< Card >&) > m_card_filter;
@@ -83,7 +83,7 @@ class Grant {
 class StatsGrant: public Grant {
   public:
    StatsGrant(
-      const sptr<Card>& bestowing_card,
+      const sptr< Card >& bestowing_card,
       const sptr< Unit >& card_to_bestow,
       bool permanent,
       long int power,
@@ -108,7 +108,7 @@ class StatsGrant: public Grant {
       auto unit = to_unit(this->get_bestowed_card());
       if(this->is_permanent()) {
          unit->add_power(-m_power_change, true);
-         unit->add_health(-static_cast<long>(m_health_change), true);
+         unit->add_health(-static_cast< long >(m_health_change), true);
       } else {
          unit->add_power(-m_power_change, false);
          unit->heal(m_health_change);
@@ -140,7 +140,7 @@ class StatsGrant: public Grant {
 class ManaGrant: public Grant {
   public:
    ManaGrant(
-      const sptr<Card>& bestowing_card,
+      const sptr< Card >& bestowing_card,
       const sptr< Card >& card_to_bestow,
       bool permanent,
       long int mana_change)
@@ -170,7 +170,7 @@ class ManaGrant: public Grant {
 class KeywordGrant: public Grant {
   public:
    KeywordGrant(
-      const sptr<Card>& bestowing_card,
+      const sptr< Card >& bestowing_card,
       const sptr< Card >& card_to_bestow,
       bool permanent,
       enum Keyword kword)
@@ -220,7 +220,7 @@ class EffectGrant: public Grant {
 
   public:
    EffectGrant(
-      const sptr<Card>& bestowing_card,
+      const sptr< Card >& bestowing_card,
       const sptr< Card >& card_to_bestow,
       bool permanent,
       EffectContainer effect,
@@ -255,6 +255,122 @@ class EffectGrant: public Grant {
       return std::make_shared< EffectGrant >(
          get_bestowing_card(), card, is_permanent(), get_effect(), get_event_type());
    }
+};
+
+class GrantFactory {
+  public:
+   template < GrantType grant_type, typename... Params >
+   inline sptr< Grant > grant(Params&&... params)
+   {
+      if constexpr(grant_type == Stats) {
+         return _grant_stats(std::forward< Params... >(params...));
+      } else if constexpr(grant_type == Mana) {
+         return _grant_mana(std::forward< Params... >(params...));
+      } else if constexpr(grant_type == Keyword) {
+         return _grant_keyword(std::forward< Params... >(params...));
+      } else if constexpr(grant_type == Effect) {
+         return _grant_effect(std::forward< Params... >(params...));
+      }
+   }
+
+   inline void fix_permanent(bool permanent) { m_permanent = permanent; }
+   inline void fix_card_filter(std::function< bool(const sptr< Card >&) > card_filter)
+   {
+      m_card_filter = card_filter;
+   }
+   inline void fix_mana_change(long mana_change) { m_mana_change = mana_change; }
+   inline void fix_power_change(long power_change) { m_power_change = power_change; }
+   inline void fix_health_change(long health_change) { m_health_change = health_change; }
+   inline void fix_effect(const EffectContainer& effect) { m_effect = effect; }
+   inline void fix_event_type(events::EventType event_type) { m_event_type = event_type; }
+   inline void fix_keyword(enum Keyword keyword) { m_keyword = keyword; }
+
+   inline void reset_permanent() { m_permanent.reset(); }
+   inline void reset_card_filter() { m_card_filter.reset(); }
+   inline void reset_mana_change() { m_mana_change.reset(); }
+   inline void reset_health_change() { m_power_change.reset(); }
+   inline void reset_power_change() { m_health_change.reset(); }
+   inline void reset_effect() { m_effect.reset(); }
+   inline void reset_event_type() { m_event_type.reset(); }
+   inline void reset_keyword() { m_keyword.reset(); }
+
+  private:
+   std::optional< bool > m_permanent;
+   std::optional< std::function< bool(const sptr< Card >&) > > m_card_filter;
+   std::optional< long int > m_power_change;
+   std::optional< size_t > m_health_change;
+   std::optional< long int > m_mana_change;
+   std::optional< enum Keyword > m_keyword;
+   std::optional< EffectContainer > m_effect;
+   std::optional< events::EventType > m_event_type;
+
+   inline sptr< Grant > _grant_stats(
+      const sptr< Card >& bestowing_card,
+      const sptr< Unit >& card_to_bestow,
+      bool permanent,
+      long int power,
+      size_t health)
+   {
+      if(m_permanent.has_value()) {
+         permanent = m_permanent.value();
+      }
+      if(m_power_change.has_value()) {
+         power = m_power_change.value();
+      }
+      if(m_health_change.has_value()) {
+         health = m_health_change.value();
+      }
+      return std::make_shared< StatsGrant >(
+         bestowing_card, card_to_bestow, permanent, power, health);
+   }
+   inline sptr< Grant > _grant_mana(
+      const sptr< Card >& bestowing_card,
+      const sptr< Unit >& card_to_bestow,
+      bool permanent,
+      long int mana_change)
+   {
+      if(m_permanent.has_value()) {
+         permanent = m_permanent.value();
+      }
+      if(m_mana_change.has_value()) {
+         mana_change = m_mana_change.value();
+      }
+      return std::make_shared< ManaGrant >(bestowing_card, card_to_bestow, permanent, mana_change);
+   }
+   inline sptr< Grant > _grant_keyword(
+      const sptr< Card >& bestowing_card,
+      const sptr< Unit >& card_to_bestow,
+      bool permanent,
+      enum Keyword kword)
+   {
+      if(m_permanent.has_value()) {
+         permanent = m_permanent.value();
+      }
+      if(m_keyword.has_value()) {
+         kword = m_keyword.value();
+      }
+      return std::make_shared< KeywordGrant >(bestowing_card, card_to_bestow, permanent, kword);
+   }
+   inline sptr< Grant > _grant_effect(
+      const sptr< Card >& bestowing_card,
+      const sptr< Unit >& card_to_bestow,
+      bool permanent,
+      EffectContainer effect,
+      events::EventType event_type)
+   {
+      if(m_permanent.has_value()) {
+         permanent = m_permanent.value();
+      }
+      if(m_effect.has_value()) {
+         effect = m_effect.value();
+      }
+      if(m_event_type.has_value()) {
+         event_type = m_event_type.value();
+      }
+      return std::make_shared< EffectGrant >(
+         bestowing_card, card_to_bestow, permanent, std::move(effect), event_type);
+   }
+
 };
 
 #endif  // LORAINE_GRANT_H

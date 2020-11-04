@@ -122,6 +122,9 @@ class Card {
       m_keywords[static_cast< unsigned long >(kword)] = false;
    }
 
+   inline bool operator==(const Card& rhs) const { return m_uuid == rhs.get_uuid(); }
+   inline bool operator!=(const Card& rhs) const { return *this == rhs; }
+
    /*
     * This function returns the boolean indicator for whether the current card has a play condition
     * that can be fulfilled at the present moment.

@@ -27,15 +27,6 @@ class AnyEvent {
    const std::optional< const std::vector< sptr< long > > > m_values;
 
   public:
-   template < typename T, typename V, typename W >
-   AnyEvent(EventType type, Player causing_player, T causing_cards(), V targets(), W values())
-       : m_event_type(type),
-         m_causing_player(causing_player),
-         m_causing_cards(causing_cards),
-         m_targets(targets),
-         m_values(values)
-   {
-   }
    AnyEvent(
       EventType type,
       Player causing_player,
