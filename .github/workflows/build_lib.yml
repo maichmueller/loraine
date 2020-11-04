@@ -78,6 +78,5 @@ jobs:
         shell: bash
         # Execute tests defined by the CMake configuration.
         run: |
-        cd pwd
-        ls
-        test/tests
+          ls bin
+          ./bin/tests
