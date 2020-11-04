@@ -79,6 +79,6 @@ jobs:
         # Execute tests defined by the CMake configuration.
         run: |
           cd ..
+          ls
           pwd
-          ls bin
           ./bin/tests
