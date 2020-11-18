@@ -27,6 +27,10 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install doxygen
+        run: |
+          sudo apt-get install doxygen graphviz libgraphviz-dev pkg-config
+
       - name: Use cmake
         run: cmake --version
 
