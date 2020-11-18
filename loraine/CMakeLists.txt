@@ -8,7 +8,6 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/board.cpp
         ${LORAINE_SRC_DIR}/specific_effects.cpp
-        ${LORAINE_SRC_DIR}/card_filters.cpp
         ${LORAINE_SRC_DIR}/card_defs.cpp
         ${LORAINE_SRC_DIR}/effect.cpp
         ${LORAINE_SRC_DIR}/targeter.cpp
