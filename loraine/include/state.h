@@ -7,13 +7,16 @@
 #include <utility>
 #include <vector>
 
-#include "action.h"
+
 #include "board.h"
-#include "cards/card.h"
+//#include "cards/card.h"
 #include "deck.h"
 #include "rng_machine.h"
 #include "rulesets.h"
 #include "types.h"
+
+class Card;
+class AnyAction;
 
 class State {
   public:

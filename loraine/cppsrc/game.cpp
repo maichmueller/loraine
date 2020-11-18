@@ -112,7 +112,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          case PLAY: {
             auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
             auto card = cast_action->get_card_played();
-            if(card->get_card_type() == Card::Type::SPELL) {
+            if(card->get_card_type() == CardType::SPELL) {
                auto spell = std::dynamic_pointer_cast< Spell >(card);
                play(spell);
                if(spell->has_keyword(Keyword::BURST)) {
@@ -408,6 +408,7 @@ void Game::_end_round()
          if(unit->has_keyword(Keyword::EPHEMERAL)) {
             kill_unit(player, unit);
          }
+         // REGENERATION units will regenerate after removing grants etc.
          if(unit->has_keyword(Keyword::REGENERATION)) {
             regenerators[player].emplace_back(unit);
          }
@@ -533,7 +534,7 @@ void Game::play(const sptr< Spell >& spell)
 {
    Player player = spell->get_owner();
    for(auto& effect : spell->get_effects_map().at(events::EventType::NONE)) {
-      effect.choose_targets(*this, player);
+      effect.choose_targets(*m_state, *(get_agent(m_state->get_turn())), player);
    }
    spend_mana(player, spell->get_mana_cost(), true);
    m_state->get_spell_stack().emplace_back(spell);

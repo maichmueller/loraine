@@ -7,11 +7,10 @@
 #include <utility>
 #include <vector>
 
+#include "card_defs.h"
 #include "effect.h"
 #include "event/event.h"
 #include "event/event_types.h"
-#include "keywords.h"
-#include "region.h"
 #include "types.h"
 #include "uuid_gen.h"
 
@@ -25,21 +24,6 @@ class Game;
  */
 class Card {
   public:
-   enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
-   enum struct Group {
-      NONE,
-      DRAGON,
-      ELITE,
-      ELNUK,
-      PORO,
-      SEA_MONSTER,
-      SPIDER,
-      TECH,
-      TREASURE,
-      YETI,
-   };
-   enum struct Type { SPELL, UNIT, LANDMARK };
-   enum struct SuperType { NONE, SKILL, CHAMPION };
 
    inline bool operator()(Game& game, const events::AnyEvent& event)
    {
@@ -153,9 +137,9 @@ class Card {
       const char* const lore,
       Region region,
       Group group,
-      SuperType super_type,
+      CardSuperType super_type,
       Rarity rarity,
-      Type card_type,
+      CardType card_type,
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
@@ -196,11 +180,11 @@ class Card {
    // the subgroup the cards belongs to
    const Group m_group;
    // the super type (champion, skill, none)
-   const SuperType m_super_type;
+   const CardSuperType m_super_type;
    // the rarity of the cards
    const Rarity m_rarity;
    // whether the cards is a spell or a unit
-   const Type m_card_type;
+   const CardType m_card_type;
    // whether a card is collectible (i.e. can be added to a deck)
    const bool m_is_collectible;
 
@@ -276,8 +260,6 @@ class Unit: public Card {
 
    [[nodiscard]] bool is_unit() const override { return true; }
 
-   [[nodiscard]] inline auto is_damaged() const { return m_damage > 0; }
-
    [[nodiscard]] inline auto get_power_raw() const
    {
       return m_power_base + static_cast< size_t >(m_power_delta);
@@ -309,7 +291,7 @@ class Unit: public Card {
       const char* const lore,
       Region region,
       Group group,
-      SuperType super_type,
+      CardSuperType super_type,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost_ref,
@@ -317,7 +299,7 @@ class Unit: public Card {
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
       const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-      Type card_type = Card::Type::UNIT);
+      CardType card_type = CardType::UNIT);
 
    Unit(const Unit& card);
    Unit& operator=(const Unit& unit) = delete;
@@ -338,7 +320,7 @@ class Spell: public Card {
       const char* const lore,
       Region region,
       Group group,
-      SuperType super_type,
+      CardSuperType super_type,
       Rarity rarity,
       bool is_collectible,
       size_t mana_cost,
@@ -367,7 +349,11 @@ class Landmark: public Unit {
    [[nodiscard]] bool is_landmark() const override { return true; }
    [[nodiscard]] bool is_unit() const override { return false; }
 };
-
+template <typename T>
+inline sptr< Card > to_card(const sptr< T >& card)
+{
+   return std::dynamic_pointer_cast< Card >(card);
+}
 inline sptr< Unit > to_unit(const sptr< Card >& card)
 {
    return std::dynamic_pointer_cast< Unit >(card);

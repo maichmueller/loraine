@@ -14,13 +14,11 @@ set(TEST_SOURCES
         test_cards.h test_cards.cpp)
 
 add_executable(tests ${TEST_SOURCES})
-target_include_directories(tests
-        SYSTEM PRIVATE loraine)
+target_include_directories(tests PRIVATE loraine)
 #target_include_directories(tests
 #        SYSTEM PRIVATE ${CONAN_INCLUDE_DIRS_STDUUID} ${CONAN_INCLUDE_DIRS_MS-GSL}
 #        )
 target_include_directories(tests PRIVATE ${GTEST_INCLUDE_DIRS})
-  #  target_link_libraries(enough ${GTEST_LIBRARIES})
 
 
 target_link_libraries(tests PRIVATE project_options

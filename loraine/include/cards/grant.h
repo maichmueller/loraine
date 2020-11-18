@@ -3,8 +3,9 @@
 
 #include <utility>
 
-#include "card.h"
+#include "cards/card.h"
 #include "uuid_gen.h"
+#include "types.h"
 
 enum GrantType { Stats, Mana, Keyword, Effect };
 
@@ -14,18 +15,14 @@ class Grant {
    [[nodiscard]] inline auto get_bestowed_card() const { return m_bestowed_card; }
    [[nodiscard]] inline auto get_bestowing_card() const { return m_bestowing_card; }
    [[nodiscard]] inline auto is_permanent() const { return m_permanent; }
-   [[nodiscard]] inline auto get_card_filter() const { return m_card_filter; }
    [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
 
    virtual void undo() = 0;
 
-   [[nodiscard]] sptr< Grant > copy_on(const sptr< Card >& card) const
+   [[nodiscard]] inline sptr< Grant > copy_on(const sptr< Card >& card) const
    {
-      if(m_card_filter(card)) {
-         return _copy_on(card);
-      }
-      return nullptr;
-   };
+      return _copy_on(card);
+   }
 
    virtual ~Grant() = default;
 
@@ -33,14 +30,11 @@ class Grant {
       GrantType grant_type,
       sptr< Card > bestowing_card,
       sptr< Card > card_to_bestow,
-      bool permanent,
-      std::function< bool(const sptr< Card >&) > card_filter =
-         [](const sptr< Card >& /*unused*/) { return true; })
+      bool permanent)
        : m_grant_type(grant_type),
          m_bestowing_card(std::move(bestowing_card)),
          m_bestowed_card(std::move(card_to_bestow)),
          m_permanent(permanent),
-         m_card_filter(std::move(card_filter)),
          m_uuid(new_uuid())
    {
    }
@@ -49,7 +43,6 @@ class Grant {
          m_bestowing_card(grant.get_bestowed_card()),
          m_bestowed_card(grant.get_bestowed_card()),
          m_permanent(grant.is_permanent()),
-         m_card_filter(grant.get_card_filter()),
          m_uuid(new_uuid())
    {
    }
@@ -58,7 +51,6 @@ class Grant {
          m_bestowing_card(grant.m_bestowing_card),
          m_bestowed_card(grant.m_bestowed_card),
          m_permanent(grant.m_permanent),
-         m_card_filter(grant.m_card_filter),
          m_uuid(grant.m_uuid)
    {
    }
@@ -74,7 +66,6 @@ class Grant {
    const sptr< Card > m_bestowing_card;
    const sptr< Card > m_bestowed_card;
    const bool m_permanent;
-   const std::function< bool(const sptr< Card >&) > m_card_filter;
    const UUID m_uuid;
 
    [[nodiscard]] virtual sptr< Grant > _copy_on(const sptr< Card >& card) const = 0;
@@ -92,8 +83,7 @@ class StatsGrant: public Grant {
           GrantType::Stats,
           bestowing_card,
           card_to_bestow,
-          permanent,
-          [](const sptr< Card >& card) { return card->is_unit(); }),
+          permanent),
          m_power_change(power),
          m_health_change(health)
    {
@@ -117,7 +107,6 @@ class StatsGrant: public Grant {
    }
 
    [[nodiscard]] inline auto get_power_change() const { return m_power_change; }
-
    [[nodiscard]] inline auto get_health_change() const { return m_health_change; }
 
   private:

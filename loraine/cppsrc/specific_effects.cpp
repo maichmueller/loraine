@@ -1,6 +1,6 @@
 
 
-#include "cards/specific_effects.h"
+#include "cards/gallery/specific_effects.h"
 
 void cardEffectFunc::fading_memories_none(
    Game& game,
@@ -8,11 +8,11 @@ void cardEffectFunc::fading_memories_none(
    EffectContainer& source_container)
 {
    auto targets = source_container.get_targets();
-   if(not targets.has_value()) {
+   if(targets.empty()) {
       // TODO: Log this! Something has gone wrong in the logic
       throw std::logic_error("Fading Memories effect has no chosen target.");
    }
    create_exact_copy(
-      game, source_container.get_owner(), targets.value()[0].card);
+      game, source_container.get_owner(), targets[0].opt_card.value());
    source_container.consume();
 }

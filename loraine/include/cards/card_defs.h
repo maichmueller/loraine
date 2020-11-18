@@ -1,11 +1,34 @@
-//
-// Created by michael on 31.05.20.
-//
+#ifndef LORAINE_CARD_DEFS_H
+#define LORAINE_CARD_DEFS_H
 
-#ifndef LORAINE_KEYWORDS_H
-#define LORAINE_KEYWORDS_H
+#include "types.h"
 
-#include <array>
+enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
+enum struct Group {
+   NONE,
+   DRAGON,
+   ELITE,
+   ELNUK,
+   PORO,
+   SEA_MONSTER,
+   SPIDER,
+   TECH,
+   TREASURE,
+   YETI,
+};
+enum struct CardType { SPELL, UNIT, LANDMARK };
+enum struct CardSuperType { NONE, SKILL, CHAMPION };
+enum struct Region {
+   BILGEWATER,
+   DEMACIA,
+   FRELJORD,
+   IONIA,
+   NOXUS,
+   PILTOVER_ZAUN,
+   SHADOW_ISLES,
+   TARGON
+};
+
 
 enum class Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
@@ -59,4 +82,4 @@ using KeywordMap = std::array< bool , static_cast<int>(Keyword::WEAKEST)>;
 
 KeywordMap create_kword_list(std::initializer_list< Keyword > kwords);
 
-#endif  // LORAINE_KEYWORDS_H
+#endif  // LORAINE_CARD_DEFS_H

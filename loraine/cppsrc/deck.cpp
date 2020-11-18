@@ -25,7 +25,7 @@ std::vector< sptr< Card > > DeckContainer::find_spells(
    const std::function< bool(sptr< Card >) >& filter)
 {
    return _find_cards_pop([&](const sptr< Card >& card) {
-      return card->get_card_type() == Card::Type::SPELL && filter(card);
+      return card->get_card_type() == CardType::SPELL && filter(card);
    });
 }
 
@@ -33,7 +33,7 @@ std::vector< sptr< Card > > DeckContainer::find_units(
    const std::function< bool(sptr< Card >) >& filter)
 {
    return _find_cards_pop([&](const sptr< Card >& card) {
-      return card->get_card_type() == Card::Type::UNIT && filter(card);
+      return card->get_card_type() == CardType::UNIT && filter(card);
    });
 }
 sptr< Card > DeckContainer::draw_specific_card(const char * card_sid)

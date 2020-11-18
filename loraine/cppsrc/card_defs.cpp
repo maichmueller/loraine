@@ -1,5 +1,4 @@
-
-#include "cards/keywords.h"
+#include "cards/card_defs.h"
 
 KeywordMap create_kword_list(std::initializer_list< Keyword > kwords)
 {

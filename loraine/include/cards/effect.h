@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "rulesets.h"
+#include "targeter.h"
 #include "types.h"
 #include "utils.h"
 #include "uuid_gen.h"
@@ -27,114 +28,62 @@ class EffectContainer {
    using EffectFunc = std::function< void(Game&, const events::AnyEvent&, EffectContainer&) >;
    using ConditionFunc = std::function< bool(
       const Game&, const events::AnyEvent&, const EffectContainer&) >;
-   using TargetFunc = std::function< void(const Game&, Player, EffectContainer&) >;
-   using TargetVerificationFunc = std::function< bool(
-      const Game&,
-      Player,
-      const std::optional< std::vector< Target > >& targets,
-      const EffectContainer&) >;
 
+   [[nodiscard]] bool has_targets() const { return !m_targets.empty(); }
    [[nodiscard]] bool is_null() const { return m_is_null; }
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    [[nodiscard]] auto get_effect_func() const { return m_effect_func; }
-   [[nodiscard]] auto get_cast_con_func() const { return m_cast_con_func; }
-   [[nodiscard]] auto get_target_func() const { return m_target_func; }
-   [[nodiscard]] auto get_target_verify_func() const { return m_target_verify_func; }
+   [[nodiscard]] auto get_cast_condition_func() const { return m_cast_con_func; }
    [[nodiscard]] auto get_targets() const { return m_targets; }
    [[nodiscard]] auto get_value_buffers() const { return m_value_buffers; }
    [[nodiscard]] auto get_associated_card() const { return m_assoc_card; }
-   [[nodiscard]] auto get_owner() const { return m_owner; }
+   [[nodiscard]] Player get_owner() const;
    [[nodiscard]] auto get_location() const { return m_location; }
    [[nodiscard]] auto get_effect_type() const { return m_effect_type; }
+   [[nodiscard]] auto get_targeter() const { return m_targeter; }
 
    inline void consume() { m_consumed = true; }
 
-   inline void set_assoc_card(sptr< Card > card_ptr) { m_assoc_card = std::move(card_ptr); }
+   void operator()(Game& game, const events::AnyEvent& event);
+   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
 
-   inline void operator()(Game& game, const events::AnyEvent& event)
-   {
-      if(check_cast_condition(game, event)) {
-         if(m_effect_type != Type::AOE) {
-            if(verify_targets(game, m_owner)) {
-               m_effect_func(game, event, *this);
-            }
-         } else {
-            // AOE effects need to redo their targeting to adapt to any changes inbetween playing
-            // and casting the effect
-            choose_targets(game, m_owner);
-            m_effect_func(game, event, *this);
-         }
-      }
-   }
-   inline void set_targets(std::vector< Target > targets) { m_targets = targets; }
-
-   void choose_targets(const Game& game, Player player) { m_target_func(game, player, *this); }
-
-   [[nodiscard]] inline bool verify_targets(
-      const Game& game,
-      Player player,  // the player who owns this precise effect (m_owner)
-      const std::optional< std::vector< Target > >& opt_targets = {})
-   {
-      if(opt_targets.has_value()) {
-         return m_target_verify_func(game, player, opt_targets.value(), *this);
-      }
-      return m_target_verify_func(game, player, m_targets, *this);
-   }
+   void choose_targets(const State& state, Agent& agent, Player player) { (*m_targeter)(state, agent, player); }
 
    [[nodiscard]] inline bool check_cast_condition(
       const Game& game, const events::AnyEvent& event) const
    {
       return m_cast_con_func(game, event, *this);
    }
-   bool operator==(const EffectContainer& effect) const
-   {
-      return m_is_null == effect.is_null() && m_owner == effect.get_owner()
-             && m_effect_type == effect.get_effect_type() && m_location == effect.get_location()
-             && get_address(m_effect_func) == get_address(effect.get_effect_func())
-             && get_address(m_cast_con_func) == get_address(effect.get_cast_con_func())
-             && get_address(m_target_func) == get_address(effect.get_target_func())
-             && get_address(m_target_verify_func) == get_address(effect.get_target_verify_func());
-   }
-   inline bool operator!=(const EffectContainer& effect) const { return ! (*this == effect); }
+   bool operator==(const EffectContainer& effect) const;
+   bool operator!=(const EffectContainer& effect) const;
 
    ~EffectContainer() = default;
 
    EffectContainer(
-      Player owner,
       EffectFunc effect_func,
       ConditionFunc cast_condition_func,
       Location location,
       Type effect_type,
       sptr< Card > card_ptr,
       size_t nr_buffers = 0,
-      TargetFunc target_func =
-         [](const Game& /*unused*/, Player /*unused*/, EffectContainer& /*unused*/) {},
-      TargetVerificationFunc target_verify_func =
-         [](const Game& /*unused*/,
-            Player /*unused*/,
-            const std::optional< std::vector< Target > >& /*unused*/,
-            const EffectContainer& /*unused*/) { return true; })
+      sptr<BaseTargeter> targeter = std::make_shared<NoneTargeter>())
        : m_effect_func(std::move(effect_func)),
          m_cast_con_func(std::move(cast_condition_func)),
-         m_target_func(std::move(target_func)),
-         m_target_verify_func(std::move(target_verify_func)),
+         m_targeter(std::move(targeter)),
          m_location(location),
          m_effect_type(effect_type),
-         m_owner(owner),
          m_value_buffers(nr_buffers),
          m_assoc_card(std::move(card_ptr))
    {
    }
    EffectContainer(const EffectContainer& effect)
        : m_effect_func(effect.get_effect_func()),
-         m_cast_con_func(effect.get_cast_con_func()),
-         m_target_func(effect.get_target_func()),
-         m_target_verify_func(effect.get_target_verify_func()),
+         m_cast_con_func(effect.get_cast_condition_func()),
+         m_targeter(effect.get_targeter()),
          m_location(effect.get_location()),
          m_effect_type(effect.get_effect_type()),
          m_is_null(effect.is_null()),
          m_consumed(effect.is_consumed()),
-         m_owner(effect.get_owner()),
          m_value_buffers(effect.get_value_buffers()),
          m_assoc_card(effect.get_associated_card())
    {
@@ -142,28 +91,25 @@ class EffectContainer {
    EffectContainer(EffectContainer&& effect) noexcept
        : m_effect_func(std::move(effect.m_effect_func)),
          m_cast_con_func(std::move(effect.m_cast_con_func)),
-         m_target_func(std::move(effect.m_target_func)),
+         m_targeter(std::move(effect.m_targeter)),
          m_location(effect.m_location),
          m_effect_type(effect.m_effect_type),
          m_is_null(effect.m_is_null),
          m_consumed(effect.m_consumed),
-         m_owner(effect.m_owner),
          m_value_buffers(std::move(effect.m_value_buffers)),
          m_assoc_card(std::move(effect.m_assoc_card))
    {
    }
-
    EffectContainer& operator=(EffectContainer&& rhs) noexcept
    {
       if(*this != rhs) {
          m_effect_func = std::move(rhs.m_effect_func);
          m_cast_con_func = std::move(rhs.m_cast_con_func);
-         m_target_func = std::move(rhs.m_target_func);
+         m_targeter = std::move(rhs.m_targeter);
          m_location = rhs.m_location;
          m_effect_type = rhs.m_effect_type;
          m_is_null = rhs.m_is_null;
          m_consumed = rhs.m_consumed;
-         m_owner = rhs.m_owner;
          m_value_buffers = std::move(rhs.m_value_buffers);
          m_assoc_card = rhs.m_assoc_card;
       }
@@ -174,14 +120,12 @@ class EffectContainer {
   private:
    EffectFunc m_effect_func;
    ConditionFunc m_cast_con_func;
-   TargetFunc m_target_func;
-   TargetVerificationFunc m_target_verify_func;
+   sptr<BaseTargeter> m_targeter;
    Location m_location;
    Type m_effect_type;
    bool m_is_null = false;
    bool m_consumed = false;
-   Player m_owner;
-   std::optional< std::vector< Target > > m_targets{};
+   std::vector< Target > m_targets;
    std::vector< std::any > m_value_buffers;
    sptr< Card > m_assoc_card;
 };

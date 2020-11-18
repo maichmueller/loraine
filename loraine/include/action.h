@@ -8,6 +8,7 @@
 #include <map>
 #include <utility>
 
+#include "cards/card.h"
 #include "rulesets.h"
 #include "types.h"
 

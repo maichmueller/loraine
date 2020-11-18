@@ -3,7 +3,6 @@
 
 #include <utility>
 
-#include "cards/keywords.h"
 #include "game.h"
 #include "utils.h"
 
@@ -15,9 +14,9 @@ Card::Card(
    const char* const lore,
    Region region,
    Group group,
-   SuperType super_type,
+   CardSuperType super_type,
    Rarity rarity,
-   Type card_type,
+   CardType card_type,
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
@@ -148,7 +147,7 @@ Unit::Unit(
    const char* const lore,
    Region region,
    Group group,
-   SuperType super_type,
+   CardSuperType super_type,
    Rarity rarity,
    bool is_collectible,
    size_t mana_cost_ref,
@@ -156,7 +155,7 @@ Unit::Unit(
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
    const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-   Type card_type)
+   CardType card_type)
     : Card(
        owner,
        code,
@@ -197,7 +196,7 @@ Spell::Spell(
    const char* const lore,
    Region region,
    Group group,
-   SuperType super_type,
+   CardSuperType super_type,
    Rarity rarity,
    bool is_collectible,
    size_t mana_cost,
@@ -213,7 +212,7 @@ Spell::Spell(
        group,
        super_type,
        rarity,
-       Type::SPELL,
+       CardType::SPELL,
        is_collectible,
        mana_cost,
        keyword_list,
@@ -256,7 +255,7 @@ Landmark::Landmark(
        lore,
        region,
        group,
-       SuperType::NONE,
+       CardSuperType::NONE,
        rarity,
        is_collectible,
        mana_cost,
@@ -264,7 +263,7 @@ Landmark::Landmark(
        -1,
        keyword_list,
        effects,
-       Type::LANDMARK)
+       CardType::LANDMARK)
 {
    add_keyword(Keyword::LANDMARK);
 }

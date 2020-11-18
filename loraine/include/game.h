@@ -103,7 +103,7 @@ class Game {
    template < GrantType grant_type, typename... Params >
    inline void grant(Player player, Params&&... params)
    {
-      store_grant(m_grant_factory[player]->grant(std::forward<Params...>(params...)));
+      store_grant(m_grant_factory[player]->grant<grant_type>(std::forward<Params...>(params...)));
    }
 
    inline void store_grant(const sptr< Grant >& grant)
@@ -127,8 +127,9 @@ class Game {
       store_grant(grant->copy_on(card_to_bestow));
    }
 
+   template <typename Container>
    inline void copy_grant(
-      const std::vector< sptr< Grant > >& grants, const sptr< Card >& card_to_bestow)
+      const Container& grants, const sptr< Card >& card_to_bestow)
    {
       for(const auto& grant : grants) {
          store_grant(grant->copy_on(card_to_bestow));

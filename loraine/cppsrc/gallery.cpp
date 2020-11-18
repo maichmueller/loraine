@@ -1,3 +1,0 @@
-
-#include "cards/gallery.h"
-

@@ -7,13 +7,13 @@ void EventListener::on_event(Game& game, Player player, const events::AnyEvent& 
 {
    for(auto& listeners :
        std::array{access_listeners(player), access_listeners(Player(1 - player))}) {
-      auto& cards_with_effect = listeners[size_t(event.get_event_type())];
+      auto& registered_cards = listeners.at(size_t(event.get_event_type()));
       auto opt_causing_cards = event.get_causing_cards();
 
       auto trigger_card_lambda = [&](const sptr< Card >& card) {
          bool all_consumed = (*card)(game, event);
          if(all_consumed) {
-            cards_with_effect.erase(card);
+            registered_cards.erase(card);
          }
       };
 
@@ -26,17 +26,15 @@ void EventListener::on_event(Game& game, Player player, const events::AnyEvent& 
             auto causing_card = causing_cards.back();
             causing_cards.pop_back();
 
-            auto end_iter = cards_with_effect.end();
-            auto search_iter = std::find(cards_with_effect.begin(), end_iter, causing_card);
+            auto end_iter = registered_cards.end();
+            auto search_iter = std::find(registered_cards.begin(), end_iter, causing_card);
             if(search_iter != end_iter) {
                trigger_card_lambda(*search_iter);
             }
          }
       }
-      for(auto card_iter = cards_with_effect.begin(); card_iter != cards_with_effect.end();
-          ++card_iter) {
-         trigger_card_lambda(*card_iter);
-      }
+      // trigger now every remaining card that is listening to this event
+      std::for_each(registered_cards.begin(), registered_cards.end(), trigger_card_lambda);
    }
 }
 void EventListener::unregister_card(const sptr< Card >& card)

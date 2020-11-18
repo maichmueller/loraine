@@ -48,7 +48,8 @@ enable_sanitizers(project_options)
 
 # enable doxygen
 include(${CMAKE_CONFIG_FOLDER}/Doxygen.cmake)
-enable_doxygen()
+option(ENABLE_DOXYGEN "Enable doxygen doc builds of source")
+enable_doxygen(ENABLE_DOXYGEN)
 
 # allow for static analysis options
 include(${CMAKE_CONFIG_FOLDER}/StaticAnalyzers.cmake)
@@ -58,7 +59,7 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 option(ENABLE_FUZZING "Enable Fuzzing Builds" OFF)
 
 # Very basic PCH example
-option(ENABLE_PCH "Enable Precompiled Headers" OFF)
+option(ENABLE_PCH "Enable Precompiled Headers" ON)
 if (ENABLE_PCH)
     # This sets a global PCH parameter, each project will build its own PCH, which
     # is a good idea if any #define's change
