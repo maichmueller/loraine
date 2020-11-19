@@ -11,6 +11,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/card_defs.cpp
         ${LORAINE_SRC_DIR}/effect.cpp
         ${LORAINE_SRC_DIR}/targeter.cpp
+        ${LORAINE_SRC_DIR}/target.cpp
 
         )
 

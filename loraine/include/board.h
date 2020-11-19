@@ -41,8 +41,14 @@ class Board {
       _reserve_space();
    }
 
+   std::pair< bool, Camp::const_iterator > find_in_camp(const sptr< Unit >& unit) const;
+   std::pair< bool, Battlefield ::const_iterator > find_on_battlefield(const sptr< Unit >& unit) const;
+
    std::pair< bool, Camp::iterator > find_in_camp(const sptr< Unit >& unit);
    std::pair< bool, Battlefield ::iterator > find_on_battlefield(const sptr< Unit >& unit);
+
+   size_t index_camp(const sptr<Unit>& unit) const;
+   size_t index_battlefield(const sptr<Unit>& unit) const;
 
    void remove_units(const std::vector< sptr< Unit > >& units);
    void remove_units(Player player, std::vector< size_t > indices, bool in_camp);

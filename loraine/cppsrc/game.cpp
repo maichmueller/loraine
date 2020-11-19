@@ -108,7 +108,6 @@ bool Game::_do_action(const sptr< AnyAction >& action)
       m_state->disable_endround();
 
       switch(action_type) {
-
          case PLAY: {
             auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
             auto card = cast_action->get_card_played();
@@ -323,7 +322,10 @@ void Game::deal_damage_to_unit(
 {
    long health_def = unit->get_health();
    _trigger_event(events::UnitTakeDamageEvent(
-      cause->get_owner(), cause, {false, unit->get_owner(), Location::BOARD, 0, unit}, damage));
+      cause->get_owner(),
+      cause,
+      std::make_shared< CardTarget >(unit->get_owner(), Location::BOARD, 0, unit),
+      damage));
    unit->take_damage(*damage);
    // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
    *damage += -health_def;
@@ -332,7 +334,9 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
 {
    killed_unit->die();
    _trigger_event(events::DieEvent(
-      killer, {false, killed_unit->get_owner(), Location::BOARD, 0, killed_unit}, cause));
+      killer,
+      std::make_shared< CardTarget >(killed_unit->get_owner(), Location::BOARD, 0, killed_unit),
+      cause));
    if(not killed_unit->is_alive()) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
@@ -552,10 +556,6 @@ void Game::play_event_triggers(const sptr< Card >& card, const Player& player)
 }
 void Game::cast(const sptr< Spell >& spell)
 {
-   // spells dont react to events particularly, so they are passed a None-
-   // event
-   uncover_card(spell);
-   (*spell)(*this, events::NoneEvent());
    _trigger_event(events::CastEvent(spell->get_owner(), spell));
 }
 void Game::process_camp_queue(Player player)
@@ -653,16 +653,17 @@ std::vector< sptr< Grant > > Game::get_all_grants(const sptr< Card >& card) cons
    return grants;
 }
 
-std::vector< Target > Game::filter_targets_bf(
+std::vector< sptr< BaseTarget > > Game::filter_targets_bf(
    const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    auto filter_lambda = [&](Player player) {
       auto bf = m_board->get_battlefield(player);
       for(size_t i = 0; i < BATTLEFIELD_SIZE; ++i) {
          if(const auto& opt_unit = bf.at(i); opt_unit.has_value() && filter(opt_unit.value())) {
-            targets.emplace_back(Target{false, player, Location::BATTLEFIELD, i, opt_unit.value()});
+            targets.emplace_back(
+               std::make_shared< CardTarget >(player, Location::BATTLEFIELD, i, opt_unit.value()));
          }
       }
    };
@@ -675,16 +676,16 @@ std::vector< Target > Game::filter_targets_bf(
    return targets;
 }
 
-std::vector< Target > Game::filter_targets_camp(
+std::vector< sptr< BaseTarget > > Game::filter_targets_camp(
    const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    auto filter_lambda = [&](Player player) {
       auto camp = m_board->get_camp(player);
       for(size_t i = 0; i < camp.size(); ++i) {
          if(auto unit = camp.at(i); filter(unit)) {
-            targets.emplace_back(Target{false, player, Location::CAMP, i, unit});
+            targets.emplace_back(std::make_shared< CardTarget >(player, Location::CAMP, i, unit));
          }
       }
    };
@@ -697,16 +698,16 @@ std::vector< Target > Game::filter_targets_camp(
    return targets;
 }
 
-std::vector< Target > Game::filter_targets_hand(
+std::vector< sptr< BaseTarget > > Game::filter_targets_hand(
    const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    auto filter_lambda = [&](Player player) {
       auto* hand = m_state->get_hand(player);
       for(size_t i = 0; i < hand->size(); ++i) {
          if(auto card = hand->at(i); filter(card)) {
-            targets.emplace_back(Target{false, player, Location::HAND, i, card});
+            targets.emplace_back(std::make_shared< CardTarget >(player, Location::HAND, i, card));
          }
       }
    };
@@ -718,16 +719,16 @@ std::vector< Target > Game::filter_targets_hand(
    }
    return targets;
 }
-std::vector< Target > Game::filter_targets_deck(
+std::vector< sptr< BaseTarget > > Game::filter_targets_deck(
    const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    auto filter_lambda = [&](Player player) {
       auto* deck = m_state->get_deck(player);
       for(size_t i = 0; i < deck->size(); ++i) {
          if(auto card = deck->at(i); filter(card)) {
-            targets.emplace_back(Target{false, player, Location::DECK, i, card});
+            targets.emplace_back(std::make_shared< CardTarget >(player, Location::DECK, i, card));
          }
       }
    };
@@ -740,10 +741,10 @@ std::vector< Target > Game::filter_targets_deck(
    return targets;
 }
 
-std::vector< Target > Game::filter_targets_board(
+std::vector< sptr< BaseTarget > > Game::filter_targets_board(
    const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    if(opt_player.has_value()) {
       Player& player = opt_player.value();
@@ -755,10 +756,10 @@ std::vector< Target > Game::filter_targets_board(
    return targets;
 }
 
-std::vector< Target > Game::filter_targets_everywhere(
+std::vector< sptr< BaseTarget > > Game::filter_targets_everywhere(
    const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
 {
-   std::vector< Target > targets;
+   std::vector< sptr< BaseTarget > > targets;
 
    if(opt_player.has_value()) {
       Player& player = opt_player.value();

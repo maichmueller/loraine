@@ -23,15 +23,16 @@ class AnyEvent {
    const EventType m_event_type;
    const Player m_causing_player;
    const std::optional< const std::vector< sptr< Card > > > m_causing_cards;
-   const std::optional< const std::vector< Target > > m_targets;
+   const std::optional< const std::vector< sptr< BaseTarget > > > m_targets;
    const std::optional< const std::vector< sptr< long > > > m_values;
 
   public:
+   virtual ~AnyEvent() = default;
    AnyEvent(
       EventType type,
       Player causing_player,
       std::vector< sptr< Card > > causing_cards = {},
-      std::vector< Target > targets = {},
+      std::vector< sptr< BaseTarget > > targets = {},
       std::vector< sptr< long > > values = {})
        : m_event_type(type),
          m_causing_player(causing_player),
@@ -47,63 +48,14 @@ class AnyEvent {
    [[nodiscard]] inline auto get_values() const { return m_values; }
 };
 
-//
-// struct AnyEvent {
-//   static const EventType event_type = EventType::NONE;
-//   /*
-//    * The base class method to return all base member variables
-//    */
-//   [[nodiscard]] static auto get_event_data() { return std::tuple{event_type}; }
-//
-//  protected:
-//   /*
-//    * This is a protected stack of methods to allow the child classes to simply
-//    * call _get_event_data() in their own public get_event_data() methods
-//    * without needing to constantly copy over arguments from the base class into
-//    * the method call. This will be done automatically by the methods below!
-//    */
-//   template < typename Tuple, size_t... I, typename... Args >
-//   [[nodiscard]] auto _get_event_data_base(
-//      Tuple t, std::index_sequence< I... > /*unused*/, Args... args) const
-//   {
-//      return std::tuple{std::get< I >(t)..., args...};
-//   }
-//   template < typename Tuple, typename... Args >
-//   [[nodiscard]] auto _get_event_data_base_applied(Tuple t, Args... args) const
-//   {
-//      static constexpr auto size = std::tuple_size< Tuple >::value;
-//      return _get_event_data_base(t, std::make_index_sequence< size >{}, args...);
-//   }
-//   // This is now the protected method to call when overriding the child's
-//   // method get_event_data() in the form of
-//   // auto get_event_data() {
-//   //    return _get_event_data(child_member_variable1,
-//   //       child_member_variable2, ...);
-//   // }
-//   template < typename... Args >
-//   [[nodiscard]] auto _get_event_data(Args... args) const
-//   {
-//      return _get_event_data_base_applied(get_event_data(), args...);
-//   }
-//
-//  public:
-//   virtual ~AnyEvent() = default;
-//   AnyEvent() = default;
-//};
-//
 class NoneEvent: public AnyEvent {
   public:
    NoneEvent() : AnyEvent(EventType::NONE, BLUE) {}
 };
-
 class AttackEvent: public AnyEvent {
   public:
    explicit AttackEvent(Player player) : AnyEvent(EventType::ATTACK, player) {}
 };
-// struct BattleEvent: public AnyEvent {
-//   static const EventType event_type = EventType::BATTLE;
-//   explicit BattleEvent() : AnyEvent() {}
-//};
 class BeholdEvent: public AnyEvent {
   public:
    explicit BeholdEvent(Player player) : AnyEvent(EventType::BEHOLD, player) {}
@@ -115,7 +67,7 @@ class BlockEvent: public AnyEvent {
 class CaptureEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::CAPTURE;
-   CaptureEvent(Player player, const sptr< Card >& causing_card, Target captor, Target captee)
+   CaptureEvent(Player player, const sptr< Card >& causing_card, sptr< BaseTarget > captor, sptr< BaseTarget > captee)
        : AnyEvent(
           EventType::CAPTURE, player, {causing_card}, {std::move(captor), std::move(captee)})
    {
@@ -129,9 +81,6 @@ class CastEvent: public AnyEvent {
    }
 };
 class DaybreakEvent: public AnyEvent {
-   Player m_player;
-   sptr< Card > m_card;
-
   public:
    static const EventType event_type = EventType::DAYBREAK;
    DaybreakEvent(Player player, sptr< Card > causing_card)
@@ -142,19 +91,18 @@ class DaybreakEvent: public AnyEvent {
 class DieEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::DIE;
-   DieEvent(Player player, Target killed, sptr< Card > killer)
+   DieEvent(Player player, sptr< BaseTarget > killed, sptr< Card > killer)
        : AnyEvent(EventType::DIE, player, {std::move(killer)}, {std::move(killed)})
    {
    }
-   template < typename Container >
-   DieEvent(Player player, Container killed_units, sptr< Card > killer)
-       : AnyEvent(EventType::DIE, player, {std::move(killer)}, std::move(killed_units))
+   DieEvent(Player player, const std::vector<sptr< BaseTarget > >& killed_units, sptr< Card > killer)
+       : AnyEvent(EventType::DIE, player, {std::move(killer)}, killed_units)
    {
    }
 };
 class DiscardEvent: public AnyEvent {
   public:
-   DiscardEvent(Player player, sptr< Card > causing_card, Target discarded_card)
+   DiscardEvent(Player player, sptr< Card > causing_card, sptr< BaseTarget > discarded_card)
        : AnyEvent(
           EventType::DISCARD, player, {std::move(causing_card)}, {std::move(discarded_card)})
    {
@@ -186,7 +134,7 @@ class HealUnitEvent: public AnyEvent {
           EventType::HEAL_UNIT,
           player,
           {},
-          {Target{false, player, Location::BOARD, 0, std::move(healed_unit)}},
+          {std::make_shared<CardTarget>(player, Location::BOARD, 0, std::move(healed_unit))},
           {std::move(amount)})
    {
    }
@@ -209,7 +157,7 @@ class NexusStrikeEvent: public AnyEvent {
           EventType::NEXUS_STRIKE,
           attacking_player,
           {std::move(attacking_card)},
-          {Target(attacked_nexus)},
+          {std::make_shared<NexusTarget>(attacked_nexus)},
           {std::move(damage)})
    {
    }
@@ -272,7 +220,7 @@ class StunEvent: public AnyEvent {
 };
 class TargetEvent: public AnyEvent {
   public:
-   TargetEvent(Player player, sptr< Card > cause, Target target)
+   TargetEvent(Player player, sptr< Card > cause, sptr< BaseTarget > target)
        : AnyEvent(EventType::TARGET, player, {std::move(cause)}, {std::move(target)})
    {
    }
@@ -284,7 +232,7 @@ class TargetEvent: public AnyEvent {
 };
 class UnitTakeDamageEvent: public AnyEvent {
   public:
-   UnitTakeDamageEvent(Player player, sptr< Card > cause, Target unit, sptr< long > damage)
+   UnitTakeDamageEvent(Player player, sptr< Card > cause, sptr< BaseTarget > unit, sptr< long > damage)
        : AnyEvent(
           EventType::UNIT_TAKE_DAMAGE,
           player,

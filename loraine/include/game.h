@@ -53,7 +53,7 @@ class Game {
    constexpr inline void trigger_event(Params... params);
 
    template < Location range >
-   std::vector< Target > filter_targets(
+   std::vector< sptr< BaseTarget > > filter_targets(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    [[nodiscard]] const auto& get_active_event() const { return m_active_event; }
@@ -81,23 +81,23 @@ class Game {
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
     */
-   std::vector< Target > filter_targets_bf(
+   std::vector< sptr< BaseTarget > > filter_targets_bf(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< Target > filter_targets_camp(
+   std::vector< sptr< BaseTarget > > filter_targets_camp(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< Target > filter_targets_board(
+   std::vector< sptr< BaseTarget > > filter_targets_board(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< Target > filter_targets_hand(
+   std::vector< sptr< BaseTarget > > filter_targets_hand(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< Target > filter_targets_deck(
+   std::vector< sptr< BaseTarget > > filter_targets_deck(
       const std::function< bool(const sptr< Card >&) >& function,
       std::optional< Player > anOptional);
 
-   std::vector< Target > filter_targets_everywhere(
+   std::vector< sptr< BaseTarget > > filter_targets_everywhere(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    template < GrantType grant_type, typename... Params >
@@ -244,7 +244,7 @@ constexpr inline void Game::trigger_event(Params... params)
 }
 
 template < Location range >
-std::vector< Target > Game::filter_targets(
+std::vector< sptr< BaseTarget > > Game::filter_targets(
    const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
 {
    if constexpr(range == Location::BATTLEFIELD) {

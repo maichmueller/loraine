@@ -1,11 +1,10 @@
 
 
 #include "cards/gallery/specific_effects.h"
+#include "target.h"
 
-void cardEffectFunc::fading_memories_none(
-   Game& game,
-   const events::NoneEvent& /*event*/,
-   EffectContainer& source_container)
+void effects::fading_memories_cast(
+   Game& game, const events::NoneEvent& /*event*/, EffectContainer& source_container)
 {
    auto targets = source_container.get_targets();
    if(targets.empty()) {
@@ -13,6 +12,8 @@ void cardEffectFunc::fading_memories_none(
       throw std::logic_error("Fading Memories effect has no chosen target.");
    }
    create_exact_copy(
-      game, source_container.get_owner(), targets[0].opt_card.value());
+      game,
+      source_container.get_owner(),
+      to_card_target(targets[0])->get_contextcard().card);
    source_container.consume();
 }

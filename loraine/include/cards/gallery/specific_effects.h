@@ -10,17 +10,13 @@
 void create_card(Game& game, Player player, size_t card_id);
 void create_exact_copy(Game& game, Player player, const sptr<Card>& card);
 
-namespace cardEffectFunc {
+namespace effects {
 
-void fading_memories_none(
+void fading_memories_cast(
    Game& game,
    const events::NoneEvent& event,
    EffectContainer& source_container);
 
-void fading_memories_none(
-   Game& game,
-   const events::NoneEvent& event,
-   EffectContainer& source_container);
 
 }
 #endif  // LORAINE_SPECIFIC_EFFECTS_H

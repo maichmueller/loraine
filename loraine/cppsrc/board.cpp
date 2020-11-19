@@ -6,14 +6,30 @@
 
 std::pair< bool, Board::Camp::iterator > Board::find_in_camp(const sptr< Unit >& unit)
 {
-   auto& battlefield = m_camp.at(unit->get_owner());
+   auto& battlefield = m_camp[unit->get_owner()];
    auto end = battlefield.end();
    auto found = std::find(battlefield.begin(), end, unit);
    return {found != end, found};
 }
-std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(const sptr< Unit >& unit)
+std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(
+   const sptr< Unit >& unit)
 {
-   auto& battlefield = m_battlefield.at(unit->get_owner());
+   auto& battlefield = m_battlefield[unit->get_owner()];
+   auto* end = battlefield.end();
+   auto* found = std::find(battlefield.begin(), end, unit);
+   return {found != end, found};
+}
+std::pair< bool, Board::Camp::const_iterator > Board::find_in_camp(const sptr< Unit >& unit) const
+{
+   auto& battlefield = m_camp[unit->get_owner()];
+   auto end = battlefield.end();
+   auto found = std::find(battlefield.begin(), end, unit);
+   return {found != end, found};
+}
+std::pair< bool, Board::Battlefield::const_iterator > Board::find_on_battlefield(
+   const sptr< Unit >& unit) const
+{
+   auto& battlefield = m_battlefield[unit->get_owner()];
    auto* end = battlefield.end();
    auto* found = std::find(battlefield.begin(), end, unit);
    return {found != end, found};
@@ -75,4 +91,16 @@ size_t Board::count_units(Player player, bool in_camp) const
 {
    return in_camp ? m_camp[player].size()
                   : count_units(player, false, [](const auto& /*unused*/) { return true; });
+}
+size_t Board::index_camp(const sptr< Unit >& unit) const
+{
+   const auto& camp = m_camp[unit->get_owner()];
+   auto [found, unit_iter] = find_in_camp(unit);
+   return static_cast< size_t >(std::distance(camp.begin(), unit_iter));
+}
+size_t Board::index_battlefield(const sptr< Unit >& unit) const
+{
+   const auto& bf = m_battlefield[unit->get_owner()];
+   auto [found, unit_iter] = find_on_battlefield(unit);
+   return static_cast< size_t >(std::distance(bf.begin(), unit_iter));
 }

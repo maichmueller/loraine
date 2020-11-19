@@ -28,18 +28,18 @@ class BaseTargeter {
    {
    }
 
-   std::vector< Target > operator()(const State& state, Agent& agent, Player player)
+   std::vector< sptr< BaseTarget > > operator()(const State& state, Agent& agent, Player player)
    {
       return _target(state, agent, player);
    }
 
-   void filter_targets(std::vector< Target >& targets)
+   void filter_targets(std::vector< sptr< BaseTarget > >& targets)
    {
       targets.erase(
          std::remove_if(
             targets.begin(),
             targets.end(),
-            [&](const Target& target) { return not m_filter(target.opt_card.value()); }),
+            [&](const sptr< BaseTarget >& target) { return not m_filter(target); }),
          targets.end());
    }
 
@@ -56,7 +56,7 @@ class BaseTargeter {
    size_t m_nr_targets;
    Filter m_filter;
 
-   virtual std::vector< Target > _target(const State& state, Agent& agent, Player player) = 0;
+   virtual std::vector< sptr< BaseTarget > > _target(const State& state, Agent& agent, Player player) = 0;
 };
 
 class NoneTargeter: public BaseTargeter {
@@ -64,10 +64,10 @@ class NoneTargeter: public BaseTargeter {
    NoneTargeter() : BaseTargeter(Type::automatic, Affiliation::any, Location::EVERYWHERE, 0) {}
 
   private:
-   std::vector< Target > _target(
+   std::vector< sptr< BaseTarget > > _target(
       const State& /*state*/, Agent& /*agent*/, Player /*player*/) override
    {
-      return std::vector< Target >();
+      return std::vector< sptr< BaseTarget > >();
    }
 };
 
@@ -78,7 +78,7 @@ class EnemyCampManTargeter: public BaseTargeter {
    }
 
   private:
-   std::vector< Target > _target(const State& state, Agent& agent, Player acting_player) override;
+   std::vector< sptr< BaseTarget > > _target(const State& state, Agent& agent, Player acting_player) override;
 };
 
 #endif  // LORAINE_TARGETER_H

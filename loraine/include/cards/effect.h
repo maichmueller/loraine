@@ -15,7 +15,7 @@
 // forward-declarations
 class Game;
 class Card;
-class Target;
+class BaseTarget;
 
 namespace events {
 class AnyEvent;
@@ -29,7 +29,7 @@ class EffectContainer {
    using ConditionFunc = std::function< bool(
       const Game&, const events::AnyEvent&, const EffectContainer&) >;
 
-   [[nodiscard]] bool has_targets() const { return !m_targets.empty(); }
+   [[nodiscard]] bool has_targets() const { return ! m_targets.empty(); }
    [[nodiscard]] bool is_null() const { return m_is_null; }
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    [[nodiscard]] auto get_effect_func() const { return m_effect_func; }
@@ -45,9 +45,15 @@ class EffectContainer {
    inline void consume() { m_consumed = true; }
 
    void operator()(Game& game, const events::AnyEvent& event);
-   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
+   inline void set_targets(std::vector< sptr< BaseTarget > > targets)
+   {
+      m_targets = std::move(targets);
+   }
 
-   void choose_targets(const State& state, Agent& agent, Player player) { (*m_targeter)(state, agent, player); }
+   void choose_targets(const State& state, Agent& agent, Player player)
+   {
+      (*m_targeter)(state, agent, player);
+   }
 
    [[nodiscard]] inline bool check_cast_condition(
       const Game& game, const events::AnyEvent& event) const
@@ -66,7 +72,7 @@ class EffectContainer {
       Type effect_type,
       sptr< Card > card_ptr,
       size_t nr_buffers = 0,
-      sptr<BaseTargeter> targeter = std::make_shared<NoneTargeter>())
+      sptr< BaseTargeter > targeter = std::make_shared< NoneTargeter >())
        : m_effect_func(std::move(effect_func)),
          m_cast_con_func(std::move(cast_condition_func)),
          m_targeter(std::move(targeter)),
@@ -110,6 +116,7 @@ class EffectContainer {
          m_effect_type = rhs.m_effect_type;
          m_is_null = rhs.m_is_null;
          m_consumed = rhs.m_consumed;
+         m_targets = rhs.m_targets;
          m_value_buffers = std::move(rhs.m_value_buffers);
          m_assoc_card = rhs.m_assoc_card;
       }
@@ -120,12 +127,12 @@ class EffectContainer {
   private:
    EffectFunc m_effect_func;
    ConditionFunc m_cast_con_func;
-   sptr<BaseTargeter> m_targeter;
+   sptr< BaseTargeter > m_targeter;
    Location m_location;
    Type m_effect_type;
    bool m_is_null = false;
    bool m_consumed = false;
-   std::vector< Target > m_targets;
+   std::vector< sptr< BaseTarget > > m_targets;
    std::vector< std::any > m_value_buffers;
    sptr< Card > m_assoc_card;
 };

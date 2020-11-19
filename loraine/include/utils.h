@@ -21,7 +21,7 @@ std::vector< T, Allocator >& operator+(
    std::vector< T, Allocator >& vec1, const std::vector< T, Allocator >& vec2)
 {
    vec1.reserve(vec1.size() + vec2.size());
-   for(const auto & elem : vec2) {
+   for(const auto& elem : vec2) {
       vec1.emplace_back(elem);
    }
    return vec1;
@@ -31,7 +31,7 @@ std::vector< T, Allocator >& operator+(
    std::vector< T, Allocator >& vec1, std::vector< T, Allocator >&& vec2)
 {
    vec1.reserve(vec1.size() + vec2.size());
-   for(auto && elem : vec2) {
+   for(auto&& elem : vec2) {
       vec1.emplace_back(std::move(elem));
    }
    return vec1;
@@ -59,5 +59,17 @@ size_t get_address(std::function< ReturnType(Params...) > f)
    return size_t(*fn_ptr);
 }
 
+/*
+ * Function to remove the const qualifier of a provided iterator
+ *
+ * The range-erase member functions have a pair of const_iterator parameters, but they return an
+ * iterator. Because an empty range is provided, the call to erase does not change the contents of
+ * the container.
+ */
+template < typename Container, typename ConstIterator >
+typename Container::iterator remove_constness(Container& c, ConstIterator it)
+{
+   return c.erase(it, it);
+}
 
 #endif  // LORAINE_UTILS_H

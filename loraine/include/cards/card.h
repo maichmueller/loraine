@@ -119,7 +119,7 @@ class Card {
     * The play condition function represents a potential 'cost' the player has to pay to play this
     * card (e.g. discarding another card in hand)
     */
-   virtual void play_condition(Game& /*unused*/) {}
+   virtual inline void pay_play_tribute(Game& /*unused*/) {}
 
    /*
     * A defaulted virtual destructor needed bc of inheritance
