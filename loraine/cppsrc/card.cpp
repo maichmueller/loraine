@@ -20,7 +20,8 @@ Card::Card(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > >  effects,
+   std::map< events::EventType, std::vector< EffectContainer > > effects,
+   Location loc,
    bool is_hidden)
     : m_name(name),
       m_effect_desc(effect_desc),
@@ -39,7 +40,8 @@ Card::Card(
       m_mana_cost_delta(0),
       m_keywords(create_kword_list(keyword_list)),
       m_effects(std::move(effects)),
-      m_owner(owner)
+      m_owner(owner),
+      m_location(loc)
 {
 }
 Card::Card(const Card& card)
@@ -95,7 +97,7 @@ void Card::set_effect_vec(events::EventType e_type, std::vector< EffectContainer
       curr_vec.emplace_back(std::move(eff));
    }
 }
-bool Card::check_play_condition(const Game& game) const
+bool Card::check_play_tribute(const Game& game) const
 {
    auto state = game.get_state();
    size_t total_mana = state->get_mana(this->get_owner());
@@ -155,7 +157,9 @@ Unit::Unit(
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
    const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-   CardType card_type)
+   CardType card_type,
+   Location loc,
+   bool hidden)
     : Card(
        owner,
        code,
@@ -170,7 +174,9 @@ Unit::Unit(
        is_collectible,
        mana_cost_ref,
        keyword_list,
-       effects),
+       effects,
+       loc,
+       hidden),
       m_power_ref(power_ref),
       m_power_base(power_ref),
       m_health_ref(health_ref),
@@ -216,7 +222,8 @@ Spell::Spell(
        is_collectible,
        mana_cost,
        keyword_list,
-       std::move(effects))
+       std::move(effects),
+       Location::DECK)
 {
 }
 bool Spell::_check_play_condition(const Game& game) const
@@ -246,8 +253,10 @@ Landmark::Landmark(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   const std::map< events::EventType, std::vector< EffectContainer > >& effects)
-    : Unit(
+   const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+   Location loc,
+   bool hidden)
+    : Card(
        owner,
        code,
        name,
@@ -257,13 +266,13 @@ Landmark::Landmark(
        group,
        CardSuperType::NONE,
        rarity,
+       CardType::LANDMARK,
        is_collectible,
        mana_cost,
-       -1,
-       -1,
        keyword_list,
        effects,
-       CardType::LANDMARK)
+       loc,
+       hidden)
 {
    add_keyword(Keyword::LANDMARK);
 }

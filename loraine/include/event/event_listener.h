@@ -13,6 +13,8 @@
 #include "event_types.h"
 #include "types.h"
 
+class Game;
+
 namespace events {
 
 class EventListener {

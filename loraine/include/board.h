@@ -4,16 +4,19 @@
 
 #include <queue>
 #include <utility>
+#include <variant>
 
-#include "cards/card.h"
-#include "cards/grant.h"
 #include "rulesets.h"
 #include "types.h"
 
+class Card;
+class Unit;
+class Landmark;
+
 class Board {
    using Battlefield = std::array< std::optional< sptr< Unit > >, BATTLEFIELD_SIZE >;
-   using Camp = std::vector< sptr< Unit > >;
-   using CampQueue = std::queue< sptr< Unit > >;
+   using Camp = std::vector< sptr< Card > >;
+   using CampQueue = std::queue< sptr< Card > >;
 
    // the container holding battling units
    SymArr< Battlefield > m_battlefield;
@@ -41,14 +44,16 @@ class Board {
       _reserve_space();
    }
 
-   std::pair< bool, Camp::const_iterator > find_in_camp(const sptr< Unit >& unit) const;
-   std::pair< bool, Battlefield ::const_iterator > find_on_battlefield(const sptr< Unit >& unit) const;
+   [[nodiscard]] std::pair< bool, Camp::const_iterator > find_in_camp(
+      const sptr< Unit >& unit) const;
+   [[nodiscard]] std::pair< bool, Battlefield ::const_iterator > find_on_battlefield(
+      const sptr< Unit >& unit) const;
 
    std::pair< bool, Camp::iterator > find_in_camp(const sptr< Unit >& unit);
-   std::pair< bool, Battlefield ::iterator > find_on_battlefield(const sptr< Unit >& unit);
+   std::pair< bool, Battlefield::iterator > find_on_battlefield(const sptr< Unit >& unit);
 
-   size_t index_camp(const sptr<Unit>& unit) const;
-   size_t index_battlefield(const sptr<Unit>& unit) const;
+   [[nodiscard]] size_t index_camp(const sptr< Unit >& unit) const;
+   [[nodiscard]] size_t index_battlefield(const sptr< Unit >& unit) const;
 
    void remove_units(const std::vector< sptr< Unit > >& units);
    void remove_units(Player player, std::vector< size_t > indices, bool in_camp);
@@ -67,19 +72,12 @@ class Board {
    [[nodiscard]] auto& get_battlefield(Player player) const { return m_battlefield[player]; }
    auto& get_camp(Player player) { return m_camp[player]; }
    [[nodiscard]] auto& get_camp(Player player) const { return m_camp[player]; }
+   [[nodiscard]] std::vector< sptr< Unit > > get_camp_units(Player player) const;
    auto& get_camp_queue(Player player) { return m_camp_queue.at(player); }
    [[nodiscard]] auto& get_camp_queue(Player player) const { return m_camp_queue.at(player); }
 
-   inline void add_to_queue(const sptr< Unit >& unit)
-   {
-      m_camp_queue[unit->get_owner()].emplace(unit);
-   }
-   inline void add_to_queue(std::vector< sptr< Unit > > units)
-   {
-      for(auto&& unit : units) {
-         m_camp_queue[unit->get_owner()].emplace(std::move(unit));
-      }
-   }
+   inline void add_to_queue(const sptr< Card >& unit);
+   inline void add_to_queue(std::vector< sptr< Card > >&& units);
 };
 
 #endif  // LORAINE_BOARD_H

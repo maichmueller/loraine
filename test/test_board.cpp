@@ -6,8 +6,8 @@
 TEST(BoardTest, BoardTest_Basics)
 {
    using Battlefield = std::array< std::optional< sptr< Unit > >, BATTLEFIELD_SIZE >;
-   using Camp = std::vector< sptr< Unit > >;
-   using CampQueue = std::queue< sptr< Unit > >;
+   using Camp = std::vector< sptr< Card > >;
+   using CampQueue = std::queue< sptr< Card > >;
 
    auto unit1 = std::make_shared< TestUnit1 >(BLUE);
    auto unit2 = std::make_shared< TestUnit3 >(BLUE);

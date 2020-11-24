@@ -7,7 +7,7 @@
 #include "state.h"
 #include "types.h"
 
-class BaseTarget;
+class Target;
 class Card;
 
 class Agent {

@@ -1,12 +1,6 @@
 
 #include "target.h"
 
+#include "cards/card.h"
 
-sptr< NexusTarget > to_nexus_target(const sptr< BaseTarget >& target)
-{
-   return std::dynamic_pointer_cast< NexusTarget >(target);
-}
-sptr< CardTarget > to_card_target(const sptr< BaseTarget >& target)
-{
-   return std::dynamic_pointer_cast< CardTarget >(target);
-}
+Target::Target(const sptr< Card >& card) : player(card->get_owner()) {}

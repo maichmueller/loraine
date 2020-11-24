@@ -7,7 +7,6 @@
 #include <utility>
 #include <vector>
 
-
 #include "board.h"
 //#include "cards/card.h"
 #include "deck.h"
@@ -22,44 +21,6 @@ class State {
   public:
    using HandType = std::vector< sptr< Card > >;
 
-  private:
-   // player symmetric attributes
-
-   SymArr< Player > m_nexus_ids{BLUE, RED};
-   SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
-   SymArr< size_t > m_mana{0, 0};
-   SymArr< size_t > m_managems{0, 0};
-   SymArr< size_t > m_spell_mana{0, 0};
-
-   SymArr< bool > m_can_attack{false, false};
-   SymArr< bool > m_scout_token{false, false};
-   SymArr< bool > m_can_plunder{false, false};
-   SymArr< bool > m_can_daybreak{true, true};
-   SymArr< bool > m_can_nightfall{false, false};
-
-   // the cards in hand (short: the player's 'hand')
-   SymArr< HandType > m_hand;
-   SymArr< DeckContainer > m_deck_cont;
-
-   SymArr< std::map< size_t, std::vector< sptr< Unit > > > > m_graveyard{};
-   SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
-   sptr< Board > m_board = std::make_shared< Board >();
-
-   SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > m_history;
-
-   // state attributes
-   Player m_starting_player;
-   std::optional< Player > m_attacker;
-   size_t m_round = 0;
-   Player m_turn;
-   bool m_can_endround = false;
-   Status m_terminal = Status::ONGOING;
-   bool m_terminal_checked = false;
-   std::vector< sptr< Spell > > m_spell_stack;
-
-   void _check_terminal();
-
-  public:
    State(
       Player starting_player,
       SymArr< HandType > hands,
@@ -92,10 +53,11 @@ class State {
       std::optional< Player > attacker,
       size_t round,
       Player turn,
-      unsigned short pass_count,
+      SymArr< bool > passes,
       Status terminal,
       bool terminal_checked,
       std::vector< sptr< Spell > > spell_stack);
+
    inline void set_nexus_health(long int value, Player player) { m_nexus_health[player] = value; }
    inline void damage_nexus(size_t amount, Player player) { m_nexus_health[player] -= amount; }
    inline void heal_nexus(size_t amount, Player player)
@@ -122,8 +84,6 @@ class State {
 
    inline void set_flag_attack(bool value, Player player) { m_can_attack[player] = value; }
    inline void set_flag_plunder(bool value, Player player) { m_can_plunder[player] = value; }
-   inline void set_flag_daybreak(bool value, Player player) { m_can_daybreak[player] = value; }
-   inline void set_flag_nightfall(bool value, Player player) { m_can_nightfall[player] = value; }
    inline void set_graveyard(std::map< size_t, std::vector< sptr< Unit > > > value, Player player)
    {
       m_graveyard[player] = std::move(value);
@@ -145,6 +105,20 @@ class State {
       set_flag_attack(true, player);
       set_turn(player);
    }
+   inline bool round_ended() const { return m_passed[Player::BLUE] && m_passed[Player::RED]; }
+   inline bool pass(Player player)
+   {
+      m_passed[player] = true;
+      return round_ended();
+   }
+   inline bool pass()
+   {
+      m_passed[m_turn] = true;
+      return round_ended();
+   }
+   inline void reset_pass(Player player) { m_passed[player] = false; }
+   inline void reset_pass() { m_passed[m_turn] = false; }
+   inline void reset_pass_all() { m_passed = {false, false}; }
 
    inline void set_turn(Player player) { m_turn = player; }
 
@@ -176,14 +150,7 @@ class State {
       return m_managems[player] == MAX_MANA;
    }
    [[nodiscard]] inline auto get_flag_plunder(Player player) const { return m_can_plunder[player]; }
-   [[nodiscard]] inline auto get_flag_daybreak(Player player) const
-   {
-      return m_can_daybreak[player];
-   }
-   [[nodiscard]] inline auto get_flag_nightfall(Player player) const
-   {
-      return m_can_nightfall[player];
-   }
+
    [[nodiscard]] inline auto get_graveyard(Player player) const { return m_graveyard[player]; }
    [[nodiscard]] inline auto get_tossed_cards(Player player) const
    {
@@ -195,17 +162,13 @@ class State {
    [[nodiscard]] inline auto get_turn() const { return m_turn; }
    [[nodiscard]] inline auto get_attacker() const { return m_attacker; }
    [[nodiscard]] inline auto get_starting_player() const { return m_starting_player; }
-   [[nodiscard]] inline auto get_pass_count() const { return m_can_endround; }
    [[nodiscard]] inline auto& get_spell_stack() { return m_spell_stack; }
 
-   inline void incr_managems(Player player, size_t amount = 1)
+   inline void incr_managems(Player player, long amount = 1)
    {
       set_mana_gems(std::min(m_managems[player] + amount, size_t(MAX_MANA)), player);
    }
-   inline void decr_managems(Player player, size_t amount = 1)
-   {
-      set_mana_gems(std::max(m_managems[player] - amount, size_t(1)), player);
-   }
+   inline void fill_mana(Player player, size_t amount) { m_mana[player] += amount; }
    inline void fill_mana(Player player) { m_mana[player] = m_managems[player]; }
    inline void incr_turn() { m_turn = Player(1 - m_turn); }
    inline void incr_round() { m_round += 1; }
@@ -238,12 +201,45 @@ class State {
    std::vector< sptr< Card > > draw_n_cards(Player player, size_t n, bool random = true);
 
    void add_to_graveyard(const sptr< Unit >& unit);
-   void move_to_tossed(sptr< Card > card);
-
-   inline void enable_endround() { m_can_endround = true; }
-   inline void disable_endround() { m_can_endround = false; }
+   void add_to_tossed(const sptr< Card >& card);
 
    void shuffle_deck(Player player);
+
+   std::tuple< Location, long > find(const sptr< Card >& card) const;
+
+  private:
+   // player symmetric attributes
+
+   SymArr< Player > m_nexus_ids{BLUE, RED};
+   SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
+   SymArr< size_t > m_mana{0, 0};
+   SymArr< size_t > m_managems{0, 0};
+   SymArr< size_t > m_spell_mana{0, 0};
+
+   SymArr< bool > m_can_attack{false, false};
+   SymArr< bool > m_scout_token{false, false};
+   SymArr< bool > m_can_plunder{false, false};
+   SymArr< bool > m_passed{false, false};
+   // the cards in hand (short: the player's 'hand')
+   SymArr< HandType > m_hand;
+
+   SymArr< DeckContainer > m_deck_cont;
+   SymArr< std::map< size_t, std::vector< sptr< Unit > > > > m_graveyard{};
+   SymArr< std::vector< sptr< Card > > > m_tossed_cards{};
+
+   sptr< Board > m_board = std::make_shared< Board >();
+
+   SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > m_history;
+   // state attributes
+   Player m_starting_player;
+   std::optional< Player > m_attacker;
+   size_t m_round = 0;
+   Player m_turn;
+   Status m_terminal = Status::ONGOING;
+   bool m_terminal_checked = false;
+   std::vector< sptr< Spell > > m_spell_stack;
+
+   void _check_terminal();
 };
 
 #endif  // LORAINE_STATE_H

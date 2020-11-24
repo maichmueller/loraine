@@ -2,6 +2,7 @@
 
 #include "board.h"
 
+#include "cards/card.h"
 #include "utils.h"
 
 std::pair< bool, Board::Camp::iterator > Board::find_in_camp(const sptr< Unit >& unit)
@@ -11,8 +12,7 @@ std::pair< bool, Board::Camp::iterator > Board::find_in_camp(const sptr< Unit >&
    auto found = std::find(battlefield.begin(), end, unit);
    return {found != end, found};
 }
-std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(
-   const sptr< Unit >& unit)
+std::pair< bool, Board::Battlefield::iterator > Board::find_on_battlefield(const sptr< Unit >& unit)
 {
    auto& battlefield = m_battlefield[unit->get_owner()];
    auto* end = battlefield.end();
@@ -70,7 +70,7 @@ size_t Board::count_units(
    size_t sum = 0;
    if(in_camp) {
       for(const auto& pot_unit : m_camp.at(player)) {
-         if(filter(pot_unit)) {
+         if(pot_unit->is_unit() && filter(to_unit(pot_unit))) {
             sum += 1;
          } else {
             break;
@@ -103,4 +103,24 @@ size_t Board::index_battlefield(const sptr< Unit >& unit) const
    const auto& bf = m_battlefield[unit->get_owner()];
    auto [found, unit_iter] = find_on_battlefield(unit);
    return static_cast< size_t >(std::distance(bf.begin(), unit_iter));
+}
+std::vector< sptr<Unit> > Board::get_camp_units(Player player) const
+{
+   std::vector< sptr< Unit > > units;
+   for(const auto& card : m_camp[player]) {
+      if(card->is_unit()) {
+         units.emplace_back(to_unit(card));
+      }
+   }
+   return units;
+}
+void Board::add_to_queue(const sptr< Card >& unit)
+{
+   m_camp_queue[unit->get_owner()].emplace(unit);
+}
+void Board::add_to_queue(std::vector< sptr<Card> >&& units)
+{
+   for(auto&& unit : units) {
+      m_camp_queue[unit->get_owner()].emplace(std::move(unit));
+   }
 }

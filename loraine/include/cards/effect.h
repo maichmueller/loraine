@@ -15,7 +15,7 @@
 // forward-declarations
 class Game;
 class Card;
-class BaseTarget;
+class Target;
 
 namespace events {
 class AnyEvent;
@@ -37,15 +37,15 @@ class EffectContainer {
    [[nodiscard]] auto get_targets() const { return m_targets; }
    [[nodiscard]] auto get_value_buffers() const { return m_value_buffers; }
    [[nodiscard]] auto get_associated_card() const { return m_assoc_card; }
-   [[nodiscard]] Player get_owner() const;
    [[nodiscard]] auto get_location() const { return m_location; }
    [[nodiscard]] auto get_effect_type() const { return m_effect_type; }
    [[nodiscard]] auto get_targeter() const { return m_targeter; }
+   [[nodiscard]] Player get_owner() const;
 
    inline void consume() { m_consumed = true; }
 
    void operator()(Game& game, const events::AnyEvent& event);
-   inline void set_targets(std::vector< sptr< BaseTarget > > targets)
+   inline void set_targets(std::vector< Target > targets)
    {
       m_targets = std::move(targets);
    }
@@ -132,7 +132,7 @@ class EffectContainer {
    Type m_effect_type;
    bool m_is_null = false;
    bool m_consumed = false;
-   std::vector< sptr< BaseTarget > > m_targets;
+   std::vector< Target > m_targets;
    std::vector< std::any > m_value_buffers;
    sptr< Card > m_assoc_card;
 };

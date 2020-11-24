@@ -10,6 +10,8 @@
 #include "state.h"
 #include "types.h"
 
+#include <optional>
+
 class Game {
   public:
    [[nodiscard]] inline auto& get_board() const { return m_board; }
@@ -21,8 +23,7 @@ class Game {
 
    bool run_game();
 
-   void incr_managems(Player player, size_t amount = 1);
-   void decr_managems(Player player, size_t amount = 1);
+   void incr_managems(Player player, long amount = 1);
 
    void play(const sptr< Spell >& spell);
    void play(const sptr< Unit >& unit, std::optional< size_t > replaces);
@@ -31,6 +32,9 @@ class Game {
    void summon(const sptr< Unit >& unit);
    void summon_to_battlefield(const sptr< Unit >& unit);
    void summon_exact_copy(const sptr< Unit >& unit);
+
+   void create_card(Player player, size_t card_id);
+   void create_exact_copy(Player player, const sptr<Card>& card);
 
    void deal_damage_to_unit(
       const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
@@ -53,7 +57,7 @@ class Game {
    constexpr inline void trigger_event(Params... params);
 
    template < Location range >
-   std::vector< sptr< BaseTarget > > filter_targets(
+   std::vector< Target > filter_targets(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    [[nodiscard]] const auto& get_active_event() const { return m_active_event; }
@@ -81,23 +85,23 @@ class Game {
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
     */
-   std::vector< sptr< BaseTarget > > filter_targets_bf(
+   std::vector< Target > filter_targets_bf(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< sptr< BaseTarget > > filter_targets_camp(
+   std::vector< Target > filter_targets_camp(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< sptr< BaseTarget > > filter_targets_board(
+   std::vector< Target > filter_targets_board(
       const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< sptr< BaseTarget > > filter_targets_hand(
+   std::vector< Target > filter_targets_hand(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
-   std::vector< sptr< BaseTarget > > filter_targets_deck(
+   std::vector< Target > filter_targets_deck(
       const std::function< bool(const sptr< Card >&) >& function,
-      std::optional< Player > anOptional);
+      std::optional< Player > opt_player);
 
-   std::vector< sptr< BaseTarget > > filter_targets_everywhere(
+   std::vector< Target > filter_targets_everywhere(
       const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player);
 
    template < GrantType grant_type, typename... Params >
@@ -244,7 +248,7 @@ constexpr inline void Game::trigger_event(Params... params)
 }
 
 template < Location range >
-std::vector< sptr< BaseTarget > > Game::filter_targets(
+std::vector< Target > Game::filter_targets(
    const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
 {
    if constexpr(range == Location::BATTLEFIELD) {

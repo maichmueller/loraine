@@ -21,7 +21,7 @@ constexpr const static size_t MAX_ROUNDS = 40;
 
 enum Player { BLUE = 0, RED };
 
-constexpr const static size_t n_players = static_cast< size_t >(Player::RED);
+constexpr const static size_t n_players = static_cast< size_t >(Player::RED) + 1;
 
 enum Status {
    TIE = 0,
@@ -34,7 +34,7 @@ enum Status {
    RED_WINS_CARD
 };
 
-constexpr const static size_t n_status = static_cast< size_t >(Status::RED_WINS_CARD);
+constexpr const static size_t n_status = static_cast< size_t >(Status::RED_WINS_CARD) + 1;
 
 enum class Location {
    BATTLEFIELD = 0,
@@ -45,6 +45,6 @@ enum class Location {
    HAND
 };
 
-constexpr const static size_t n_locations = static_cast< size_t >(Location::HAND);
+constexpr const static size_t n_locations = static_cast< size_t >(Location::HAND) + 1;
 
 #endif  // LORAINE_RULESETS_H

@@ -3,9 +3,12 @@
 
 #include "types.h"
 
-enum struct Rarity { NONE, COMMON, RARE, EPIC, CHAMPION };
+enum struct Rarity { NONE = 0, CHAMPION, COMMON, EPIC, RARE };
+
+constexpr const static size_t n_rarities = static_cast< size_t >(Rarity::RARE) + 1;
+
 enum struct Group {
-   NONE,
+   NONE = 0,
    DRAGON,
    ELITE,
    ELNUK,
@@ -14,24 +17,35 @@ enum struct Group {
    SPIDER,
    TECH,
    TREASURE,
-   YETI,
+   YETI
 };
+
+constexpr const static size_t n_groups = static_cast< size_t >(Group::YETI) + 1;
+
 enum struct CardType { SPELL, UNIT, LANDMARK };
-enum struct CardSuperType { NONE, SKILL, CHAMPION };
+
+constexpr const static size_t n_cardtypes = static_cast< size_t >(CardType::LANDMARK) + 1;
+
+enum struct CardSuperType { NONE, CHAMPION, SKILL };
+
+constexpr const static size_t n_cardsupertypes = static_cast< size_t >(CardSuperType::SKILL) + 1;
+
 enum struct Region {
-   BILGEWATER,
+   BILGEWATER = 0,
    DEMACIA,
    FRELJORD,
    IONIA,
    NOXUS,
    PILTOVER_ZAUN,
    SHADOW_ISLES,
-   TARGON
+   TARGON,
 };
 
+constexpr const static size_t n_regions = static_cast< size_t >(Region::TARGON) + 1;
 
 enum class Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
+   ATTACK,
    ATTUNE,
    BARRIER,
    BURST,
@@ -73,12 +87,12 @@ enum class Keyword {
    WEAKEST,
 };
 
-constexpr const static size_t n_keywords = static_cast<size_t>(Keyword::WEAKEST);
+constexpr const static size_t n_keywords = static_cast< size_t >(Keyword::WEAKEST);
 
 // This is intended to be used as lookup table for keywords:
 // Does the card have the keyword 'lifesteal'?
 // -> m_keywords[LIFESTEAL] will return the boolean answer
-using KeywordMap = std::array< bool , static_cast<int>(Keyword::WEAKEST)>;
+using KeywordMap = std::array< bool, n_keywords >;
 
 KeywordMap create_kword_list(std::initializer_list< Keyword > kwords);
 

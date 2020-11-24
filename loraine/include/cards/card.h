@@ -24,7 +24,6 @@ class Game;
  */
 class Card {
   public:
-
    inline bool operator()(Game& game, const events::AnyEvent& event)
    {
       bool all_consumed = true;
@@ -61,6 +60,8 @@ class Card {
    [[nodiscard]] inline Player get_owner() const { return m_owner; }
    [[nodiscard]] inline auto& get_grants() const { return m_grants; }
    [[nodiscard]] inline auto& get_grants_temp() const { return m_grants_temp; }
+   [[nodiscard]] inline auto& get_grants_temp() { return m_grants_temp; }
+   [[nodiscard]] inline auto get_location() const { return m_location; }
 
    // status requests
 
@@ -113,13 +114,13 @@ class Card {
     * This function returns the boolean indicator for whether the current card has a play condition
     * that can be fulfilled at the present moment.
     */
-   [[nodiscard]] bool check_play_condition(const Game& game) const;
+   [[nodiscard]] bool check_play_tribute(const Game& game) const;
 
    /*
     * The play condition function represents a potential 'cost' the player has to pay to play this
     * card (e.g. discarding another card in hand)
     */
-   virtual inline void pay_play_tribute(Game& /*unused*/) {}
+   virtual inline void pay_to_play(Game& /*unused*/) {}
 
    /*
     * A defaulted virtual destructor needed bc of inheritance
@@ -144,6 +145,7 @@ class Card {
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
       std::map< events::EventType, std::vector< EffectContainer > > effects,
+      Location loc = Location::DECK,
       bool is_hidden = true);
 
    /*
@@ -204,6 +206,8 @@ class Card {
    long int m_mana_cost_delta;
    // all the keywords pertaining to the cards
    KeywordMap m_keywords;
+   // the current location of the card in the game
+   Location m_location;
 
    // all possible effects
    std::map< events::EventType, std::vector< EffectContainer > > m_effects;
@@ -299,11 +303,12 @@ class Unit: public Card {
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
       const std::map< events::EventType, std::vector< EffectContainer > >& effects,
-      CardType card_type = CardType::UNIT);
+      CardType card_type = CardType::UNIT,
+      Location loc = Location::DECK,
+      bool hidden = true);
 
    Unit(const Unit& card);
    Unit& operator=(const Unit& unit) = delete;
-   ~Unit() override = default;
    Unit(Unit&&) = delete;
    Unit& operator=(Unit&&) = delete;
 };
@@ -330,7 +335,7 @@ class Spell: public Card {
    [[nodiscard]] bool is_spell() const override { return true; }
 };
 
-class Landmark: public Unit {
+class Landmark: public Card {
   public:
    Landmark(
       Player owner,
@@ -344,12 +349,14 @@ class Landmark: public Unit {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      const std::map< events::EventType, std::vector< EffectContainer > >& effects);
+      const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+      Location loc = Location::DECK,
+      bool hidden = true);
 
    [[nodiscard]] bool is_landmark() const override { return true; }
    [[nodiscard]] bool is_unit() const override { return false; }
 };
-template <typename T>
+template < typename T >
 inline sptr< Card > to_card(const sptr< T >& card)
 {
    return std::dynamic_pointer_cast< Card >(card);
@@ -378,7 +385,5 @@ struct hash< sptr< Card > > {
    size_t operator()(const sptr< Card >& x) const { return std::hash< Card >()(*x); }
 };
 }  // namespace std
-
-// using VariantCard = std::variant <Follower, Champion, Spell>;
 
 #endif  // LORAINE_CARD_H

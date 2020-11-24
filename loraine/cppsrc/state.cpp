@@ -63,8 +63,11 @@ std::vector< sptr< Card > > State::draw_n_cards(Player player, size_t n, bool ra
 }
 void State::add_to_graveyard(const sptr< Unit >& unit)
 {
-   auto player = unit->get_owner();
-   m_graveyard.at(player).at(m_round).emplace_back(unit);
+   m_graveyard.at(unit->get_owner()).at(m_round).emplace_back(unit);
+}
+void State::add_to_tossed(const sptr< Card >& card)
+{
+   m_tossed_cards.at(card->get_owner()).emplace_back(card);
 }
 State::State(
    Player starting_player,
@@ -84,7 +87,7 @@ State::State(
    std::optional< Player > attacker,
    size_t round,
    Player turn,
-   unsigned short pass_count,
+   SymArr< bool > passes,
    Status terminal,
    bool terminal_checked,
    std::vector< sptr< Spell > > spell_stack)
@@ -105,9 +108,18 @@ State::State(
       m_attacker(attacker),
       m_round(round),
       m_turn(turn),
-      m_can_endround(pass_count),
+      m_passed(passes),
       m_terminal(terminal),
       m_terminal_checked(terminal_checked),
       m_spell_stack(std::move(spell_stack))
 {
+}
+std::tuple< Location, long > State::find(const sptr< Card >& card) const
+{
+   auto location = card->get_location();
+   if(location == Location::BATTLEFIELD) {
+      auto [found, unit_iter] = m_board->find_on_battlefield(to_unit(card));
+      return {
+         location, std::distance(unit_iter, m_board->get_battlefield(card->get_owner()).begin())};
+   }
 }

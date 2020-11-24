@@ -12,7 +12,7 @@
 #include "rulesets.h"
 #include "types.h"
 
-enum ActionType { ACCEPT, ATTACK, BLOCK, END_ROUND, MOVE_UNIT, MOVE_SPELL, MULLIGAN, PASS, PLAY };
+enum ActionType { ACCEPT, ATTACK, BLOCK, MOVE_UNIT, MOVE_SPELL, MULLIGAN, PASS, PLAY };
 
 class AnyAction {
    // the type of action performed
@@ -42,12 +42,6 @@ class PassAction: public AnyAction {
   public:
    PassAction(size_t round, Player player) : AnyAction(ActionType::PASS, round, player) {}
 };
-
-class EndRoundAction: public AnyAction {
-  public:
-   EndRoundAction(size_t round, Player player) : AnyAction(ActionType::END_ROUND, round, player) {}
-};
-
 /*
  * This is the action for accepting the spell/skill outcome of whatever
  * action/reaction the opponent has played.

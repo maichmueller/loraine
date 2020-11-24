@@ -30,11 +30,13 @@ enum class EventType {
    SCOUT,  // a scout attack occurred (not yet needed afaik)
    STUN,  // stunning a unit
    SUMMON,  // summoning a unit
+   SUPPORT,  // supporting the unit on the right of the attacking unit
    TARGET,  // targeting a unit with a spell/skill
    UNIT_TAKE_DAMAGE,  // any unit on the field takes damage
+   COUNTER
 };
 
-constexpr const static size_t n_events = size_t (EventType::UNIT_TAKE_DAMAGE);
+constexpr const static size_t n_events = size_t (EventType::COUNTER) + 1;
 }
 
 #endif  // LORAINE_EVENT_TYPES_H

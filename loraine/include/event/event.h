@@ -23,7 +23,7 @@ class AnyEvent {
    const EventType m_event_type;
    const Player m_causing_player;
    const std::optional< const std::vector< sptr< Card > > > m_causing_cards;
-   const std::optional< const std::vector< sptr< BaseTarget > > > m_targets;
+   const std::optional< const std::vector< Target > > m_targets;
    const std::optional< const std::vector< sptr< long > > > m_values;
 
   public:
@@ -32,7 +32,7 @@ class AnyEvent {
       EventType type,
       Player causing_player,
       std::vector< sptr< Card > > causing_cards = {},
-      std::vector< sptr< BaseTarget > > targets = {},
+      std::vector< Target > targets = {},
       std::vector< sptr< long > > values = {})
        : m_event_type(type),
          m_causing_player(causing_player),
@@ -54,7 +54,10 @@ class NoneEvent: public AnyEvent {
 };
 class AttackEvent: public AnyEvent {
   public:
-   explicit AttackEvent(Player player) : AnyEvent(EventType::ATTACK, player) {}
+   explicit AttackEvent(Player player, sptr< Card > cause_for_event)
+       : AnyEvent(EventType::ATTACK, player, {std::move(cause_for_event)})
+   {
+   }
 };
 class BeholdEvent: public AnyEvent {
   public:
@@ -67,7 +70,7 @@ class BlockEvent: public AnyEvent {
 class CaptureEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::CAPTURE;
-   CaptureEvent(Player player, const sptr< Card >& causing_card, sptr< BaseTarget > captor, sptr< BaseTarget > captee)
+   CaptureEvent(Player player, const sptr< Card >& causing_card, Target captor, Target captee)
        : AnyEvent(
           EventType::CAPTURE, player, {causing_card}, {std::move(captor), std::move(captee)})
    {
@@ -91,18 +94,18 @@ class DaybreakEvent: public AnyEvent {
 class DieEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::DIE;
-   DieEvent(Player player, sptr< BaseTarget > killed, sptr< Card > killer)
+   DieEvent(Player player, Target killed, sptr< Card > killer)
        : AnyEvent(EventType::DIE, player, {std::move(killer)}, {std::move(killed)})
    {
    }
-   DieEvent(Player player, const std::vector<sptr< BaseTarget > >& killed_units, sptr< Card > killer)
+   DieEvent(Player player, const std::vector< Target >& killed_units, sptr< Card > killer)
        : AnyEvent(EventType::DIE, player, {std::move(killer)}, killed_units)
    {
    }
 };
 class DiscardEvent: public AnyEvent {
   public:
-   DiscardEvent(Player player, sptr< Card > causing_card, sptr< BaseTarget > discarded_card)
+   DiscardEvent(Player player, sptr< Card > causing_card, Target discarded_card)
        : AnyEvent(
           EventType::DISCARD, player, {std::move(causing_card)}, {std::move(discarded_card)})
    {
@@ -129,13 +132,8 @@ class GainManagemEvent: public AnyEvent {
 };
 class HealUnitEvent: public AnyEvent {
   public:
-   HealUnitEvent(Player player, sptr< Card > healed_unit, sptr< long > amount)
-       : AnyEvent(
-          EventType::HEAL_UNIT,
-          player,
-          {},
-          {std::make_shared<CardTarget>(player, Location::BOARD, 0, std::move(healed_unit))},
-          {std::move(amount)})
+   HealUnitEvent(Player player, const sptr< Card >& healed_unit, sptr< long > amount)
+       : AnyEvent(EventType::HEAL_UNIT, player, {}, {Target(healed_unit)}, {std::move(amount)})
    {
    }
 };
@@ -157,14 +155,14 @@ class NexusStrikeEvent: public AnyEvent {
           EventType::NEXUS_STRIKE,
           attacking_player,
           {std::move(attacking_card)},
-          {std::make_shared<NexusTarget>(attacked_nexus)},
+          {Target(attacked_nexus)},
           {std::move(damage)})
    {
    }
 };
 class NightfallEvent: public AnyEvent {
   public:
-   NightfallEvent(Player player, sptr< Card > card) : AnyEvent(EventType::NIGHTFALL, player, {card})
+   NightfallEvent(Player player, sptr< Card > card) : AnyEvent(EventType::NIGHTFALL, player, {std::move(card)})
    {
    }
 };
@@ -202,37 +200,46 @@ class ScoutEvent: public AnyEvent {
 };
 class StrikeEvent: public AnyEvent {
   public:
-   StrikeEvent(Player player, sptr< Card > striker)
-       : AnyEvent(EventType::STRIKE, player, {std::move(striker)})
+   StrikeEvent(Player player, sptr< Card > striker, const sptr< Card >& struck_unit)
+       : AnyEvent(EventType::STRIKE, player, {std::move(striker)}, {Target(struck_unit)})
    {
    }
 };
 class SummonEvent: public AnyEvent {
   public:
-   SummonEvent(Player player, sptr< Card > card) : AnyEvent(EventType::SUMMON, player, {card}) {}
+   SummonEvent(Player player, sptr< Card > card)
+       : AnyEvent(EventType::SUMMON, player, {std::move(card)})
+   {
+   }
 };
 class StunEvent: public AnyEvent {
   public:
-   StunEvent(Player player, sptr< Card > card)
-       : AnyEvent(EventType::STUN, player, {std::move(card)})
+   StunEvent(Player player, sptr< Card > stunned_card)
+       : AnyEvent(EventType::STUN, player, {std::move(stunned_card)})
+   {
+   }
+};
+class SupportEvent: public AnyEvent {
+  public:
+   SupportEvent(Player player, sptr< Card > supporter, Target supported)
+       : AnyEvent(EventType::SUPPORT, player, {std::move(supporter)}, {std::move(supported)})
    {
    }
 };
 class TargetEvent: public AnyEvent {
   public:
-   TargetEvent(Player player, sptr< Card > cause, sptr< BaseTarget > target)
+   TargetEvent(Player player, sptr< Card > cause, Target target)
        : AnyEvent(EventType::TARGET, player, {std::move(cause)}, {std::move(target)})
    {
    }
-   template < typename Container >
-   TargetEvent(Player player, sptr< Card > cause, Container targets)
-       : AnyEvent(EventType::TARGET, player, {std::move(cause)}, {std::move(targets)})
+   TargetEvent(Player player, const sptr< Card >& cause, const std::vector<Target>& targets)
+       : AnyEvent(EventType::TARGET, player, {cause}, targets)
    {
    }
 };
 class UnitTakeDamageEvent: public AnyEvent {
   public:
-   UnitTakeDamageEvent(Player player, sptr< Card > cause, sptr< BaseTarget > unit, sptr< long > damage)
+   UnitTakeDamageEvent(Player player, sptr< Card > cause, Target unit, sptr< long > damage)
        : AnyEvent(
           EventType::UNIT_TAKE_DAMAGE,
           player,
