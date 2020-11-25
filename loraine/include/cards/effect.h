@@ -26,8 +26,7 @@ class EffectContainer {
    enum class Type { AOE = 0, TARGETED, NEXUS, OTHER };
 
    using EffectFunc = std::function< void(Game&, const events::AnyEvent&, EffectContainer&) >;
-   using ConditionFunc = std::function< bool(
-      const Game&, const events::AnyEvent&, const EffectContainer&) >;
+   using ConditionFunc = std::function< bool(const Game&, const EffectContainer&) >;
 
    [[nodiscard]] bool has_targets() const { return ! m_targets.empty(); }
    [[nodiscard]] bool is_null() const { return m_is_null; }
@@ -45,20 +44,16 @@ class EffectContainer {
    inline void consume() { m_consumed = true; }
 
    void operator()(Game& game, const events::AnyEvent& event);
-   inline void set_targets(std::vector< Target > targets)
-   {
-      m_targets = std::move(targets);
-   }
+   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
 
    void choose_targets(const State& state, Agent& agent, Player player)
    {
       (*m_targeter)(state, agent, player);
    }
 
-   [[nodiscard]] inline bool check_cast_condition(
-      const Game& game, const events::AnyEvent& event) const
+   [[nodiscard]] inline bool check_cast_condition(const Game& game) const
    {
-      return m_cast_con_func(game, event, *this);
+      return m_cast_con_func(game, *this);
    }
    bool operator==(const EffectContainer& effect) const;
    bool operator!=(const EffectContainer& effect) const;

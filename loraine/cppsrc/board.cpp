@@ -114,13 +114,13 @@ std::vector< sptr<Unit> > Board::get_camp_units(Player player) const
    }
    return units;
 }
-void Board::add_to_queue(const sptr< Card >& unit)
+void Board::add_to_queue(const sptr< Card >& card)
 {
-   m_camp_queue[unit->get_owner()].emplace(unit);
+   m_camp_queue[card->get_owner()].emplace(card);
 }
-void Board::add_to_queue(std::vector< sptr<Card> >&& units)
+void Board::add_to_queue(std::vector< sptr<Card> >&& cards)
 {
-   for(auto&& unit : units) {
-      m_camp_queue[unit->get_owner()].emplace(std::move(unit));
+   for(auto&& card : cards) {
+      m_camp_queue[card->get_owner()].emplace(std::move(card));
    }
 }

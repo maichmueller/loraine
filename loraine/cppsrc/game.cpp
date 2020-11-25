@@ -114,7 +114,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
             auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
             auto card = cast_action->get_card_played();
             if(card->get_card_type() == CardType::SPELL) {
-               auto spell = std::dynamic_pointer_cast< Spell >(card);
+               auto spell = to_spell(card);
                play(spell);
                if(spell->has_keyword(Keyword::BURST)) {
                   _resolve_spell_stack(true);
@@ -254,6 +254,9 @@ void Game::_resolve_spell_stack(bool burst)
          auto last_spell = spell_stack.back();
          spell_stack.pop_back();
          cast(last_spell);
+      }
+      if(m_battle_mode) {
+         _resolve_battle();
       }
    }
 }

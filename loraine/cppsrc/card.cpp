@@ -228,17 +228,8 @@ Spell::Spell(
 }
 bool Spell::_check_play_condition(const Game& game) const
 {
-   // If any of the sub-effects of the spell are playable then this is the generally accepted case.
-   // Any specific spell can choose to override this in its inheritance.
-   for(const auto& event_effect : get_effects_map()) {
-      const auto& effect_vec = event_effect.second;
-      for(const auto& effect : effect_vec) {
-         if(effect.check_cast_condition(game, events::NoneEvent())) {
-            return true;
-         }
-      }
-   }
-   return false;
+   auto state = game.get_state();
+   return state->get_mana(get_owner()) + state->get_spell_mana(get_owner()) >= get_mana_cost();
 }
 
 Landmark::Landmark(

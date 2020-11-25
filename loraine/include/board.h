@@ -76,8 +76,8 @@ class Board {
    auto& get_camp_queue(Player player) { return m_camp_queue.at(player); }
    [[nodiscard]] auto& get_camp_queue(Player player) const { return m_camp_queue.at(player); }
 
-   inline void add_to_queue(const sptr< Card >& unit);
-   inline void add_to_queue(std::vector< sptr< Card > >&& units);
+   void add_to_queue(const sptr< Card >& card);
+   void add_to_queue(std::vector< sptr< Card > >&& units);
 };
 
 #endif  // LORAINE_BOARD_H

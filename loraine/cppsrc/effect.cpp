@@ -9,7 +9,7 @@ Player EffectContainer::get_owner() const
 }
 void EffectContainer::operator()(Game& game, const events::AnyEvent& event)
 {
-   if(check_cast_condition(game, event)) {
+   if(check_cast_condition(game)) {
       if(m_effect_type != Type::AOE) {
          if(has_targets()) {
             // in case something has changed in between playing and casting the targets need to be
