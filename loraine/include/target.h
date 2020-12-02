@@ -4,7 +4,6 @@
 
 #include <utility>
 
-#include "cards/context_card.h"
 #include "rulesets.h"
 #include "types.h"
 
