@@ -19,8 +19,8 @@ class Agent {
    virtual sptr< AnyAction > decide_action(const State& state) = 0;
    virtual sptr< MulliganAction > decide_mulligan(
       State& state, std::vector< sptr< Card > > hand) = 0;
-   virtual std::vector< size_t > decide_targets(
-      std::vector< sptr< Card > > card_container, long n = -1) = 0;
+   virtual std::vector< Target > decide_targets(
+      std::vector< Target > targets, long n = -1) = 0;
 };
 
 #endif  // LORAINE_AGENT_H

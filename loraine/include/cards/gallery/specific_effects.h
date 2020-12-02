@@ -12,8 +12,7 @@ namespace effects {
 
 void fading_memories_cast(
    Game& game,
-   const events::CastEvent& event,
-   EffectContainer& source_container);
+   const events::CastEvent& event, Effect& source_container);
 
 
 }

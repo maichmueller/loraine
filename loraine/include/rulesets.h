@@ -42,9 +42,10 @@ enum class Location {
    CAMP,
    DECK,
    EVERYWHERE,
-   HAND
+   HAND,
+   SPELLSTACK
 };
 
-constexpr const static size_t n_locations = static_cast< size_t >(Location::HAND) + 1;
+constexpr const static size_t n_locations = static_cast< size_t >(Location::SPELLSTACK) + 1;
 
 #endif  // LORAINE_RULESETS_H

@@ -14,16 +14,17 @@ class Unit;
 class Landmark;
 
 class Board {
-   using Battlefield = std::array< std::optional< sptr< Unit > >, BATTLEFIELD_SIZE >;
-   using Camp = std::vector< sptr< Card > >;
-   using CampQueue = std::queue< sptr< Card > >;
+   using BfType = std::vector< sptr< Card > >;
+   using CampType = std::vector< sptr< Card > >;
+   using CampQueueType = std::queue< sptr< Card > >;
 
    // the container holding battling units
-   SymArr< Battlefield > m_battlefield;
+   SymArr< BfType > m_battlefield;
 
    // the container holding summoned/played, alive units
-   SymArr< Camp > m_camp;
-   SymArr< CampQueue > m_camp_queue;
+   SymArr< CampType > m_camp;
+   // the queue for newly summoned units
+   SymArr< CampQueueType > m_camp_queue;
 
    inline bool _check_boundaries(Player player, bool in_camp)
    {
@@ -38,33 +39,18 @@ class Board {
 
   public:
    Board() : m_battlefield(), m_camp(), m_camp_queue() { _reserve_space(); }
-   Board(SymArr< Battlefield > bfs, SymArr< Camp > camps, SymArr< CampQueue > queues)
+   Board(SymArr< BfType > bfs, SymArr< CampType > camps, SymArr< CampQueueType > queues)
        : m_battlefield(std::move(bfs)), m_camp(std::move(camps)), m_camp_queue(std::move(queues))
    {
       _reserve_space();
    }
 
-   [[nodiscard]] std::pair< bool, Camp::const_iterator > find_in_camp(
-      const sptr< Unit >& unit) const;
-   [[nodiscard]] std::pair< bool, Battlefield ::const_iterator > find_on_battlefield(
-      const sptr< Unit >& unit) const;
-
-   std::pair< bool, Camp::iterator > find_in_camp(const sptr< Unit >& unit);
-   std::pair< bool, Battlefield::iterator > find_on_battlefield(const sptr< Unit >& unit);
-
-   [[nodiscard]] size_t index_camp(const sptr< Unit >& unit) const;
-   [[nodiscard]] size_t index_battlefield(const sptr< Unit >& unit) const;
-
-   void remove_units(const std::vector< sptr< Unit > >& units);
-   void remove_units(Player player, std::vector< size_t > indices, bool in_camp);
-
    /*
     * Counts the units in the camp or the battlefield, subject to a filter on
-    * the unit ptr, if desired.
-    *
+    * the unit ptr, if needed.
     */
    [[nodiscard]] size_t count_units(
-      Player player, bool in_camp, const std::function< bool(const sptr< Unit >&) >& filter) const;
+      Player player, bool in_camp, const std::function< bool(const sptr< Card >&) >& filter) const;
 
    [[nodiscard]] size_t count_units(Player player, bool in_camp) const;
 

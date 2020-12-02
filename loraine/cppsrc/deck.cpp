@@ -9,8 +9,7 @@
 
 #include "rng_machine.h"
 
-std::vector< size_t > DeckContainer::_find_indices(
-   const std::function< bool(sptr< Card >) >& filter) const
+std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) const
 {
    std::vector< size_t > indices;
    for(auto i = 0ul; i < m_cards.size(); ++i) {
@@ -21,41 +20,28 @@ std::vector< size_t > DeckContainer::_find_indices(
    return indices;
 }
 
-std::vector< sptr< Card > > DeckContainer::find_spells(
-   const std::function< bool(sptr< Card >) >& filter)
+std::vector< sptr< Card > > CardContainer::find_spells(const FilterFunc& filter)
 {
-   return _find_cards_pop([&](const sptr< Card >& card) {
+   return _pop_cards([&](const sptr< Card >& card) {
       return card->get_card_type() == CardType::SPELL && filter(card);
    });
 }
 
-std::vector< sptr< Card > > DeckContainer::find_units(
-   const std::function< bool(sptr< Card >) >& filter)
+std::vector< sptr< Card > > CardContainer::find_units(const FilterFunc& filter)
 {
-   return _find_cards_pop([&](const sptr< Card >& card) {
+   return _pop_cards([&](const sptr< Card >& card) {
       return card->get_card_type() == CardType::UNIT && filter(card);
    });
 }
-sptr< Card > DeckContainer::draw_specific_card(const char * card_sid)
+sptr< Card > CardContainer::draw_specific_card(const char* card_sid)
 {
-   auto indices = _find_indices([&card_sid](const sptr< Card >& card) {
-      return card->get_id() == card_sid;
-   });
-   std::shuffle(indices.begin(), indices.end(), rng::rng_def_engine);
+   auto indices = _find_indices(
+      [&card_sid](const sptr< Card >& card) { return card->get_id() == card_sid; });
+   std::shuffle(indices.begin(), indices.end(), rng::get_engine());
    return draw_card_by_index(indices[0]);
 }
 
-sptr< Spell > DeckContainer::_to_spell(const sptr< Card >& card)
-{
-   return std::dynamic_pointer_cast< Spell >(card);
-}
-sptr< Unit > DeckContainer::_to_unit(const sptr< Card >& card)
-{
-   return std::dynamic_pointer_cast< Unit >(card);
-}
-auto DeckContainer::_find_cards_pop(
-   const std::function< bool(sptr< Card >) >& filter)
-   -> std::vector< sptr< Card > >
+auto CardContainer::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > popped_cards;
    auto indices = _find_indices(filter);
@@ -71,9 +57,7 @@ auto DeckContainer::_find_cards_pop(
    }
    return popped_cards;
 }
-auto DeckContainer::_find_cards_nopop(
-   const std::function< bool(sptr< Card >) >& filter) const
-   -> std::vector< sptr< Card > >
+auto CardContainer::_find_cards(const FilterFunc& filter) const -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > cards;
    auto indices = _find_indices(filter);
@@ -84,18 +68,16 @@ auto DeckContainer::_find_cards_nopop(
    return cards;
 }
 
-auto DeckContainer::find_cards(
-   const std::function< bool(sptr< Card >) >& filter, bool pop)
-   -> std::vector< sptr< Card > >
+auto CardContainer::find_cards(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card > >
 {
    if(pop) {
-      return _find_cards_pop(filter);
+      return _pop_cards(filter);
    } else {
-      return _find_cards_nopop(filter);
+      return _find_cards(filter);
    }
 }
 
-void DeckContainer::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
+void CardContainer::shuffle_into(const sptr< Card >& card, size_t top_n)
 {
    auto deck_size = m_cards.size();
    if(top_n > deck_size) {
@@ -103,23 +85,22 @@ void DeckContainer::shuffle_into_deck(const sptr< Card >& card, size_t top_n)
    }
    auto max = std::min(top_n, deck_size);
    std::uniform_int_distribution< size_t > dist(0, max);
-   auto pos = m_cards.begin() + (deck_size - dist(rng::rng_def_engine));
+   auto pos = m_cards.begin() + (deck_size - dist(rng::get_engine()));
    m_cards.insert(pos, card);
 }
 
-sptr< Card > DeckContainer::draw_card()
+sptr< Card > CardContainer::draw_card()
 {
    sptr< Card > card = m_cards.back();
    m_cards.pop_back();
    return card;
 }
-sptr< Card > DeckContainer::draw_card_by_index(size_t index)
+sptr< Card > CardContainer::draw_card_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
       std::stringstream msg;
-      msg << "Index " << std::to_string(index)
-                << " out of bounds for deck of size "
-                << std::to_string(deck_size) << ".";
+      msg << "Index " << std::to_string(index) << " out of bounds for deck of size "
+          << std::to_string(deck_size) << ".";
       throw std::logic_error(msg.str());
    }
    auto begin = std::begin(m_cards);

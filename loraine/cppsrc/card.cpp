@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "game.h"
+#include "cards/grant.h"
 #include "utils.h"
 
 Card::Card(
@@ -20,7 +21,7 @@ Card::Card(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< EffectContainer > > effects,
+   std::map< events::EventType, std::vector< Effect > > effects,
    Location loc,
    bool is_hidden)
     : m_name(name),
@@ -65,7 +66,7 @@ Card::Card(const Card& card)
       m_owner(card.get_owner())
 {
 }
-void Card::remove_effect(events::EventType e_type, const EffectContainer& effect)
+void Card::remove_effect(events::EventType e_type, const Effect& effect)
 {
    if(auto eff_vec_iter = std::find_if(
          m_effects.begin(), m_effects.end(), [&](const auto& val) { return val.first == e_type; });
@@ -81,7 +82,7 @@ void Card::remove_effect(events::EventType e_type, const EffectContainer& effect
       }
    }
 }
-void Card::add_effect(events::EventType e_type, EffectContainer effect)
+void Card::add_effect(events::EventType e_type, Effect effect)
 {
    // if the key is already found in the effects map, delete the previous
    // effect. This essentially implies we overwrite preexisting effects
@@ -90,7 +91,7 @@ void Card::add_effect(events::EventType e_type, EffectContainer effect)
    }
    m_effects[e_type].emplace_back(std::move(effect));
 }
-void Card::set_effect_vec(events::EventType e_type, std::vector< EffectContainer > effects)
+void Card::set_effect_vec(events::EventType e_type, std::vector< Effect > effects)
 {
    auto& curr_vec = m_effects[e_type];
    for(auto&& eff : effects) {
@@ -105,6 +106,18 @@ bool Card::check_play_tribute(const Game& game) const
       total_mana += state->get_spell_mana(this->get_owner());
    }
    return this->get_mana_cost() <= total_mana && _check_play_condition(game);
+}
+std::vector< sptr< Grant > > Card::get_all_grants() const
+{
+   return get_grants_temp() + get_grants();
+}
+void Card::store_grant(const sptr< Grant >& grant)
+{
+   if(grant->is_permanent()) {
+      m_grants.emplace_back(grant);
+   } else {
+      m_grants_temp.emplace_back(grant);
+   }
 }
 
 bool Unit::_check_play_condition(const Game& game) const
@@ -156,7 +169,7 @@ Unit::Unit(
    size_t power_ref,
    size_t health_ref,
    const std::initializer_list< enum Keyword >& keyword_list,
-   const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+   const std::map< events::EventType, std::vector< Effect > >& effects,
    CardType card_type,
    Location loc,
    bool hidden)
@@ -207,7 +220,7 @@ Spell::Spell(
    bool is_collectible,
    size_t mana_cost,
    const std::initializer_list< enum Keyword >& keyword_list,
-   const std::map< events::EventType, std::vector< EffectContainer > >& effects)
+   const std::map< events::EventType, std::vector< Effect > >& effects)
     : Card(
        owner,
        code,
@@ -244,7 +257,7 @@ Landmark::Landmark(
    bool is_collectible,
    size_t mana_cost,
    std::initializer_list< enum Keyword > keyword_list,
-   const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+   const std::map< events::EventType, std::vector< Effect > >& effects,
    Location loc,
    bool hidden)
     : Card(

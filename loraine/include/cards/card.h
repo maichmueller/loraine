@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "card_defs.h"
-#include "effect.h"
+#include "cards/effect.h"
 #include "event/event.h"
 #include "event/event_types.h"
 #include "types.h"
@@ -35,6 +35,13 @@ class Card {
       }
       return all_consumed;
    }
+   void store_grant(const sptr< Grant >& grant);
+   inline void store_grant(const std::vector< sptr< Grant > >& grants)
+   {
+      for(const auto& grant : grants) {
+         store_grant(grant);
+      }
+   }
 
    [[nodiscard]] inline auto get_name() const { return m_name; }
    [[nodiscard]] inline auto get_effect_desc() const { return m_effect_desc; }
@@ -54,14 +61,17 @@ class Card {
    [[nodiscard]] inline const auto& get_keywords() const { return m_keywords; }
    [[nodiscard]] inline auto& get_keywords() { return m_keywords; }
    [[nodiscard]] inline auto& get_effects_map() { return m_effects; }
+   [[nodiscard]] inline auto& get_effects(events::EventType etype) { return m_effects.at(etype); }
    [[nodiscard]] inline const auto& get_effects_map() const { return m_effects; }
    [[nodiscard]] inline auto get_id() const { return m_code; }
    [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
    [[nodiscard]] inline Player get_owner() const { return m_owner; }
    [[nodiscard]] inline auto& get_grants() const { return m_grants; }
+   [[nodiscard]] inline auto& get_grants() { return m_grants; }
    [[nodiscard]] inline auto& get_grants_temp() const { return m_grants_temp; }
    [[nodiscard]] inline auto& get_grants_temp() { return m_grants_temp; }
    [[nodiscard]] inline auto get_location() const { return m_location; }
+   [[nodiscard]] std::vector< sptr< Grant > > get_all_grants() const;
 
    // status requests
 
@@ -85,18 +95,33 @@ class Card {
    }
    inline void set_flag_hidden(bool value) { m_hidden = value; }
    inline void set_keywords(KeywordMap keywords) { m_keywords = keywords; }
+   inline void set_location(Location loc) { m_location = loc; }
 
    // manipulations
 
-   void set_effect_vec(events::EventType e_type, std::vector< EffectContainer > effects);
+   void set_effect_vec(events::EventType e_type, std::vector< Effect > effects);
 
-   void add_effect(events::EventType e_type, EffectContainer effect);
+   void add_effect(events::EventType e_type, Effect effect);
 
-   void remove_effect(events::EventType e_type, const EffectContainer& effect);
+   void remove_effect(events::EventType e_type, const Effect& effect);
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
       return m_keywords.at(static_cast< unsigned long >(kword));
+   }
+   [[nodiscard]] inline bool has_effect(events::EventType e_type) const
+   {
+      return m_effects.find(e_type) != m_effects.end();
+   }
+   [[nodiscard]] inline bool has_effect(events::EventType e_type, const Effect& effect) const
+   {
+      auto found_effects = m_effects.find(e_type);
+      bool found = found_effects != m_effects.end();
+      if(found) {
+         const auto& effects = found_effects->second;
+         return std::find(effects.begin(), effects.end(), effect) != effects.end();
+      }
+      return false;
    }
    inline void add_keyword(Keyword kword)
    {
@@ -144,7 +169,7 @@ class Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      std::map< events::EventType, std::vector< EffectContainer > > effects,
+      std::map< events::EventType, std::vector< Effect > > effects,
       Location loc = Location::DECK,
       bool is_hidden = true);
 
@@ -210,7 +235,7 @@ class Card {
    Location m_location;
 
    // all possible effects
-   std::map< events::EventType, std::vector< EffectContainer > > m_effects;
+   std::map< events::EventType, std::vector< Effect > > m_effects;
 
    // all permanent grants
    std::vector< sptr< Grant > > m_grants;
@@ -302,7 +327,7 @@ class Unit: public Card {
       size_t power_ref,
       size_t health_ref,
       const std::initializer_list< Keyword >& keyword_list,
-      const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+      const std::map< events::EventType, std::vector< Effect > >& effects,
       CardType card_type = CardType::UNIT,
       Location loc = Location::DECK,
       bool hidden = true);
@@ -330,7 +355,7 @@ class Spell: public Card {
       bool is_collectible,
       size_t mana_cost,
       const std::initializer_list< Keyword >& keyword_list,
-      const std::map< events::EventType, std::vector< EffectContainer > >& effects);
+      const std::map< events::EventType, std::vector< Effect > >& effects);
 
    [[nodiscard]] bool is_spell() const override { return true; }
 };
@@ -349,7 +374,7 @@ class Landmark: public Card {
       bool is_collectible,
       size_t mana_cost,
       std::initializer_list< Keyword > keyword_list,
-      const std::map< events::EventType, std::vector< EffectContainer > >& effects,
+      const std::map< events::EventType, std::vector< Effect > >& effects,
       Location loc = Location::DECK,
       bool hidden = true);
 

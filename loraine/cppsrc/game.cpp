@@ -1,6 +1,8 @@
 
 #include "game.h"
 
+#include <cards/algorithms.h>
+
 #include <utility>
 
 #include "cards/grant.h"
@@ -9,14 +11,15 @@
 
 void Game::_move_units(const std::vector< size_t >& positions, Player player, bool to_bf)
 {
-   auto min_target_pos = m_board->count_units(player, not to_bf);
-   auto& battlefield = m_board->get_battlefield(player);
-   auto& camp = m_board->get_camp(player);
+   auto min_target_pos = m_state->m_board->count_units(player, not to_bf);
+   auto& battlefield = m_state->m_board->get_battlefield(player);
+   auto& camp = m_state->m_board->get_camp(player);
    if(to_bf) {
       for(size_t i = 0; i < positions.size(); ++i) {
          size_t source_pos = positions.at(i);
          size_t target_pos = i + min_target_pos;
          auto& unit = camp.at(source_pos);
+         unit->set_location(Location::BATTLEFIELD);
          battlefield.at(target_pos) = to_unit(unit);
          camp.erase(camp.begin() + source_pos);
       }
@@ -24,43 +27,72 @@ void Game::_move_units(const std::vector< size_t >& positions, Player player, bo
       for(size_t i = 0; i < positions.size(); ++i) {
          size_t source_pos = positions.at(i);
          size_t target_pos = i + min_target_pos;
-         auto& opt_unit = battlefield.at(source_pos);
-         camp.at(target_pos) = opt_unit.value();
-         opt_unit.reset();
+         auto& unit = battlefield.at(source_pos);
+         throw_if_no_value(unit);
+         unit->set_location(Location::CAMP);
+         camp.at(target_pos) = unit;
+         reset(unit);
       }
    }
 }
 void Game::_move_units_opp(const std::map< size_t, size_t >& positions, Player player, bool to_bf)
 {
-   auto* battlefield = &(m_board->get_battlefield(player));
-   decltype(battlefield) battlefield_opp_ptr;
+   auto& battlefield = m_state->m_board->get_battlefield(player);
+   auto& camp = m_state->m_board->get_camp(player);
 
-   auto& camp = m_board->get_camp(player);
-
-   std::function< void(size_t, size_t) > switch_lambda;
+   std::function< void(size_t, size_t) > move_lambda;
    if(to_bf) {
-      battlefield_opp_ptr = &m_board->get_battlefield(Player(1 - player));
-      switch_lambda = [&](size_t source_pos, size_t target_pos) {
+      auto& bf_opp = m_state->m_board->get_battlefield(Player(1 - player));
+      move_lambda = [&camp, &battlefield, bf_opp](size_t source_pos, size_t target_pos) {
          auto& unit = camp.at(source_pos);
-         if(not unit->has_keyword(Keyword::VULNERABLE)
-            && not battlefield_opp_ptr->at(target_pos).value()->has_keyword(Keyword::CHALLENGER)) {
-            throw std::invalid_argument(
+         const auto& unit_opp = bf_opp.at(target_pos);
+         throw_if_no_value(unit_opp);
+         if(not unit->has_keyword(Keyword::CHALLENGER)
+            && not unit_opp->has_keyword(Keyword::VULNERABLE)) {
+            throw std::logic_error(
                "A unit was dragged which was neither VULNERABLE nor had been challenged by a "
                "CHALLENGER.");
          }
-         battlefield->at(target_pos) = to_unit(unit);
-         camp.erase(camp.begin() + source_pos);
+         // move the unit to the battlefield now
+         unit->set_location(Location::BATTLEFIELD);
+         battlefield.at(target_pos) = to_unit(unit);
+         // remove the moved unit from the camp
+         auto camp_iter = camp.begin();
+         std::advance(camp_iter, source_pos);
+         camp.erase(camp_iter);
       };
    } else {
-      switch_lambda = [&](size_t source_pos, size_t target_pos) {
-         auto& opt_unit = battlefield->at(source_pos);
-         camp.at(target_pos) = opt_unit.value();
-         opt_unit.reset();
+      move_lambda = [&](size_t source_pos, size_t target_pos) {
+         auto& unit = battlefield.at(source_pos);
+         throw_if_no_value(unit);
+         unit->set_location(Location::CAMP);
+         camp.at(target_pos) = unit;
+         reset(unit);
       };
    }
 
    for(const auto& pos : positions) {
-      switch_lambda(pos.first, pos.second);
+      move_lambda(pos.first, pos.second);
+   }
+}
+
+void Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
+{
+   auto hand = m_state->get_hand(spell->get_owner());
+   if(to_stack) {
+      hand.erase(std::find(hand.begin(), hand.end(), spell));
+      m_state->get_spell_prestack().emplace_back(spell);
+      spell->set_location(Location::SPELLSTACK);
+   } else {
+      for(auto& effect : spell->get_effects(events::EventType::CAST)) {
+         if(effect.get_effect_type() != Effect::Type::SIMPLE) {
+            dynamic_cast< TargetEffect& >(effect).reset_targets();
+         }
+      }
+      auto& spell_stack = m_state->get_spell_prestack();
+      spell_stack.erase(std::find(spell_stack.begin(), spell_stack.end(), spell));
+      hand.emplace_back(spell);
+      spell->set_location(Location::HAND);
    }
 }
 
@@ -68,12 +100,12 @@ bool Game::run_game()
 {
    // decide the player who starts attacking
    Player starting_player = Player(
-      std::uniform_int_distribution< size_t >(0, 1)(rng::rng_def_engine));
+      std::uniform_int_distribution< size_t >(0, 1)(rng::get_engine()));
    m_state->set_starting_player(starting_player);
 
    // draw the starting cards for each player and let them _mulligan
-   auto hand_blue = _draw_initial_hand(BLUE);
-   auto hand_red = _draw_initial_hand(RED);
+   auto hand_blue = _draw_n_cards(BLUE, INITIAL_HAND_SIZE);
+   auto hand_red = _draw_n_cards(RED, INITIAL_HAND_SIZE);
    _mulligan(hand_blue, hand_red);
 
    // the actual run of the game. We play until the state says it is in a
@@ -81,7 +113,7 @@ bool Game::run_game()
 
    while(true) {
       // ask current agent for action
-      Player turn = m_state->get_turn();
+      Player turn = m_state->get_active_player();
       auto action = m_agents[turn]->decide_action(*m_state);
 
       if(_do_action(action)) {
@@ -121,7 +153,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                   flip_initiative = false;
                }
             } else {
-               play(to_unit(card), cast_action->get_replace_idx());
+               play(card, cast_action->get_replace_idx());
             }
          }
 
@@ -139,9 +171,22 @@ bool Game::_do_action(const sptr< AnyAction >& action)
 
          case MOVE_SPELL: {
             auto cast_action = std::dynamic_pointer_cast< MoveSpellAction >(action);
-            auto player = cast_action->get_player();
-            auto round = cast_action->get_round();
             auto spell = cast_action->get_spell();
+            _move_spell(spell, cast_action->towards_stack());
+            for(auto& effect : spell->get_effects(events::EventType::CAST)) {
+               using EffectType = Effect::Type;
+               auto effect_type = effect.get_effect_type();
+               if(effect_type != EffectType::SIMPLE) {
+                  auto& targ_effect = dynamic_cast< TargetEffect& >(effect);
+                  auto targets = targ_effect.find_available_targets(*m_state, spell->get_owner());
+                  if(effect_type == EffectType::TARGETED) {
+                     targets = m_agents[m_state->get_active_player()]->decide_targets(
+                        targets, targ_effect.get_targeter()->get_nr_targets());
+                  }
+                  targ_effect.set_targets(targets);
+               }
+            }
+
             flip_initiative = false;
          }
 
@@ -150,7 +195,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
             auto player = cast_action->get_player();
             auto opt_spells = cast_action->get_potential_spells();
 
-            if(opt_spells.has_value()) {
+            if(has_value(opt_spells)) {
                for(const auto& spell : opt_spells.value()) {
                   play(spell);
                }
@@ -190,38 +235,38 @@ void Game::_activate_battlemode(Player attack_player)
 {
    m_battle_mode = true;
    m_state->set_attacker(attack_player);
-   auto& bf = m_board->get_battlefield(attack_player);
-   auto check_att_effects = [&](const sptr< Unit >& unit) {
+   auto& bf = m_state->m_board->get_battlefield(attack_player);
+   auto check_att_effects = [&](const sptr< Card >& unit) {
       if(unit->has_keyword(Keyword::ATTACK)) {
          _trigger_event(events::AttackEvent(attack_player, unit));
       }
    };
-   auto check_supp_effects = [&](const sptr< Unit >& unit, const sptr< Unit >& next_unit) {
+   auto check_supp_effects = [&](const sptr< Card >& unit, const sptr< Card >& next_unit) {
       if(unit->has_keyword(Keyword::SUPPORT)) {
          _trigger_event(events::SupportEvent(attack_player, unit, Target(next_unit)));
       }
    };
 
    for(int i = 0; i < BATTLEFIELD_SIZE - 1; ++i) {
-      if(bf[i].has_value()) {
-         const auto& attack_unit = bf[i].value();
+      if(has_value(bf[i])) {
+         const auto& attack_unit = bf[i];
          check_att_effects(attack_unit);
-         if(auto next_unit = bf[i + 1]; next_unit.has_value()) {
-            check_supp_effects(attack_unit, next_unit.value());
+         if(auto next_unit = bf[i + 1]; has_value(next_unit)) {
+            check_supp_effects(attack_unit, next_unit);
          }
       }
    }
-   if(auto last_att = bf[BATTLEFIELD_SIZE]; last_att.has_value()) {
-      check_att_effects(last_att.value());
+   if(auto last_att = bf[BATTLEFIELD_SIZE]; has_value(last_att)) {
+      check_att_effects(last_att);
    }
 
    // remove the attack token of the attacker, as it is now used up,
    // unless all units were scouts (for the first attack)
    bool scout_attack = true;
    if(! m_state->get_scout_token(attack_player)) {
-      for(auto opt_unit : m_board->get_battlefield(attack_player)) {
-         if(opt_unit.has_value()) {
-            if(! opt_unit.value()->has_keyword(Keyword::SCOUT)) {
+      for(auto opt_unit : m_state->m_board->get_battlefield(attack_player)) {
+         if(has_value(opt_unit)) {
+            if(not opt_unit->has_keyword(Keyword::SCOUT)) {
                scout_attack = false;
                break;
             }
@@ -264,21 +309,21 @@ void Game::_resolve_battle()
 {
    auto attacker = m_state->get_attacker().value();
    auto defender = Player(1 - attacker);
-   auto& battlefield_att = m_board->get_battlefield(attacker);
-   auto& battlefield_def = m_board->get_battlefield(defender);
-   for(auto pos = 0U; pos < m_board->count_units(attacker, false); ++pos) {
+   auto& battlefield_att = m_state->m_board->get_battlefield(attacker);
+   auto& battlefield_def = m_state->m_board->get_battlefield(defender);
+   for(auto pos = 0U; pos < m_state->m_board->count_units(attacker, false); ++pos) {
       auto unit_att_opt = battlefield_att.at(pos);
 
-      if(unit_att_opt.has_value()) {
+      if(has_value(unit_att_opt)) {
          // if this spot on the battlefield sees an actual unit posted for
          // attack we need to make it strike
-         auto unit_att = std::dynamic_pointer_cast< Unit >(unit_att_opt.value());
+         auto unit_att = to_unit(unit_att_opt);
 
          auto unit_def_opt = battlefield_def.at(pos);
-         if(unit_def_opt.has_value()) {
+         if(has_value(unit_def_opt)) {
             // if there is a defender posted on the same spot of the
             // attacker, it needs to battle the attacker
-            auto unit_def = std::dynamic_pointer_cast< Unit >(unit_def_opt.value());
+            auto unit_def = to_unit(unit_def_opt);
 
             if(unit_def->is_alive()) {
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
@@ -360,7 +405,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->add_to_graveyard(killed_unit);
    }
-   remove(killed_unit);
+   _remove(killed_unit);
 }
 
 void Game::nexus_strike(
@@ -376,9 +421,15 @@ void Game::nexus_strike(
    }
 }
 
-std::vector< sptr< Card > > Game::_draw_initial_hand(Player player)
+std::vector< sptr< Card > > Game::_draw_n_cards(Player player, int n)
 {
-   return m_state->draw_n_cards(player, INITIAL_HAND_SIZE);
+   std::vector< sptr< Card > > hand(n);
+   auto& deck = m_state->get_deck(player);
+   choose_inplace(deck, n);
+   for(int i = 0; i < n; ++i) {
+      hand[i] = deck[i];
+   }
+   return hand;
 }
 void Game::_mulligan(
    const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red)
@@ -399,11 +450,12 @@ void Game::_mulligan(
       auto hand_size = curr_hand.size();
       for(auto i = 0U; i < hand_size; ++i) {
          if(replace_for_p.at(i)) {
-            m_state->shuffle_card_into_deck(curr_hand.at(i), Player(p));
+            shuffle_card_into_deck(curr_hand.at(i), Player(p));
             nr_cards_to_replace += 1;
          }
       }
-      auto new_cards = m_state->draw_n_cards(Player(p), nr_cards_to_replace);
+
+      auto new_cards = _draw_n_cards(Player(p), nr_cards_to_replace);
       for(size_t i = 0; i < hand_size; ++i) {
          if(replace_for_p.at(i)) {
             new_hand.at(i) = new_cards.back();
@@ -418,7 +470,7 @@ void Game::_mulligan(
 void Game::_end_round()
 {
    // first let all effects trigger that state an effect with the "Round End" keyword
-   auto active_player = m_state->get_turn();
+   auto active_player = m_state->get_active_player();
    auto passive_player = Player(1 - active_player);
    _trigger_event(
       events::RoundEndEvent(active_player, std::make_shared< long >(m_state->get_round())));
@@ -426,7 +478,7 @@ void Game::_end_round()
    SymArr< std::vector< sptr< Unit > > > regenerators;
    auto end_round_procedure = [&](Player player) {
       // kill ephemeral units
-      for(auto& unit : m_board->get_camp(player)) {
+      for(auto& unit : m_state->m_board->get_camp(player)) {
          if(unit->has_keyword(Keyword::EPHEMERAL)) {
             kill_unit(player, to_unit(unit));
          }
@@ -434,11 +486,11 @@ void Game::_end_round()
          // undo temporary buffs/nerfs and possibly heal the units if applicable
          auto temp_grants = unit->get_grants_temp();
          for(auto&& grant : temp_grants) {
-            grant->undo();
+            grant->undo(unit);
          }
          temp_grants.clear();
 
-            // REGENERATION units will regenerate after removing grants etc.
+         // REGENERATION units will regenerate after removing grants etc.
          if(unit->has_keyword(Keyword::REGENERATION)) {
             regenerators[player].emplace_back(to_unit(unit));
          }
@@ -478,7 +530,8 @@ void Game::_start_round()
    m_state->set_scout_token(RED, false);
 
    // the round start event is to be triggered by the player that also ended the previous round.
-   _trigger_event(events::RoundStartEvent(m_state->get_turn(), std::make_shared< long >(round)));
+   _trigger_event(
+      events::RoundStartEvent(m_state->get_active_player(), std::make_shared< long >(round)));
    for(int player = BLUE; player != RED; ++player) {
       incr_managems(Player(player));
    }
@@ -504,19 +557,19 @@ void Game::retreat_to_camp(Player player)
 {
    process_camp_queue(player);
 
-   size_t camp_units_count = m_board->count_units(player, true);
-   size_t bf_units_count = m_board->count_units(player, false);
+   size_t camp_units_count = m_state->m_board->count_units(player, true);
+   size_t bf_units_count = m_state->m_board->count_units(player, false);
    // obliterate any battling units which won't find space on the board
-   auto& bf = m_board->get_battlefield(player);
+   auto& bf = m_state->m_board->get_battlefield(player);
    if(auto nr_units_to_obliterate = bf_units_count + camp_units_count - CAMP_SIZE;
       nr_units_to_obliterate > 0) {
       size_t last_deleted_idx = BATTLEFIELD_SIZE;
       for(size_t i = 0; i < nr_units_to_obliterate; ++i) {
          for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
-            if(auto opt_unit = bf.at(idx); opt_unit.has_value()) {
-               auto unit_to_obliterate = opt_unit.value();
+            if(auto opt_unit = bf.at(idx); has_value(opt_unit)) {
+               auto unit_to_obliterate = opt_unit;
                obliterate(unit_to_obliterate);
-               opt_unit.reset();
+               reset(opt_unit);
                last_deleted_idx = idx;
             }
          }
@@ -524,50 +577,50 @@ void Game::retreat_to_camp(Player player)
    }
    // now move back the battlefield units
    size_t curr_idx = camp_units_count - 1;
-   auto& camp = m_board->get_camp(player);
+   auto& camp = m_state->m_board->get_camp(player);
    for(auto& opt_unit : bf) {
-      if(opt_unit.has_value()) {
-         camp.at(curr_idx) = opt_unit.value();
-         opt_unit.reset();
+      if(has_value(opt_unit)) {
+         camp.at(curr_idx) = opt_unit;
+         reset(opt_unit);
       }
       curr_idx += 1;
    }
 }
-void Game::play(const sptr< Unit >& unit, std::optional< size_t > replaces)
+void Game::play(const sptr< Card >& card, std::optional< size_t > replaces)
 {
-   Player player = unit->get_owner();
-   spend_mana(player, unit->get_mana_cost(), false);
-   auto& camp = m_board->get_camp(player);
-   uncover_card(unit);
+   Player player = card->get_owner();
+   spend_mana(player, card->get_mana_cost(), false);
+   auto& camp = m_state->m_board->get_camp(player);
+   uncover_card(card);
    if(replaces.has_value()) {
       auto& unit_to_replace = camp.at(replaces.value());
-      remove(unit_to_replace);
-      camp.at(replaces.value()) = unit;
+      _remove(unit_to_replace);
+      camp.at(replaces.value()) = card;
    } else {
-      camp.at(m_board->count_units(player, true) - 1) = unit;
+      camp.at(m_state->m_board->count_units(player, true) - 1) = card;
    }
-   m_event_listener.register_card(unit);
-   play_event_triggers(unit, player);
+   card->set_location(Location::CAMP);
+   m_event_listener.register_card(card);
+   _play_event_triggers(card, player);
 }
-void Game::play(const sptr< Spell >& spell)
+
+void Game::play_prestack()
 {
-   Player player = spell->get_owner();
-   for(auto& effect : spell->get_effects_map().at(events::EventType::CAST)) {
-      effect.choose_targets(*m_state, *(get_agent(m_state->get_turn())), player);
+   auto& prestack = m_state->get_spell_prestack();
+   for(const auto& spell : reverse(prestack)) {
+      play(spell);
    }
-   spend_mana(player, spell->get_mana_cost(), true);
-   m_state->get_spell_stack().emplace_back(spell);
-   play_event_triggers(spell, player);
+   prestack.clear();
 }
-void Game::play_event_triggers(const sptr< Card >& card, const Player& player)
+void Game::_play_event_triggers(const sptr< Card >& card, const Player& player)
 {
-   _trigger_event(events::PlayEvent(player, card));
-   if(check_daybreak(player)) {
+   if(card->has_effect(events::EventType::DAYBREAK) && check_daybreak(player)) {
       _trigger_event(events::DaybreakEvent(player, card));
    }
-   if(check_nightfall(player)) {
+   if(card->has_effect(events::EventType::NIGHTFALL) && check_nightfall(player)) {
       _trigger_event(events::NightfallEvent(player, card));
    }
+   _trigger_event(events::PlayEvent(player, card));
 }
 void Game::cast(const sptr< Spell >& spell)
 {
@@ -583,13 +636,14 @@ void Game::process_camp_queue(Player player)
    // spell), then any unit of the battlefield as counted from the end, which is
    // no longer fitting into the camp, is obliterated (this is handled in
    // the method 'retreat_to_camp').
-   size_t camp_units_count = m_board->count_units(player, true);
-   size_t bf_units_count = m_board->count_units(player, false, [](const sptr< Unit >& unit) {
-      return ! unit->has_keyword(Keyword::EPHEMERAL);
-   });
-   auto& queue = m_board->get_camp_queue(player);
+   size_t camp_units_count = m_state->m_board->count_units(player, true);
+   size_t bf_units_count = m_state->m_board->count_units(
+      player, false, [](const sptr< Card >& unit) {
+         return ! unit->has_keyword(Keyword::EPHEMERAL);
+      });
+   auto& queue = m_state->m_board->get_camp_queue(player);
    size_t units_in_queue = queue.size();
-   auto& camp = m_board->get_camp(player);
+   auto& camp = m_state->m_board->get_camp(player);
    if(auto rem_slots = CAMP_SIZE - camp_units_count - bf_units_count; rem_slots > 0) {
       size_t curr_idx = camp_units_count - 1;
       for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots); ++counter) {
@@ -613,10 +667,11 @@ void Game::spend_mana(Player player, size_t cost, bool spell_mana)
 }
 void Game::draw_card(Player player)
 {
-   auto* deck = m_state->get_deck(player);
-   auto card_drawn = deck->draw_card();
-   if(auto* hand = m_state->get_hand(player); hand->size() < HAND_CARDS_LIMIT) {
-      hand->emplace_back(card_drawn);
+   auto deck = m_state->get_deck(player);
+   auto card_drawn = deck.back();
+   deck.pop_back();
+   if(auto hand = m_state->get_hand(player); hand.size() < HAND_CARDS_LIMIT) {
+      hand.emplace_back(card_drawn);
       _trigger_event(events::DrawCardEvent(player, card_drawn));
    } else {
       obliterate(card_drawn);
@@ -625,7 +680,7 @@ void Game::draw_card(Player player)
 
 void Game::summon(const sptr< Unit >& unit)
 {
-   m_board->add_to_queue(unit);
+   m_state->m_board->add_to_queue(unit);
    Player player = unit->get_owner();
    process_camp_queue(player);
    m_event_listener.register_card(unit);
@@ -634,50 +689,38 @@ void Game::summon(const sptr< Unit >& unit)
 void Game::summon_to_battlefield(const sptr< Unit >& unit)
 {
    Player player = unit->get_owner();
-   auto bf = m_board->get_battlefield(player);
-   auto curr_unit_count = m_board->count_units(player, false);
+   auto bf = m_state->m_board->get_battlefield(player);
+   auto curr_unit_count = m_state->m_board->count_units(player, false);
    if(curr_unit_count < BATTLEFIELD_SIZE) {
       auto index_to_place = std::max(static_cast< long >(curr_unit_count - 1), 0L);
       bf.at(index_to_place) = unit;
       m_event_listener.register_card(unit);
       _trigger_event(events::SummonEvent(player, unit));
    } else {
-      remove(unit);
+      _remove(unit);
    }
 }
 void Game::summon_exact_copy(const sptr< Unit >& unit)
 {
    Player player = unit->get_owner();
    auto copied_unit = std::make_shared< Unit >(*unit);
-   m_board->add_to_queue(unit);
+   m_state->m_board->add_to_queue(unit);
    process_camp_queue(player);
-   copy_grant(get_all_grants(unit), copied_unit);
+   _copy_grants(unit->get_all_grants(), copied_unit);
    m_event_listener.register_card(copied_unit);
    _trigger_event(events::SummonEvent(player, unit));
 }
-std::vector< sptr< Grant > > Game::get_all_grants(const sptr< Card >& card) const
-{
-   auto uuid = card->get_uuid();
-   std::vector< sptr< Grant > > grants;
-   for(const auto& grant : m_grants_temp.at(uuid)) {
-      grants.emplace_back(grant);
-   }
-   for(const auto& grant : m_grants_perm.at(uuid)) {
-      grants.emplace_back(grant);
-   }
-   return grants;
-}
 
 std::vector< Target > Game::filter_targets_bf(
-   const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
-      auto bf = m_board->get_battlefield(player);
+      auto bf = m_state->m_board->get_battlefield(player);
       for(size_t i = 0; i < BATTLEFIELD_SIZE; ++i) {
-         if(const auto& opt_unit = bf.at(i); opt_unit.has_value() && filter(opt_unit.value())) {
-            targets.emplace_back(Target(opt_unit.value()));
+         if(const auto& opt_unit = bf.at(i); has_value(opt_unit) && filter(Target(opt_unit))) {
+            targets.emplace_back(Target(opt_unit));
          }
       }
    };
@@ -691,14 +734,14 @@ std::vector< Target > Game::filter_targets_bf(
 }
 
 std::vector< Target > Game::filter_targets_camp(
-   const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
-      auto camp = m_board->get_camp(player);
+      auto camp = m_state->m_board->get_camp(player);
       for(size_t i = 0; i < camp.size(); ++i) {
-         if(auto unit = camp.at(i); filter(to_unit(unit))) {
+         if(auto unit = camp.at(i); filter(Target(unit))) {
             targets.emplace_back(Target(unit));
          }
       }
@@ -713,14 +756,14 @@ std::vector< Target > Game::filter_targets_camp(
 }
 
 std::vector< Target > Game::filter_targets_hand(
-   const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
-      auto* hand = m_state->get_hand(player);
-      for(size_t i = 0; i < hand->size(); ++i) {
-         if(auto card = hand->at(i); filter(card)) {
+      auto hand = m_state->get_hand(player);
+      for(size_t i = 0; i < hand.size(); ++i) {
+         if(auto card = hand.at(i); filter(Target(card))) {
             targets.emplace_back(Target(card));
          }
       }
@@ -734,14 +777,14 @@ std::vector< Target > Game::filter_targets_hand(
    return targets;
 }
 std::vector< Target > Game::filter_targets_deck(
-   const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
    auto filter_lambda = [&](Player player) {
-      auto* deck = m_state->get_deck(player);
-      for(size_t i = 0; i < deck->size(); ++i) {
-         if(auto card = deck->at(i); filter(card)) {
+      auto deck = m_state->get_deck(player);
+      for(size_t i = 0; i < deck.size(); ++i) {
+         if(auto card = deck.at(i); filter(Target(card))) {
             targets.emplace_back(Target(card));
          }
       }
@@ -756,7 +799,7 @@ std::vector< Target > Game::filter_targets_deck(
 }
 
 std::vector< Target > Game::filter_targets_board(
-   const std::function< bool(const sptr< Unit >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
@@ -771,7 +814,7 @@ std::vector< Target > Game::filter_targets_board(
 }
 
 std::vector< Target > Game::filter_targets_everywhere(
-   const std::function< bool(const sptr< Card >&) >& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Player > opt_player)
 {
    std::vector< Target > targets;
 
@@ -820,15 +863,20 @@ bool Game::check_nightfall(Player player) const
              })
           != history.end();
 }
-void Game::remove(const sptr< Card >& card)
+void Game::_remove(const sptr< Card >& card)
 {
    m_event_listener.unregister_card(card);
-   auto uuid = card->get_uuid();
-   m_grants_perm.erase(uuid);
-   m_grants_temp.erase(uuid);
-   if(card->is_unit() || card->is_landmark()) {
-      m_board->remove_units({to_unit(card)});
+   if(auto loc = card->get_location(); loc == Location::CAMP) {
+      algo::remove_element(m_state->m_board->get_camp(card->get_owner()), card);
+   } else if(loc == Location::BATTLEFIELD) {
+      algo::remove_element(m_state->m_board->get_battlefield(card->get_owner()), card);
+   } else if(loc == Location::HAND) {
+      algo::remove_element(m_state->get_hand(card->get_owner()), card);
    }
+}
+void Game::_copy_grants(
+   const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit)
+{
 }
 
 // void Game::level_up_champion(sptr<Champion> champ)

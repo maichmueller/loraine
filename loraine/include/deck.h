@@ -5,25 +5,39 @@
 #ifndef LORAINE_DECK_H
 #define LORAINE_DECK_H
 
+
 #include <functional>
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "cards/card.h"
 #include "types.h"
 
-/*
- * Deck requirements:
- * - Pop efficiently at end
- * - draw any category of cards individually (spell, champion, follower,...)
- * -
- */
-
-class DeckContainer {
+class CardContainer {
   public:
-   [[nodiscard]] inline auto& get_cards() { return m_cards; }
+   using container = std::vector< sptr< Card > >;
+   using FilterFunc = std::function< bool(const sptr< Card >&) >;
 
+   using value_type = typename container::value_type;
+   using pointer = typename container::pointer;
+   using reference = typename container::reference;
+   using const_reference = typename container::const_reference;
+   using iterator = typename container::iterator;
+   using const_iterator = typename container::const_iterator;
+   using reverse_iterator = typename container::reverse_iterator;
+   using const_reverse_iterator = typename container::const_reverse_iterator;
+   using size_type = typename container::size_type;
+   using difference_type = typename container::difference_type;
+
+   CardContainer() : m_cards() {}
+   CardContainer(std::initializer_list<value_type> cards): m_cards(cards) {}
+   explicit CardContainer(container cards): m_cards(std::move(cards)) {}
+   explicit CardContainer(container&& cards): m_cards(std::move(cards)) {}
+
+   [[nodiscard]] inline auto& get_cards() { return m_cards; }
    [[nodiscard]] inline const auto& get_cards() const { return m_cards; }
+
    void set_cards(std::vector< sptr< Card > > cards) { m_cards = std::move(cards); }
 
    /*
@@ -31,29 +45,28 @@ class DeckContainer {
     * as decided by the filter.
     * This does pop the filtered cards.
     */
-   std::vector< sptr< Card > > find_spells(const std::function< bool(sptr< Card >) >& filter);
+   std::vector< sptr< Card > > find_spells(const FilterFunc& filter);
 
    /*
     * Method to filter out specific units
     * as decided by the filter
     * This does pop the filtered cards.
     */
-   std::vector< sptr< Card > > find_units(const std::function< bool(sptr< Card >) >& filter);
+   std::vector< sptr< Card > > find_units(const FilterFunc& filter);
 
    /*
     * Method to filter out specific spells
     * as decided by the filter.
     * This CAN pop the filtered cards.
     */
-   std::vector< sptr< Card > > find_cards(
-      const std::function< bool(sptr< Card >) >& filter, bool pop);
+   std::vector< sptr< Card > > find_cards(const FilterFunc& filter, bool pop);
 
    /*
-    * Shuffle a card into the top n cards of the deck.
+    * Shuffle a card into the top n cards of the container.
     * If top_n == 0 (default), the card is shuffled randomly
     * into the deck without restriction on depth.
     */
-   void shuffle_into_deck(const sptr< Card >& card, size_t top_n = 0);
+   void shuffle_into(const sptr< Card >& card, size_t top_n = 0);
 
    /*
     * Draw the top card
@@ -83,19 +96,19 @@ class DeckContainer {
   private:
    // vectors of sptrs should be fastest when cache locality is considered
    // (also for insertion operations)
-   std::vector< sptr< Card > > m_cards;
+   container m_cards;
 
    /*
     * Method to filter the indices of specific cards
     * as decided by the filter.
     * This does NOT pop the filtered indices.
     */
-   std::vector< size_t > _find_indices(const std::function< bool(sptr< Card >) >& filter) const;
+   [[nodiscard]] std::vector< size_t > _find_indices(const FilterFunc& filter) const;
 
-   std::vector< sptr< Card > > _find_cards_pop(const std::function< bool(sptr< Card >) >& filter);
+   std::vector< sptr< Card > > _pop_cards(const FilterFunc& filter);
 
-   std::vector< sptr< Card > > _find_cards_nopop(
-      const std::function< bool(sptr< Card >) >& filter) const;
+   [[nodiscard]] std::vector< sptr< Card > > _find_cards(
+      const FilterFunc& filter) const;
 };
 
 #endif  // LORAINE_DECK_H

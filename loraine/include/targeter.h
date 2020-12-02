@@ -7,7 +7,6 @@
 #include "cards/filter.h"
 #include "target.h"
 
-class Agent;
 class State;
 
 class BaseTargeter {
@@ -19,7 +18,7 @@ class BaseTargeter {
    };
 
    BaseTargeter(
-      Type type, Affiliation affiliation, Location range, size_t n_targets, Filter filter = {})
+      Type type, Affiliation affiliation, Location range, long n_targets, Filter filter = {})
        : m_affiliation(affiliation),
          m_type(type),
          m_range(range),
@@ -28,9 +27,9 @@ class BaseTargeter {
    {
    }
 
-   std::vector< Target > operator()(const State& state, Agent& agent, Player player)
+   std::vector< Target > operator()(const State& state, Player player)
    {
-      return _target(state, agent, player);
+      return _target(state, player);
    }
 
    void filter_targets(std::vector< Target >& targets)
@@ -53,10 +52,10 @@ class BaseTargeter {
    Type m_type;
    Affiliation m_affiliation;
    Location m_range;
-   size_t m_nr_targets;
+   long m_nr_targets;
    Filter m_filter;
 
-   virtual std::vector< Target > _target(const State& state, Agent& agent, Player player) = 0;
+   virtual std::vector< Target > _target(const State& state, Player player) = 0;
 };
 
 class NoneTargeter: public BaseTargeter {
@@ -65,7 +64,7 @@ class NoneTargeter: public BaseTargeter {
 
   private:
    std::vector< Target > _target(
-      const State& /*state*/, Agent& /*agent*/, Player /*player*/) override
+      const State& /*state*/, Player /*player*/) override
    {
       return std::vector< Target >();
    }
@@ -78,7 +77,7 @@ class EnemyCampManTargeter: public BaseTargeter {
    }
 
   private:
-   std::vector< Target > _target(const State& state, Agent& agent, Player acting_player) override;
+   std::vector< Target > _target(const State& state, Player acting_player) override;
 };
 
 #endif  // LORAINE_TARGETER_H
