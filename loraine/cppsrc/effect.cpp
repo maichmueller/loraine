@@ -3,6 +3,7 @@
 
 #include "cards/card.h"
 #include "game.h"
+#include "agent.h"
 
 Player Effect::get_owner() const
 {
@@ -31,12 +32,16 @@ void Effect::_call(Game& game, const events::AnyEvent& event)
 {
    m_effect_func(game, event, *this);
 }
+bool Effect::target(const State& state, Agent& agent, Player player)
+{
+   return true;
+}
 void TargetEffect::_call(Game& game, const events::AnyEvent& event)
 {
    if(has_targets()) {
       // in case something has changed in between playing and casting the targets need to be
       // refiltered
-      m_targeter->filter_targets(m_targets);
+      get_targeter()->filter_targets(get_targets());
    }
    //   } else {
    //      // AOE effects need to redo their targeting to adapt to any changes inbetween playing
@@ -45,4 +50,15 @@ void TargetEffect::_call(Game& game, const events::AnyEvent& event)
    //      set_targets(std::move(find_available_targets(*game.get_state(), player)));
    //   }
    get_effect_func()(game, event, *this);
+}
+bool TargetEffect::target(const State& state, Agent& agent, Player player)
+{
+   auto & targeter = get_targeter();
+   auto potential_targets = (*targeter)(state, player);
+   auto targets = agent.decide_targets(potential_targets, targeter->get_nr_targets());
+   if(has_value(targets)) {
+      set_targets(targets.value());
+      return true;
+   }
+   return false;
 }

@@ -3,6 +3,7 @@
 #define LORAINE_TARGET_H
 
 #include <utility>
+#include <optional>
 
 #include "rulesets.h"
 #include "types.h"

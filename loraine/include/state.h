@@ -56,6 +56,7 @@ class State {
       SymArr< std::vector< sptr< Card > > > tossed_cards,
       SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > history,
       std::optional< Player > attacker,
+      bool battle_mode,
       size_t round,
       Player turn,
       SymArr< bool > passes,
@@ -112,6 +113,7 @@ class State {
 
    inline void set_scout_token(Player player, bool value) { m_scout_token.at(player) = value; }
 
+   inline void set_battle_mode(bool value) { m_battle_mode = value; }
    inline void set_attacker(Player player) { m_attacker = player; }
 
    inline void reset_attacker() { m_attacker.reset(); }
@@ -134,6 +136,7 @@ class State {
    [[nodiscard]] inline auto& get_deck(Player player) { return m_deck_cont[player]; }
    [[nodiscard]] inline auto get_flag_attack(Player player) const { return m_can_attack[player]; }
    [[nodiscard]] inline auto get_scout_token(Player player) const { return m_scout_token[player]; }
+   [[nodiscard]] inline auto get_battle_status() const { return m_battle_mode; }
    [[nodiscard]] inline auto is_enlightened(Player player) const
    {
       return m_managems[player] == MAX_MANA;
@@ -226,6 +229,7 @@ class State {
    // state attributes
    Player m_starting_player;
    std::optional< Player > m_attacker;
+   bool m_battle_mode = false;
    size_t m_round = 0;
    size_t m_turn;
    Status m_terminal = Status::ONGOING;

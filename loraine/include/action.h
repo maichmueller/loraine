@@ -12,7 +12,7 @@
 #include "rulesets.h"
 #include "types.h"
 
-enum ActionType { ACCEPT, ATTACK, BLOCK, MOVE_UNIT, MOVE_SPELL, MULLIGAN, PASS, PLAY };
+enum ActionType { ACCEPT, ATTACK, BLOCK, CANCEL, MOVE_UNIT, MOVE_SPELL, MULLIGAN, PASS, PLAY };
 
 class AnyAction {
    // the type of action performed
@@ -159,4 +159,11 @@ class MulliganAction: public AnyAction {
    [[nodiscard]] inline auto get_replace_decisions() const { return replace; }
 };
 
+
+class CancelAction: public AnyAction {
+   CancelAction(size_t round, Player player)
+   : AnyAction(ActionType::CANCEL, round, player)
+      {
+      }
+};
 #endif  // LORAINE_ACTION_H

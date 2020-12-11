@@ -24,6 +24,13 @@ inline void throw_if_no_value(const sptr< T >& ptr)
       throw std::logic_error("Shared pointer is null.");
    }
 }
+template < typename T >
+inline void throw_if_no_value(const std::optional< T >& ptr)
+{
+   if(not has_value(ptr)) {
+      throw std::logic_error("Passed optional holds no value.");
+   }
+}
 
 template < typename T >
 inline void reset(sptr< T >& ptr)

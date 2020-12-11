@@ -62,6 +62,10 @@ class Card {
    [[nodiscard]] inline auto& get_keywords() { return m_keywords; }
    [[nodiscard]] inline auto& get_effects_map() { return m_effects; }
    [[nodiscard]] inline auto& get_effects(events::EventType etype) { return m_effects.at(etype); }
+   [[nodiscard]] inline const auto& get_effects(events::EventType etype) const
+   {
+      return m_effects.at(etype);
+   }
    [[nodiscard]] inline const auto& get_effects_map() const { return m_effects; }
    [[nodiscard]] inline auto get_id() const { return m_code; }
    [[nodiscard]] inline auto get_uuid() const { return m_uuid; }
@@ -340,6 +344,7 @@ class Unit: public Card {
 
 class Spell: public Card {
    [[nodiscard]] bool _check_play_condition(const Game& game) const override;
+   virtual bool _check_cast_condition(const Game& game) const;
 
   public:
    Spell(
@@ -358,6 +363,7 @@ class Spell: public Card {
       const std::map< events::EventType, std::vector< Effect > >& effects);
 
    [[nodiscard]] bool is_spell() const override { return true; }
+   virtual bool check_cast_condition(const Game& game) const;
 };
 
 class Landmark: public Card {

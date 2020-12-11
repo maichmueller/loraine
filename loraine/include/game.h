@@ -32,16 +32,8 @@ class Game {
 
    void incr_managems(Player player, long amount = 1);
 
-   inline void play(const sptr< Spell >& spell)
-   {
-      Player player = spell->get_owner();
-      m_state->get_spell_stack().emplace_back(spell);
-      spend_mana(player, spell->get_mana_cost(), true);
-      uncover_card(spell);
-      _play_event_triggers(spell, player);
-   }
-   void play_prestack();
-   void play(const sptr< Card >& card, std::optional< size_t > replaces);
+   void play_to_camp(const sptr< Card >& card, std::optional< size_t > replaces);
+   void play_spells();
    void cast(const sptr< Spell >& spell);
    void cast_spellstack();
 
@@ -50,7 +42,9 @@ class Game {
    void summon_exact_copy(const sptr< Unit >& unit);
 
    void create_card(Player player, size_t card_id);
-   void create_exact_copy(Player player, const sptr< Card >& card);
+   void create_copy(Player player, const sptr< Card >& card, bool exact_copy = false);
+
+   void recall(Player recaller, const sptr<Card>& recalled_card);
 
    void deal_damage_to_unit(
       const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
@@ -137,7 +131,6 @@ class Game {
    SymArr< sptr< Agent > > m_agents;
    events::EventListener m_event_listener;
    sptr< events::AnyEvent > m_last_event;
-   bool m_battle_mode = false;
    SymArr< sptr< GrantFactory > > m_grant_factory;
 
    inline void _trigger_event(events::AnyEvent&& event)
@@ -148,7 +141,7 @@ class Game {
 
    void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
    void _move_units_opp(const std::map< size_t, size_t >& positions, Player player, bool to_bf);
-   void _move_spell(const sptr< Spell >& spell, bool to_stack);
+   bool _move_spell(const sptr< Spell >& spell, bool to_stack);
 
    void _mulligan(
       const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);

@@ -16,6 +16,7 @@
 class Game;
 class Card;
 class Target;
+class Agent;
 
 namespace events {
 class AnyEvent;
@@ -36,6 +37,14 @@ class Effect {
    [[nodiscard]] auto get_location() const { return m_location; }
    [[nodiscard]] auto get_effect_type() const { return m_effect_type; }
    [[nodiscard]] Player get_owner() const;
+   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
+   [[nodiscard]] auto get_targets() const { return m_targets; }
+   [[nodiscard]] auto& get_targets() { return m_targets; }
+   [[nodiscard]] auto get_targeter() const { return m_targeter; }
+   [[nodiscard]] auto& get_targeter() { return m_targeter; }
+
+   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
+   inline void reset_targets() { m_targets.clear(); }
 
    inline void consume() { m_consumed = true; }
 
@@ -45,6 +54,8 @@ class Effect {
    {
       return m_con_func(game, *this);
    }
+   [[nodiscard]] virtual bool target(const State& state, Agent& agent, Player player);
+
    bool operator==(const Effect& effect) const;
    bool operator!=(const Effect& effect) const;
 
@@ -55,12 +66,14 @@ class Effect {
       ConditionFunc cast_condition_func,
       Location location,
       sptr< Card > card_ptr,
+      sptr< BaseTargeter > targeter = std::make_shared< NoneTargeter >(),
       Type effect_type = Type::SIMPLE)
        : m_effect_func(std::move(effect_func)),
          m_con_func(std::move(cast_condition_func)),
          m_location(location),
          m_effect_type(effect_type),
-         m_assoc_card(std::move(card_ptr))
+         m_assoc_card(std::move(card_ptr)),
+         m_targeter(std::move(targeter))
    {
    }
    Effect(const Effect& effect) = default;
@@ -76,35 +89,16 @@ class Effect {
    bool m_is_null = false;
    bool m_consumed = false;
    sptr< Card > m_assoc_card;
+   sptr< BaseTargeter > m_targeter;
+   std::vector< Target > m_targets;
 
    virtual void _call(Game& game, const events::AnyEvent& event);
 };
 
 class TargetEffect: public Effect {
   public:
-   template < typename... Params >
-   TargetEffect(
-      Params... params, sptr< BaseTargeter > targeter = std::make_shared< NoneTargeter >())
-       : Effect(std::forward< Params... >(params...)), m_targeter(std::move(targeter))
-   {
-   }
-
-   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
-   [[nodiscard]] auto get_targets() const { return m_targets; }
-   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
-   inline void reset_targets() { m_targets.clear(); }
-
-   [[nodiscard]] inline auto find_available_targets(const State& state, Player player)
-   {
-      return (*m_targeter)(state, player);
-   }
-
-   [[nodiscard]] auto get_targeter() const { return m_targeter; }
-
+   bool target(const State& state, Agent& agent, Player player) override;
   private:
-   sptr< BaseTargeter > m_targeter;
-   std::vector< Target > m_targets;
-
    void _call(Game& game, const events::AnyEvent& event) override;
 };
 

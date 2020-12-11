@@ -76,24 +76,33 @@ void Game::_move_units_opp(const std::map< size_t, size_t >& positions, Player p
    }
 }
 
-void Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
+bool Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
 {
-   auto hand = m_state->get_hand(spell->get_owner());
+   Player player = spell->get_owner();
+   auto hand = m_state->get_hand(player);
+   auto& cast_effects = spell->get_effects(events::EventType::CAST);
    if(to_stack) {
       hand.erase(std::find(hand.begin(), hand.end(), spell));
       m_state->get_spell_prestack().emplace_back(spell);
       spell->set_location(Location::SPELLSTACK);
-   } else {
-      for(auto& effect : spell->get_effects(events::EventType::CAST)) {
-         if(effect.get_effect_type() != Effect::Type::SIMPLE) {
-            dynamic_cast< TargetEffect& >(effect).reset_targets();
+      for(auto& effect : cast_effects) {
+         if(not effect.target(*m_state, *get_agent(player), player)) {
+            // the agent has cancelled playing the spell, we thus return handling to the action
+            // method
+            return false;
          }
+      }
+   } else {
+      for(auto& effect : cast_effects) {
+         effect.reset_targets();
       }
       auto& spell_stack = m_state->get_spell_prestack();
       spell_stack.erase(std::find(spell_stack.begin(), spell_stack.end(), spell));
       hand.emplace_back(spell);
       spell->set_location(Location::HAND);
    }
+
+   return true;
 }
 
 bool Game::run_game()
@@ -147,13 +156,13 @@ bool Game::_do_action(const sptr< AnyAction >& action)
             auto card = cast_action->get_card_played();
             if(card->get_card_type() == CardType::SPELL) {
                auto spell = to_spell(card);
-               play(spell);
+               play_spells();
                if(spell->has_keyword(Keyword::BURST)) {
                   _resolve_spell_stack(true);
                   flip_initiative = false;
                }
             } else {
-               play(card, cast_action->get_replace_idx());
+               play_to_camp(card, cast_action->get_replace_idx());
             }
          }
 
@@ -172,54 +181,33 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          case MOVE_SPELL: {
             auto cast_action = std::dynamic_pointer_cast< MoveSpellAction >(action);
             auto spell = cast_action->get_spell();
-            _move_spell(spell, cast_action->towards_stack());
-            for(auto& effect : spell->get_effects(events::EventType::CAST)) {
-               using EffectType = Effect::Type;
-               auto effect_type = effect.get_effect_type();
-               if(effect_type != EffectType::SIMPLE) {
-                  auto& targ_effect = dynamic_cast< TargetEffect& >(effect);
-                  auto targets = targ_effect.find_available_targets(*m_state, spell->get_owner());
-                  if(effect_type == EffectType::TARGETED) {
-                     targets = m_agents[m_state->get_active_player()]->decide_targets(
-                        targets, targ_effect.get_targeter()->get_nr_targets());
-                  }
-                  targ_effect.set_targets(targets);
-               }
+            if(not _move_spell(spell, cast_action->towards_stack())) {
+               // the spell was supposed to be moved to the stack, but the player cancelled
+               _move_spell(spell, false);
+               flip_initiative = false;
+            } else {
+               flip_initiative = _do_action(
+                  std::make_shared< PlayAction >(m_state->get_round(), spell->get_owner(), spell));
             }
-
-            flip_initiative = false;
          }
 
          case ATTACK: {
-            auto cast_action = std::dynamic_pointer_cast< AttackAction >(action);
-            auto player = cast_action->get_player();
-            auto opt_spells = cast_action->get_potential_spells();
-
-            if(has_value(opt_spells)) {
-               for(const auto& spell : opt_spells.value()) {
-                  play(spell);
-               }
-            }
+            auto player = action->get_player();
             _activate_battlemode(player);
             process_camp_queue(player);
          }
 
          case BLOCK: {
-            auto cast_action = std::dynamic_pointer_cast< BlockAction >(action);
-            auto player = cast_action->get_player();
-            auto opt_spells = cast_action->get_potential_spells();
-
-            if(opt_spells.has_value()) {
-               for(const auto& spell : opt_spells.value()) {
-                  play(spell);
-               }
-            }
+            auto player = action->get_player();
             _trigger_event(events::BlockEvent(player));
          }
 
          case ACCEPT: {
-            _resolve_spell_stack(false);
-            if(m_battle_mode) {
+            if(auto& spell_prestack = m_state->get_spell_prestack(); spell_prestack.empty()) {
+               _resolve_spell_stack(false);
+            } else {
+            }
+            if(m_state->get_battle_status()) {
                _resolve_battle();
                _deactivate_battlemode();
             }
@@ -233,7 +221,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
 }
 void Game::_activate_battlemode(Player attack_player)
 {
-   m_battle_mode = true;
+   m_state->set_battle_mode(true);
    m_state->set_attacker(attack_player);
    auto& bf = m_state->m_board->get_battlefield(attack_player);
    auto check_att_effects = [&](const sptr< Card >& unit) {
@@ -284,7 +272,7 @@ void Game::_activate_battlemode(Player attack_player)
 }
 void Game::_deactivate_battlemode()
 {
-   m_battle_mode = false;
+   m_state->set_battle_mode(false);
    m_state->reset_attacker();
 }
 void Game::_resolve_spell_stack(bool burst)
@@ -295,12 +283,8 @@ void Game::_resolve_spell_stack(bool burst)
       spell_stack.pop_back();
       cast(last_spell);
    } else {
-      while(! spell_stack.empty()) {
-         auto last_spell = spell_stack.back();
-         spell_stack.pop_back();
-         cast(last_spell);
-      }
-      if(m_battle_mode) {
+      cast_spellstack();
+      if(m_state->get_battle_status()) {
          _resolve_battle();
       }
    }
@@ -373,7 +357,7 @@ void Game::_resolve_battle()
       }
       retreat_to_camp(attacker);
       retreat_to_camp(defender);
-      m_battle_mode = false;
+      m_state->set_battle_mode(false);
    }
 }
 void Game::strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def)
@@ -586,7 +570,21 @@ void Game::retreat_to_camp(Player player)
       curr_idx += 1;
    }
 }
-void Game::play(const sptr< Card >& card, std::optional< size_t > replaces)
+void Game::play_spells()
+{
+   auto& spell_stack = m_state->get_spell_stack();
+   auto& spell_prestack = m_state->get_spell_prestack();
+   for(const auto& spell : spell_prestack) {
+      Player player = spell->get_owner();
+      spell_stack.emplace_back(spell);
+      spend_mana(player, spell->get_mana_cost(), true);
+      uncover_card(spell);
+      _play_event_triggers(spell, player);
+   }
+   spell_prestack.clear();
+}
+
+void Game::play_to_camp(const sptr< Card >& card, std::optional< size_t > replaces)
 {
    Player player = card->get_owner();
    spend_mana(player, card->get_mana_cost(), false);
@@ -594,7 +592,7 @@ void Game::play(const sptr< Card >& card, std::optional< size_t > replaces)
    uncover_card(card);
    if(replaces.has_value()) {
       auto& unit_to_replace = camp.at(replaces.value());
-      _remove(unit_to_replace);
+      obliterate(unit_to_replace);
       camp.at(replaces.value()) = card;
    } else {
       camp.at(m_state->m_board->count_units(player, true) - 1) = card;
@@ -602,15 +600,6 @@ void Game::play(const sptr< Card >& card, std::optional< size_t > replaces)
    card->set_location(Location::CAMP);
    m_event_listener.register_card(card);
    _play_event_triggers(card, player);
-}
-
-void Game::play_prestack()
-{
-   auto& prestack = m_state->get_spell_prestack();
-   for(const auto& spell : reverse(prestack)) {
-      play(spell);
-   }
-   prestack.clear();
 }
 void Game::_play_event_triggers(const sptr< Card >& card, const Player& player)
 {
@@ -665,6 +654,7 @@ void Game::spend_mana(Player player, size_t cost, bool spell_mana)
       m_state->set_mana(m_state->get_mana(player) + rem_mana_to_pay, player);
    }
 }
+
 void Game::draw_card(Player player)
 {
    auto deck = m_state->get_deck(player);
@@ -677,7 +667,6 @@ void Game::draw_card(Player player)
       obliterate(card_drawn);
    }
 }
-
 void Game::summon(const sptr< Unit >& unit)
 {
    m_state->m_board->add_to_queue(unit);
@@ -700,6 +689,7 @@ void Game::summon_to_battlefield(const sptr< Unit >& unit)
       _remove(unit);
    }
 }
+
 void Game::summon_exact_copy(const sptr< Unit >& unit)
 {
    Player player = unit->get_owner();
@@ -754,7 +744,6 @@ std::vector< Target > Game::filter_targets_camp(
    }
    return targets;
 }
-
 std::vector< Target > Game::filter_targets_hand(
    const Filter& filter, std::optional< Player > opt_player)
 {
@@ -776,6 +765,7 @@ std::vector< Target > Game::filter_targets_hand(
    }
    return targets;
 }
+
 std::vector< Target > Game::filter_targets_deck(
    const Filter& filter, std::optional< Player > opt_player)
 {
@@ -812,7 +802,6 @@ std::vector< Target > Game::filter_targets_board(
    }
    return targets;
 }
-
 std::vector< Target > Game::filter_targets_everywhere(
    const Filter& filter, std::optional< Player > opt_player)
 {
@@ -877,6 +866,17 @@ void Game::_remove(const sptr< Card >& card)
 void Game::_copy_grants(
    const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit)
 {
+}
+void Game::cast_spellstack()
+{
+   auto& stack = m_state->get_spell_stack();
+   // iterate from the end, since the stack is LIFO
+   for(auto& spell : reverse(stack)) {
+      if(spell->check_cast_condition(*this)) {
+         _trigger_event(events::CastEvent(spell->get_owner(), spell));
+      }
+   }
+   stack.clear();
 }
 
 // void Game::level_up_champion(sptr<Champion> champ)
