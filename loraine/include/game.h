@@ -10,6 +10,7 @@
 #include "cards/card.h"
 #include "cards/filter.h"
 #include "cards/grant.h"
+#include "factory.h"
 #include "event/event_listener.h"
 #include "rulesets.h"
 #include "state.h"
@@ -44,7 +45,7 @@ class Game {
    void create_card(Player player, size_t card_id);
    void create_copy(Player player, const sptr< Card >& card, bool exact_copy = false);
 
-   void recall(Player recaller, const sptr<Card>& recalled_card);
+   void recall(Player recaller, const sptr< Card >& recalled_card);
 
    void deal_damage_to_unit(
       const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
@@ -121,7 +122,7 @@ class Game {
       Params&&... params)
    {
       auto grant = m_grant_factory[player]->grant< grant_type >(
-         std::forward< Params... >(params...));
+         player, bestowing_card, card_to_bestow, std::forward< Params... >(params...));
       card_to_bestow->store_grant(grant);
       grant->apply(card_to_bestow);
    }

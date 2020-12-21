@@ -730,8 +730,8 @@ std::vector< Target > Game::filter_targets_camp(
 
    auto filter_lambda = [&](Player player) {
       auto camp = m_state->m_board->get_camp(player);
-      for(size_t i = 0; i < camp.size(); ++i) {
-         if(auto unit = camp.at(i); filter(Target(unit))) {
+      for(const auto& unit : camp) {
+         if(filter(Target(unit))) {
             targets.emplace_back(Target(unit));
          }
       }
@@ -751,8 +751,8 @@ std::vector< Target > Game::filter_targets_hand(
 
    auto filter_lambda = [&](Player player) {
       auto hand = m_state->get_hand(player);
-      for(size_t i = 0; i < hand.size(); ++i) {
-         if(auto card = hand.at(i); filter(Target(card))) {
+      for(const auto& card : hand) {
+         if(filter(Target(card))) {
             targets.emplace_back(Target(card));
          }
       }
@@ -773,8 +773,8 @@ std::vector< Target > Game::filter_targets_deck(
 
    auto filter_lambda = [&](Player player) {
       auto deck = m_state->get_deck(player);
-      for(size_t i = 0; i < deck.size(); ++i) {
-         if(auto card = deck.at(i); filter(Target(card))) {
+      for(const auto& card : deck) {
+         if(filter(Target(card))) {
             targets.emplace_back(Target(card));
          }
       }
