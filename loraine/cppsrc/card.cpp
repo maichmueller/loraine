@@ -1,5 +1,5 @@
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 
 #include <utility>
 
@@ -8,74 +8,23 @@
 #include "utils.h"
 
 Card::Card(
-   Player owner,
-   const char* const code,
-   const char* const name,
-   const char* const effect_desc,
-   const char* const lore,
-   Region region,
-   Group group,
-   CardSuperType super_type,
-   Rarity rarity,
-   CardType card_type,
-   bool is_collectible,
-   size_t mana_cost,
-   std::initializer_list< enum Keyword > keyword_list,
-   std::map< events::EventType, std::vector< Effect > > effects,
-   Location loc,
-   bool is_hidden)
-    : m_name(name),
-      m_effect_desc(effect_desc),
-      m_lore(lore),
-      m_region(region),
-      m_group(group),
-      m_super_type(super_type),
-      m_rarity(rarity),
-      m_card_type(card_type),
-      m_is_collectible(is_collectible),
-      m_hidden(is_hidden),
-      m_code(code),
-      m_uuid(new_uuid()),
-      m_mana_cost_ref(mana_cost),
-      m_mana_cost_base(mana_cost),
-      m_mana_cost_delta(0),
-      m_keywords(create_kword_list(keyword_list)),
-      m_effects(std::move(effects)),
-      m_owner(owner),
-      m_location(loc)
+   ConstData const_attrs,
+   MutableData var_attrs)
+    : m_immutables(std::move(const_attrs)),
+      m_mutables(std::move(var_attrs))
 {
 }
-Card::Card(const Card& card)
-    : m_name(card.get_name()),
-      m_effect_desc(card.get_effect_desc()),
-      m_lore(card.get_lore()),
-      m_region(card.get_region()),
-      m_group(card.get_group()),
-      m_super_type(card.get_super_type()),
-      m_rarity(card.get_rarity()),
-      m_card_type(card.get_card_type()),
-      m_is_collectible(card.is_collectible()),
-      m_code(card.get_id()),
-      m_hidden(card.is_hidden()),
-      m_uuid(new_uuid()),
-      m_mana_cost_ref(card.get_mana_cost_ref()),
-      m_mana_cost_base(card.get_mana_cost_base()),
-      m_mana_cost_delta(card.get_mana_cost_delta()),
-      m_keywords(card.get_keywords()),
-      m_effects(card.get_effects_map()),
-      m_owner(card.get_owner())
-{
-}
+
 void Card::remove_effect(events::EventType e_type, const Effect& effect)
 {
    if(auto eff_vec_iter = std::find_if(
-         m_effects.begin(), m_effects.end(), [&](const auto& val) { return val.first == e_type; });
-      eff_vec_iter != m_effects.end()) {
+         m_mutables.effects.begin(), m_mutables.effects.end(), [&](const auto& val) { return val.first == e_type; });
+      eff_vec_iter != m_mutables.effects.end()) {
       auto& eff_vec = (*eff_vec_iter).second;
       auto position = std::find(eff_vec.begin(), eff_vec.end(), effect);
       if(position != eff_vec.end()) {
          if(eff_vec.size() == 1) {
-            m_effects.erase(eff_vec_iter);
+            m_mutables.effects.erase(eff_vec_iter);
          } else {
             eff_vec.erase(position);
          }
@@ -86,14 +35,14 @@ void Card::add_effect(events::EventType e_type, Effect effect)
 {
    // if the key is already found in the effects map, delete the previous
    // effect. This essentially implies we overwrite preexisting effects
-   if(m_effects.find(e_type) != m_effects.end()) {
-      m_effects.erase(e_type);
+   if(m_mutables.effects.find(e_type) != m_mutables.effects.end()) {
+      m_mutables.effects.erase(e_type);
    }
-   m_effects[e_type].emplace_back(std::move(effect));
+   m_mutables.effects[e_type].emplace_back(std::move(effect));
 }
 void Card::set_effect_vec(events::EventType e_type, std::vector< Effect > effects)
 {
-   auto& curr_vec = m_effects[e_type];
+   auto& curr_vec = m_mutables.effects[e_type];
    for(auto&& eff : effects) {
       curr_vec.emplace_back(std::move(eff));
    }
@@ -101,194 +50,32 @@ void Card::set_effect_vec(events::EventType e_type, std::vector< Effect > effect
 bool Card::check_play_tribute(const Game& game) const
 {
    auto state = game.get_state();
-   size_t total_mana = state->get_mana(this->get_owner());
+   size_t total_mana = state->get_mana(this->get_mutable_attrs().owner);
    if(this->is_spell()) {
-      total_mana += state->get_spell_mana(this->get_owner());
+      total_mana += state->get_spell_mana(this->get_mutable_attrs().owner);
    }
    return this->get_mana_cost() <= total_mana && _check_play_condition(game);
 }
 std::vector< sptr< Grant > > Card::get_all_grants() const
 {
-   return get_grants_temp() + get_grants();
+   return get_mutable_attrs().grants_temp + get_mutable_attrs().grants;
 }
 void Card::store_grant(const sptr< Grant >& grant)
 {
    if(grant->is_permanent()) {
-      m_grants.emplace_back(grant);
+      m_mutables.grants.emplace_back(grant);
    } else {
-      m_grants_temp.emplace_back(grant);
+      m_mutables.grants_temp.emplace_back(grant);
    }
 }
-
-bool Unit::_check_play_condition(const Game& game) const
+bool Card::operator()(Game& game, const events::AnyEvent& event)
 {
-   return game.get_state()->get_mana(get_owner()) >= get_mana_cost();
-}
-void Unit::add_power(long amount, bool permanent)
-{
-   if(permanent) {
-      m_power_base += amount;
-   } else {
-      m_power_delta += amount;
+   bool all_consumed = true;
+   for(auto& effect : m_mutables.effects.at(event.get_event_type())) {
+      if(not effect.is_consumed()) {
+         effect(game, event);
+         all_consumed = false;
+      }
    }
-}
-void Unit::add_health(long amount, bool permanent)
-{
-   if(permanent) {
-      m_health_base += amount;
-
-   } else {
-      m_health_delta += amount;
-   }
-}
-void Unit::set_health(size_t health)
-{
-   m_health_delta = static_cast< decltype(m_health_delta) >(health - m_health_base);
-}
-void Unit::set_power(size_t power, bool as_delta)
-{
-   if(as_delta) {
-      m_power_delta = static_cast< decltype(m_power_delta) >(power - m_power_base);
-   } else {
-      m_power_base = power;
-      m_power_delta = 0;
-   }
-}
-Unit::Unit(
-   Player owner,
-   const char* const code,
-   const char* const name,
-   const char* const effect_desc,
-   const char* const lore,
-   Region region,
-   Group group,
-   CardSuperType super_type,
-   Rarity rarity,
-   bool is_collectible,
-   size_t mana_cost_ref,
-   size_t power_ref,
-   size_t health_ref,
-   const std::initializer_list< enum Keyword >& keyword_list,
-   const std::map< events::EventType, std::vector< Effect > >& effects,
-   CardType card_type,
-   Location loc,
-   bool hidden)
-    : Card(
-       owner,
-       code,
-       name,
-       effect_desc,
-       lore,
-       region,
-       group,
-       super_type,
-       rarity,
-       card_type,
-       is_collectible,
-       mana_cost_ref,
-       keyword_list,
-       effects,
-       loc,
-       hidden),
-      m_power_ref(power_ref),
-      m_power_base(power_ref),
-      m_health_ref(health_ref),
-      m_health_base(health_ref)
-{
-}
-Unit::Unit(const Unit& card)
-    : Card(card),
-      m_power_ref(card.get_power_ref()),
-      m_power_base(card.get_power_base()),
-      m_health_ref(card.get_health_ref()),
-      m_health_base(card.get_health_base()),
-      m_power_delta(card.get_power_delta()),
-      m_health_delta(card.get_health_delta()),
-      m_damage(card.get_damage())
-{
-}
-Spell::Spell(
-   Player owner,
-   const char* const code,
-   const char* const name,
-   const char* const effect_desc,
-   const char* const lore,
-   Region region,
-   Group group,
-   CardSuperType super_type,
-   Rarity rarity,
-   bool is_collectible,
-   size_t mana_cost,
-   const std::initializer_list< enum Keyword >& keyword_list,
-   const std::map< events::EventType, std::vector< Effect > >& effects)
-    : Card(
-       owner,
-       code,
-       name,
-       effect_desc,
-       lore,
-       region,
-       group,
-       super_type,
-       rarity,
-       CardType::SPELL,
-       is_collectible,
-       mana_cost,
-       keyword_list,
-       std::move(effects),
-       Location::DECK)
-{
-}
-bool Spell::_check_play_condition(const Game& game) const
-{
-   auto state = game.get_state();
-   return state->get_mana(get_owner()) + state->get_spell_mana(get_owner()) >= get_mana_cost();
-}
-bool Spell::check_cast_condition(const Game& game) const
-{
-   return _check_cast_condition(game);
-}
-bool Spell::_check_cast_condition(const Game& game) const
-{
-   const auto& effects = get_effects(events::EventType::CAST);
-   // if any effect of the spell is castable, then the card can be casted.
-   return std::any_of(effects.begin(), effects.end(), [&](const auto& effect) {
-      return effect.check_condition(game);
-   });
-}
-
-Landmark::Landmark(
-   Player owner,
-   const char* const code,
-   const char* const name,
-   const char* const effect_desc,
-   const char* const lore,
-   Region region,
-   Group group,
-   Rarity rarity,
-   bool is_collectible,
-   size_t mana_cost,
-   std::initializer_list< enum Keyword > keyword_list,
-   const std::map< events::EventType, std::vector< Effect > >& effects,
-   Location loc,
-   bool hidden)
-    : Card(
-       owner,
-       code,
-       name,
-       effect_desc,
-       lore,
-       region,
-       group,
-       CardSuperType::NONE,
-       rarity,
-       CardType::LANDMARK,
-       is_collectible,
-       mana_cost,
-       keyword_list,
-       effects,
-       loc,
-       hidden)
-{
-   add_keyword(Keyword::LANDMARK);
+   return all_consumed;
 }

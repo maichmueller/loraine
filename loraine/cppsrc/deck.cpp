@@ -23,20 +23,20 @@ std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) con
 std::vector< sptr< Card > > CardContainer::find_spells(const FilterFunc& filter)
 {
    return _pop_cards([&](const sptr< Card >& card) {
-      return card->get_card_type() == CardType::SPELL && filter(card);
+      return card->get_const_attrs().card_type == CardType::SPELL && filter(card);
    });
 }
 
 std::vector< sptr< Card > > CardContainer::find_units(const FilterFunc& filter)
 {
    return _pop_cards([&](const sptr< Card >& card) {
-      return card->get_card_type() == CardType::UNIT && filter(card);
+      return card->get_const_attrs().card_type == CardType::UNIT && filter(card);
    });
 }
 sptr< Card > CardContainer::draw_specific_card(const char* card_sid)
 {
    auto indices = _find_indices(
-      [&card_sid](const sptr< Card >& card) { return card->get_id() == card_sid; });
+      [&card_sid](const sptr< Card >& card) { return card->get_const_attrs().code == card_sid; });
    std::shuffle(indices.begin(), indices.end(), rng::get_engine());
    return draw_card_by_index(indices[0]);
 }

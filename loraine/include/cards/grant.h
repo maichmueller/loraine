@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 #include "types.h"
 #include "uuid_gen.h"
 

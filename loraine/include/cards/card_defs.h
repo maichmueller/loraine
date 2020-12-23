@@ -70,7 +70,6 @@ enum class Keyword {
    OBLITERATE,
    IMMOBILE,
    INVOKE,
-   LANDMARK,
    LAST_BREATH,
    LIFESTEAL,
    OVERWHELM,

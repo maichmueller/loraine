@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 #include "types.h"
 
 class CardContainer {

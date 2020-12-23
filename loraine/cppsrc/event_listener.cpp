@@ -39,7 +39,7 @@ void EventListener::on_event(Game& game, Player player, const events::AnyEvent& 
 }
 void EventListener::unregister_card(const sptr< Card >& card)
 {
-   for(auto& listener : access_listeners(card->get_owner())) {
+   for(auto& listener : access_listeners(card->get_mutable_attrs().owner)) {
       auto end = listener.end();
       auto pos_it = std::find(listener.begin(), end, card);
       if(pos_it != end) {

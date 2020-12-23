@@ -4,7 +4,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
-        ${LORAINE_SRC_DIR}/card.cpp
+
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/board.cpp
         ${LORAINE_SRC_DIR}/specific_effects.cpp
@@ -12,6 +12,11 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/effect.cpp
         ${LORAINE_SRC_DIR}/targeter.cpp
         ${LORAINE_SRC_DIR}/target.cpp
+
+        ${LORAINE_SRC_DIR}/card.cpp
+        ${LORAINE_SRC_DIR}/unit.cpp
+        ${LORAINE_SRC_DIR}/spell.cpp
+        ${LORAINE_SRC_DIR}/landmark.cpp
 
         )
 

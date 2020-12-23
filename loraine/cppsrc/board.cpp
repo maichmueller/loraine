@@ -2,7 +2,7 @@
 
 #include "board.h"
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 #include "utils.h"
 
 
@@ -47,11 +47,11 @@ std::vector< sptr<Unit> > Board::get_camp_units(Player player) const
 }
 void Board::add_to_queue(const sptr< Card >& card)
 {
-   m_camp_queue[card->get_owner()].emplace(card);
+   m_camp_queue[card->get_mutable_attrs().owner].emplace(card);
 }
 void Board::add_to_queue(std::vector< sptr<Card> >&& cards)
 {
    for(auto&& card : cards) {
-      m_camp_queue[card->get_owner()].emplace(std::move(card));
+      m_camp_queue[card->get_mutable_attrs().owner].emplace(std::move(card));
    }
 }

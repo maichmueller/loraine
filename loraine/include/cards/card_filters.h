@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 
 inline bool filter_trivial(const sptr< Card >& card)
 {
@@ -16,11 +16,11 @@ inline bool filter_noone(const sptr< Card >& card)
 }
 inline bool filter_ally(const sptr< Card >& card, Player ally)
 {
-   return card->get_owner() == ally;
+   return card->get_mutable_attrs().owner == ally;
 }
 inline bool filter_enemy(const sptr< Card >& card, Player ally)
 {
-   return card->get_owner() != ally;
+   return card->get_mutable_attrs().owner != ally;
 }
 inline bool filter_health_less(const sptr< Card >& card, size_t health)
 {

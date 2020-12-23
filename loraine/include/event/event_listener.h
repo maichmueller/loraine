@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 #include "event/event.h"
 #include "event_types.h"
 #include "types.h"
@@ -56,8 +56,8 @@ class EventListener {
    }
    inline void register_effects_for_event(const sptr< Card >& card, EventType event_type)
    {
-      for(const auto& effect : card->get_effects_map().at(event_type)) {
-         access_listeners(card->get_owner()).at(size_t(event_type)).emplace(card);
+      for(const auto& effect : card->get_effects(event_type)) {
+         access_listeners(card->get_mutable_attrs().owner).at(size_t(event_type)).emplace(card);
       }
    }
    void unregister_card(const sptr< Card >& card);
@@ -65,8 +65,9 @@ class EventListener {
    inline void clear_registers(std::optional< Player > opt_player)
    {
       auto clear_listener_lambda = [&](Player player) {
-         for(auto& listener : access_listeners(player))
+         for(auto& listener : access_listeners(player)) {
             listener.clear();
+         }
       };
       if(opt_player.has_value()) {
          clear_listener_lambda(opt_player.value());

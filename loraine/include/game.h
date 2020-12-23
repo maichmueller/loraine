@@ -2,16 +2,16 @@
 #ifndef LORAINE_GAME_H
 #define LORAINE_GAME_H
 
-#include <cards/algorithms.h>
+#include <algorithms.h>
 
 #include <optional>
 
 #include "agent.h"
-#include "cards/card.h"
+#include "cards/card_types/all_card_types.h"
 #include "cards/filter.h"
 #include "cards/grant.h"
-#include "factory.h"
 #include "event/event_listener.h"
+#include "factory.h"
 #include "rulesets.h"
 #include "state.h"
 #include "types.h"
@@ -55,10 +55,10 @@ class Game {
    void nexus_strike(
       Player attacked_nexus, const sptr< long >& damage, const sptr< Card >& responsible_card);
 
-   void strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def);
+   void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
 
    void kill_unit(
-      Player killer, const std::shared_ptr< Unit >& killed_unit, const sptr< Card >& cause = {});
+      Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
 
    /*
     * An api for triggering an event mainly externally. Which event is supposed to be triggered
@@ -89,7 +89,7 @@ class Game {
       uncover_card(card);
       _remove(card);
    }
-   static inline void uncover_card(const sptr< Card >& card) { card->set_flag_hidden(false); }
+   static inline void uncover_card(const sptr< Card >& card) { card->get_mutable_attrs().hidden = false; }
    //   void level_up_champion(sptr< Champion > champ);
 
    /*

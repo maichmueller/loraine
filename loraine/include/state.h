@@ -136,7 +136,7 @@ class State {
    [[nodiscard]] inline auto& get_deck(Player player) { return m_deck_cont[player]; }
    [[nodiscard]] inline auto get_flag_attack(Player player) const { return m_can_attack[player]; }
    [[nodiscard]] inline auto get_scout_token(Player player) const { return m_scout_token[player]; }
-   [[nodiscard]] inline auto get_battle_status() const { return m_battle_mode; }
+   [[nodiscard]] inline auto in_battle_mode() const { return m_battle_mode; }
    [[nodiscard]] inline auto is_enlightened(Player player) const
    {
       return m_managems[player] == MAX_MANA;

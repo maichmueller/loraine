@@ -19,40 +19,40 @@ TEST(CardTest, CardTest_Basics)
    EXPECT_EQ(unit2->get_health(), 5);
 
    unit2->take_damage(2);
-   EXPECT_EQ(unit2->get_damage(), 2);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().damage, 2);
    EXPECT_EQ(unit2->get_health(), 3);
-   EXPECT_EQ(unit2->get_health_delta(), 0);
-   EXPECT_EQ(unit2->get_health_base(), 5);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 5);
 
    unit2->heal(5);
-   EXPECT_EQ(unit2->get_health_delta(), 0);
-   EXPECT_EQ(unit2->get_damage(), 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().damage, 0);
 
    unit2->add_health(10, true);
-   EXPECT_EQ(unit2->get_health_base(), 15);
-   EXPECT_EQ(unit2->get_health_delta(), 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 15);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 0);
    EXPECT_EQ(unit2->get_health(), 15);
 
    unit2->add_health(-10, true);
-   EXPECT_EQ(unit2->get_health_base(), 5);
-   EXPECT_EQ(unit2->get_health_delta(), 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 5);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 0);
    EXPECT_EQ(unit2->get_health(), 5);
 
    unit2->add_health(10, false);
-   EXPECT_EQ(unit2->get_health_base(), 5);
-   EXPECT_EQ(unit2->get_health_delta(), 10);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 5);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 10);
    EXPECT_EQ(unit2->get_health(), 15);
 
    unit2->add_health(-10, false);
-   EXPECT_EQ(unit2->get_health_base(), 5);
-   EXPECT_EQ(unit2->get_health_delta(), 0);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 5);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 0);
    EXPECT_EQ(unit2->get_health(), 5);
 
    unit2->add_health(10, false);
    unit2->take_damage(10);
-   EXPECT_EQ(unit2->get_health_base(), 5);
-   EXPECT_EQ(unit2->get_health_delta(), 10);
-   EXPECT_EQ(unit2->get_damage(), 10);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_base, 5);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().health_delta, 10);
+   EXPECT_EQ(unit2->get_unit_mutable_attrs().damage, 10);
    EXPECT_EQ(unit2->get_health(), 5);
 
    unit2->add_keyword(Keyword::EPHEMERAL);

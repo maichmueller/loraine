@@ -1,7 +1,7 @@
 
 #include "game.h"
 
-#include <cards/algorithms.h>
+#include <algorithms.h>
 
 #include <utility>
 
@@ -19,7 +19,7 @@ void Game::_move_units(const std::vector< size_t >& positions, Player player, bo
          size_t source_pos = positions.at(i);
          size_t target_pos = i + min_target_pos;
          auto& unit = camp.at(source_pos);
-         unit->set_location(Location::BATTLEFIELD);
+         unit->move(Location::BATTLEFIELD, target_pos);
          battlefield.at(target_pos) = to_unit(unit);
          camp.erase(camp.begin() + source_pos);
       }
@@ -29,7 +29,7 @@ void Game::_move_units(const std::vector< size_t >& positions, Player player, bo
          size_t target_pos = i + min_target_pos;
          auto& unit = battlefield.at(source_pos);
          throw_if_no_value(unit);
-         unit->set_location(Location::CAMP);
+         unit->move(Location::CAMP, target_pos);
          camp.at(target_pos) = unit;
          reset(unit);
       }
@@ -54,7 +54,7 @@ void Game::_move_units_opp(const std::map< size_t, size_t >& positions, Player p
                "CHALLENGER.");
          }
          // move the unit to the battlefield now
-         unit->set_location(Location::BATTLEFIELD);
+         unit->move(Location::BATTLEFIELD, target_pos);
          battlefield.at(target_pos) = to_unit(unit);
          // remove the moved unit from the camp
          auto camp_iter = camp.begin();
@@ -65,7 +65,7 @@ void Game::_move_units_opp(const std::map< size_t, size_t >& positions, Player p
       move_lambda = [&](size_t source_pos, size_t target_pos) {
          auto& unit = battlefield.at(source_pos);
          throw_if_no_value(unit);
-         unit->set_location(Location::CAMP);
+         unit->move(Location::CAMP, target_pos);
          camp.at(target_pos) = unit;
          reset(unit);
       };
@@ -78,13 +78,14 @@ void Game::_move_units_opp(const std::map< size_t, size_t >& positions, Player p
 
 bool Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
 {
-   Player player = spell->get_owner();
+   Player player = spell->get_mutable_attrs().owner;
    auto hand = m_state->get_hand(player);
    auto& cast_effects = spell->get_effects(events::EventType::CAST);
    if(to_stack) {
       hand.erase(std::find(hand.begin(), hand.end(), spell));
-      m_state->get_spell_prestack().emplace_back(spell);
-      spell->set_location(Location::SPELLSTACK);
+      auto& spell_pre_stack = m_state->get_spell_prestack();
+      spell_pre_stack.emplace_back(spell);
+      spell->move(Location::SPELLSTACK, spell_pre_stack.size() - 1);
       for(auto& effect : cast_effects) {
          if(not effect.target(*m_state, *get_agent(player), player)) {
             // the agent has cancelled playing the spell, we thus return handling to the action
@@ -99,7 +100,7 @@ bool Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
       auto& spell_stack = m_state->get_spell_prestack();
       spell_stack.erase(std::find(spell_stack.begin(), spell_stack.end(), spell));
       hand.emplace_back(spell);
-      spell->set_location(Location::HAND);
+      spell->move(Location::HAND, hand.size() - 1);
    }
 
    return true;
@@ -154,7 +155,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
          case PLAY: {
             auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
             auto card = cast_action->get_card_played();
-            if(card->get_card_type() == CardType::SPELL) {
+            if(card->get_const_attrs().card_type == CardType::SPELL) {
                auto spell = to_spell(card);
                play_spells();
                if(spell->has_keyword(Keyword::BURST)) {
@@ -186,8 +187,8 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                _move_spell(spell, false);
                flip_initiative = false;
             } else {
-               flip_initiative = _do_action(
-                  std::make_shared< PlayAction >(m_state->get_round(), spell->get_owner(), spell));
+               flip_initiative = _do_action(std::make_shared< PlayAction >(
+                  m_state->get_round(), spell->get_mutable_attrs().owner, spell));
             }
          }
 
@@ -207,7 +208,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                _resolve_spell_stack(false);
             } else {
             }
-            if(m_state->get_battle_status()) {
+            if(m_state->in_battle_mode()) {
                _resolve_battle();
                _deactivate_battlemode();
             }
@@ -284,7 +285,7 @@ void Game::_resolve_spell_stack(bool burst)
       cast(last_spell);
    } else {
       cast_spellstack();
-      if(m_state->get_battle_status()) {
+      if(m_state->in_battle_mode()) {
          _resolve_battle();
       }
    }
@@ -309,7 +310,7 @@ void Game::_resolve_battle()
             // attacker, it needs to battle the attacker
             auto unit_def = to_unit(unit_def_opt);
 
-            if(unit_def->is_alive()) {
+            if(unit_def->get_unit_mutable_attrs().alive) {
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
                bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
 
@@ -360,31 +361,33 @@ void Game::_resolve_battle()
       m_state->set_battle_mode(false);
    }
 }
-void Game::strike(const std::shared_ptr< Unit >& unit_att, std::shared_ptr< Unit >& unit_def)
+void Game::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
    sptr< long > damage = std::make_shared< long >(unit_att->get_power());
    if(*damage > 0) {
-      _trigger_event(events::StrikeEvent(unit_att->get_owner(), unit_att, unit_def));
+      _trigger_event(events::StrikeEvent(unit_att->get_mutable_attrs().owner, unit_att, unit_def));
       deal_damage_to_unit(unit_att, unit_def, damage);
    }
-   if(unit_att->has_keyword(Keyword::OVERWHELM)) {
-      nexus_strike(unit_def->get_owner(), damage, unit_att);
+   if(m_state->in_battle_mode() && m_state->get_attacker() == unit_att->get_mutable_attrs().owner
+      && unit_att->has_keyword(Keyword::OVERWHELM)) {
+      nexus_strike(unit_def->get_mutable_attrs().owner, damage, unit_att);
    }
 }
 void Game::deal_damage_to_unit(
    const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage)
 {
    long health_def = unit->get_health();
-   _trigger_event(events::UnitTakeDamageEvent(cause->get_owner(), cause, Target(unit), damage));
+   _trigger_event(
+      events::UnitTakeDamageEvent(cause->get_mutable_attrs().owner, cause, Target(unit), damage));
    unit->take_damage(*damage);
    // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
    *damage += -health_def;
 }
 void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 {
-   killed_unit->die();
+   killed_unit->kill();
    _trigger_event(events::DieEvent(killer, Target(killed_unit), cause));
-   if(not killed_unit->is_alive()) {
+   if(not killed_unit->get_unit_mutable_attrs().alive) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->add_to_graveyard(killed_unit);
@@ -397,7 +400,7 @@ void Game::nexus_strike(
 {
    if(*damage > 0) {
       _trigger_event(events::NexusStrikeEvent(
-         responsible_card->get_owner(), responsible_card, attacked_nexus, damage));
+         responsible_card->get_mutable_attrs().owner, responsible_card, attacked_nexus, damage));
 
       m_state->damage_nexus(*damage, attacked_nexus);
 
@@ -468,7 +471,7 @@ void Game::_end_round()
          }
          // remove temporary grants
          // undo temporary buffs/nerfs and possibly heal the units if applicable
-         auto temp_grants = unit->get_grants_temp();
+         auto temp_grants = unit->get_mutable_attrs().grants_temp;
          for(auto&& grant : temp_grants) {
             grant->undo(unit);
          }
@@ -487,8 +490,8 @@ void Game::_end_round()
    auto regenerate_units = [&](Player player) {
       // regenerate the units with regeneration
       for(auto& unit : regenerators[player]) {
-         if(unit->is_alive()) {
-            heal(unit->get_owner(), unit, unit->get_damage());
+         if(unit->get_unit_mutable_attrs().alive) {
+            heal(unit->get_mutable_attrs().owner, unit, unit->get_unit_mutable_attrs().damage);
          }
       }
    };
@@ -575,7 +578,7 @@ void Game::play_spells()
    auto& spell_stack = m_state->get_spell_stack();
    auto& spell_prestack = m_state->get_spell_prestack();
    for(const auto& spell : spell_prestack) {
-      Player player = spell->get_owner();
+      Player player = spell->get_mutable_attrs().owner;
       spell_stack.emplace_back(spell);
       spend_mana(player, spell->get_mana_cost(), true);
       uncover_card(spell);
@@ -586,7 +589,7 @@ void Game::play_spells()
 
 void Game::play_to_camp(const sptr< Card >& card, std::optional< size_t > replaces)
 {
-   Player player = card->get_owner();
+   Player player = card->get_mutable_attrs().owner;
    spend_mana(player, card->get_mana_cost(), false);
    auto& camp = m_state->m_board->get_camp(player);
    uncover_card(card);
@@ -597,7 +600,7 @@ void Game::play_to_camp(const sptr< Card >& card, std::optional< size_t > replac
    } else {
       camp.at(m_state->m_board->count_units(player, true) - 1) = card;
    }
-   card->set_location(Location::CAMP);
+   card->move(Location::CAMP);
    m_event_listener.register_card(card);
    _play_event_triggers(card, player);
 }
@@ -613,7 +616,7 @@ void Game::_play_event_triggers(const sptr< Card >& card, const Player& player)
 }
 void Game::cast(const sptr< Spell >& spell)
 {
-   _trigger_event(events::CastEvent(spell->get_owner(), spell));
+   _trigger_event(events::CastEvent(spell->get_mutable_attrs().owner, spell));
 }
 void Game::process_camp_queue(Player player)
 {
@@ -670,14 +673,14 @@ void Game::draw_card(Player player)
 void Game::summon(const sptr< Unit >& unit)
 {
    m_state->m_board->add_to_queue(unit);
-   Player player = unit->get_owner();
+   Player player = unit->get_mutable_attrs().owner;
    process_camp_queue(player);
    m_event_listener.register_card(unit);
    _trigger_event(events::SummonEvent(player, unit));
 }
 void Game::summon_to_battlefield(const sptr< Unit >& unit)
 {
-   Player player = unit->get_owner();
+   Player player = unit->get_mutable_attrs().owner;
    auto bf = m_state->m_board->get_battlefield(player);
    auto curr_unit_count = m_state->m_board->count_units(player, false);
    if(curr_unit_count < BATTLEFIELD_SIZE) {
@@ -692,7 +695,7 @@ void Game::summon_to_battlefield(const sptr< Unit >& unit)
 
 void Game::summon_exact_copy(const sptr< Unit >& unit)
 {
-   Player player = unit->get_owner();
+   Player player = unit->get_mutable_attrs().owner;
    auto copied_unit = std::make_shared< Unit >(*unit);
    m_state->m_board->add_to_queue(unit);
    process_camp_queue(player);
@@ -855,12 +858,13 @@ bool Game::check_nightfall(Player player) const
 void Game::_remove(const sptr< Card >& card)
 {
    m_event_listener.unregister_card(card);
-   if(auto loc = card->get_location(); loc == Location::CAMP) {
-      algo::remove_element(m_state->m_board->get_camp(card->get_owner()), card);
+   if(auto loc = card->get_mutable_attrs().location; loc == Location::CAMP) {
+      algo::remove_element(m_state->m_board->get_camp(card->get_mutable_attrs().owner), card);
    } else if(loc == Location::BATTLEFIELD) {
-      algo::remove_element(m_state->m_board->get_battlefield(card->get_owner()), card);
+      algo::remove_element(
+         m_state->m_board->get_battlefield(card->get_mutable_attrs().owner), card);
    } else if(loc == Location::HAND) {
-      algo::remove_element(m_state->get_hand(card->get_owner()), card);
+      algo::remove_element(m_state->get_hand(card->get_mutable_attrs().owner), card);
    }
 }
 void Game::_copy_grants(
@@ -873,7 +877,7 @@ void Game::cast_spellstack()
    // iterate from the end, since the stack is LIFO
    for(auto& spell : reverse(stack)) {
       if(spell->check_cast_condition(*this)) {
-         _trigger_event(events::CastEvent(spell->get_owner(), spell));
+         _trigger_event(events::CastEvent(spell->get_mutable_attrs().owner, spell));
       }
    }
    stack.clear();

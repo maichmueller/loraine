@@ -1,13 +1,13 @@
 
 #include "cards/effect.h"
 
-#include "cards/card.h"
-#include "game.h"
 #include "agent.h"
+#include "cards/card_types/all_card_types.h"
+#include "game.h"
 
 Player Effect::get_owner() const
 {
-   return m_assoc_card->get_owner();
+   return m_assoc_card->get_mutable_attrs().owner;
 }
 bool Effect::operator()(Game& game, const events::AnyEvent& event)
 {
