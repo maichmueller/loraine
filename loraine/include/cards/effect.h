@@ -24,7 +24,7 @@ class AnyEvent;
 
 class Effect {
   public:
-   enum class Type { AOE = 0, AURA, SIMPLE, TARGETED };
+   enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
    using EffectFunc = std::function< void(Game&, const events::AnyEvent&, Effect&) >;
    using ConditionFunc = std::function< bool(const Game&, const Effect&) >;
@@ -95,7 +95,7 @@ class Effect {
    virtual void _call(Game& game, const events::AnyEvent& event);
 };
 
-class TargetEffect: public Effect {
+class TargetingEffect: public Effect {
   public:
    bool target(const State& state, Agent& agent, Player player) override;
   private:

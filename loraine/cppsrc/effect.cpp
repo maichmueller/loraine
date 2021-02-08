@@ -36,7 +36,7 @@ bool Effect::target(const State& state, Agent& agent, Player player)
 {
    return true;
 }
-void TargetEffect::_call(Game& game, const events::AnyEvent& event)
+void TargetingEffect::_call(Game& game, const events::AnyEvent& event)
 {
    if(has_targets()) {
       // in case something has changed in between playing and casting the targets need to be
@@ -51,7 +51,7 @@ void TargetEffect::_call(Game& game, const events::AnyEvent& event)
    //   }
    get_effect_func()(game, event, *this);
 }
-bool TargetEffect::target(const State& state, Agent& agent, Player player)
+bool TargetingEffect::target(const State& state, Agent& agent, Player player)
 {
    auto & targeter = get_targeter();
    auto potential_targets = (*targeter)(state, player);

@@ -33,18 +33,18 @@ class Game {
 
    void incr_managems(Player player, long amount = 1);
 
-   void play_to_camp(const sptr< Card >& card, std::optional< size_t > replaces);
+   // play a unit or landmark card onto the board
+   void play(const sptr< Card >& card, std::optional< size_t > replaces);
+   // play all the spells that have been added to the spellstack
    void play_spells();
    void cast(const sptr< Spell >& spell);
-   void cast_spellstack();
-
    void summon(const sptr< Unit >& unit);
+
    void summon_to_battlefield(const sptr< Unit >& unit);
    void summon_exact_copy(const sptr< Unit >& unit);
-
    void create_card(Player player, size_t card_id);
-   void create_copy(Player player, const sptr< Card >& card, bool exact_copy = false);
 
+   void create_copy(Player player, const sptr< Card >& card, bool exact_copy = false);
    void recall(Player recaller, const sptr< Card >& recalled_card);
 
    void deal_damage_to_unit(
@@ -52,8 +52,7 @@ class Game {
 
    void heal(Player player, const sptr< Unit >& unit, long amount);
 
-   void nexus_strike(
-      Player attacked_nexus, const sptr< long >& damage, const sptr< Card >& responsible_card);
+   void nexus_strike(Player attacked_nexus, const sptr< Unit >& striking_unit);
 
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
 
@@ -71,11 +70,11 @@ class Game {
    std::vector< Target > filter_targets(const Filter& filter, std::optional< Player > opt_player);
 
    void retreat_to_camp(Player player);
+
    void process_camp_queue(Player player);
-
    void draw_card(Player player);
-   void spend_mana(Player player, size_t cost, bool spell_mana);
 
+   void spend_mana(Player player, size_t cost, bool spell_mana);
    // inline methods
    inline void shuffle_card_into_deck(const sptr< Card >& card, Player player)
    {
@@ -84,14 +83,13 @@ class Game {
       auto pos = deck.begin() + static_cast< long >(dist(rng::get_engine()));
       deck.insert(pos, card);
    }
+
    inline void obliterate(const sptr< Card >& card)
    {
       uncover_card(card);
       _remove(card);
    }
    static inline void uncover_card(const sptr< Card >& card) { card->get_mutable_attrs().hidden = false; }
-   //   void level_up_champion(sptr< Champion > champ);
-
    /*
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
@@ -128,12 +126,12 @@ class Game {
    }
 
   private:
+
    sptr< State > m_state;
    SymArr< sptr< Agent > > m_agents;
    events::EventListener m_event_listener;
    sptr< events::AnyEvent > m_last_event;
    SymArr< sptr< GrantFactory > > m_grant_factory;
-
    inline void _trigger_event(events::AnyEvent&& event)
    {
       m_last_event = std::make_shared< events::AnyEvent >(std::move(event));
@@ -141,15 +139,16 @@ class Game {
    }
 
    void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
+
    void _move_units_opp(const std::map< size_t, size_t >& positions, Player player, bool to_bf);
    bool _move_spell(const sptr< Spell >& spell, bool to_stack);
-
    void _mulligan(
       const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);
 
    std::vector< sptr< Card > > _draw_n_cards(Player player, int n = 1);
 
    bool _do_action(const sptr< AnyAction >& action);
+
    /*
     * Start the next round.
     * Does the following actions in order:
@@ -159,11 +158,13 @@ class Game {
     */
    void _start_round();
    void _end_round();
+
+   void _cast_spellstack();
+
    void _activate_battlemode(Player attack_player);
+   void _deactivate_battlemode();
 
    void _remove(const sptr< Card >& card);
-
-   void _deactivate_battlemode();
 
    void _resolve_battle();
    void _resolve_spell_stack(bool burst);
@@ -172,7 +173,6 @@ class Game {
    void _play_event_triggers(const sptr< Card >& card, const Player& player);
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit);
-   void _set_battle_resolution_mode(bool battle_resolution_flag);
 };
 
 template < events::EventType event_type, typename... Params >

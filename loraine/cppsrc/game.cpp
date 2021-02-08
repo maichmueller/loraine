@@ -164,7 +164,7 @@ bool Game::_do_action(const sptr< AnyAction >& action)
                   flip_initiative = false;
                }
             } else {
-               play_to_camp(card, cast_action->get_replace_idx());
+               play(card, cast_action->get_replace_idx());
             }
          }
 
@@ -285,7 +285,7 @@ void Game::_resolve_spell_stack(bool burst)
       spell_stack.pop_back();
       cast(last_spell);
    } else {
-      cast_spellstack();
+      _cast_spellstack();
       if(m_state->in_battle_mode()) {
          _resolve_battle();
       }
@@ -293,12 +293,13 @@ void Game::_resolve_spell_stack(bool burst)
 }
 void Game::_resolve_battle()
 {
-   _set_battle_resolution_mode(true);
+   m_state->set_battle_resolution_mode(true);
    auto attacker = m_state->get_attacker().value();
    auto defender = Player(1 - attacker);
    auto& battlefield_att = m_state->m_board->get_battlefield(attacker);
    auto& battlefield_def = m_state->m_board->get_battlefield(defender);
    for(auto pos = 0U; pos < m_state->m_board->count_units(attacker, false); ++pos) {
+
       auto unit_att_opt = battlefield_att.at(pos);
 
       if(has_value(unit_att_opt)) {
@@ -328,7 +329,6 @@ void Game::_resolve_battle()
                      if(double_attacks) {
                         // a double attacking unit attacks again after a quick
                         // attack
-
                         strike(unit_att, unit_def);
                      }
                      strike(unit_def, unit_att);
@@ -351,17 +351,14 @@ void Game::_resolve_battle()
          } else {
             // if there is no defender to block the attack, the attacker
             // strikes the nexus
-            sptr< long > att_power = std::make_shared< long >(unit_att->get_power());
-
-            if(*att_power > 0) {
-               nexus_strike(defender, att_power, unit_att);
-            }
+            nexus_strike(defender, unit_att);
          }
       }
       retreat_to_camp(attacker);
       retreat_to_camp(defender);
       m_state->set_battle_mode(false);
    }
+   m_state->set_battle_resolution_mode(false);
 }
 void Game::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
@@ -397,15 +394,13 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
    _remove(killed_unit);
 }
 
-void Game::nexus_strike(
-   Player attacked_nexus, const sptr< long >& damage, const sptr< Card >& responsible_card)
+void Game::nexus_strike(Player attacked_nexus, const sptr< Unit >& striking_unit)
 {
-   if(*damage > 0) {
+   sptr< long > att_power = std::make_shared< long >(striking_unit->get_power());
+   if(*att_power > 0) {
       _trigger_event(events::NexusStrikeEvent(
-         responsible_card->get_mutable_attrs().owner, responsible_card, attacked_nexus, damage));
-
-      m_state->damage_nexus(*damage, attacked_nexus);
-
+         striking_unit->get_mutable_attrs().owner, striking_unit, attacked_nexus, att_power));
+      m_state->damage_nexus(*att_power, attacked_nexus);
       m_state->set_flag_plunder(true, Player(1 - attacked_nexus));
    }
 }
@@ -589,15 +584,15 @@ void Game::play_spells()
    spell_prestack.clear();
 }
 
-void Game::play_to_camp(const sptr< Card >& card, std::optional< size_t > replaces)
+void Game::play(const sptr< Card >& card, std::optional< size_t > replaces)
 {
    Player player = card->get_mutable_attrs().owner;
    spend_mana(player, card->get_mana_cost(), false);
    auto& camp = m_state->m_board->get_camp(player);
    uncover_card(card);
    if(replaces.has_value()) {
-      auto& unit_to_replace = camp.at(replaces.value());
-      obliterate(unit_to_replace);
+      auto& card_to_replace = camp.at(replaces.value());
+      obliterate(card_to_replace);
       camp.at(replaces.value()) = card;
    } else {
       camp.at(m_state->m_board->count_units(player, true) - 1) = card;
@@ -623,17 +618,24 @@ void Game::cast(const sptr< Spell >& spell)
 void Game::process_camp_queue(Player player)
 {
    // the logic of LOR for deciding how many units in the queue fit into the
-   // camp goes by whether there is space left after counting all units in the
-   // camp and currently on the battlefield, except for those battling units
-   // that are ephemeral and thus expected to die after striking. If they,
-   // contrary to expectation, manage to survive (e.g. through "Death's Hand"
-   // spell), then any unit of the battlefield as counted from the end, which is
-   // no longer fitting into the camp, is obliterated (this is handled in
-   // the method 'retreat_to_camp').
+   // camp goes by 2 different modes:
+   // 1) default play mode, and
+   // 2) battle resolution mode
+
+   // In 1) the card will be obliterated, if there is no space currently on the board left,
+   // after having considered all previous units in the queue. Otherwise, it is placed
+   // in the camp. When a unit is summoned when attack is declared (e.g. Kalista summoning
+   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
+   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
+   // units are ephemeral and expected to die on strike), then that unit would be placed
+   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
+   // through "Death's Hand" spell removing ephemeral or the ephemeral was shadow-blocked),
+   // then, starting from the end, any unit of the battlefield, which no longer finds space
+   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
    size_t camp_units_count = m_state->m_board->count_units(player, true);
    size_t bf_units_count = m_state->m_board->count_units(
       player, false, [](const sptr< Card >& unit) {
-         return ! unit->has_keyword(Keyword::EPHEMERAL);
+         return not unit->has_keyword(Keyword::EPHEMERAL);
       });
    auto& queue = m_state->m_board->get_camp_queue(player);
    size_t units_in_queue = queue.size();
@@ -873,7 +875,7 @@ void Game::_copy_grants(
    const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit)
 {
 }
-void Game::cast_spellstack()
+void Game::_cast_spellstack()
 {
    auto& stack = m_state->get_spell_stack();
    // iterate from the end, since the stack is LIFO
@@ -884,14 +886,3 @@ void Game::cast_spellstack()
    }
    stack.clear();
 }
-void Game::_set_battle_resolution_mode(bool battle_resolution_flag) {
-   m_battle_resolution_flag = battle_resolution_flag;
-}
-
-// void Game::level_up_champion(sptr<Champion> champ)
-//{
-//   auto curr_uuid = champ->get_uuid();
-//   auto grants = get_all_grants(champ);
-//   auto damage = champ->get_damage();
-//
-//}

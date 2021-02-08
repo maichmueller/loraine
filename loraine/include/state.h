@@ -114,6 +114,7 @@ class State {
    inline void set_scout_token(Player player, bool value) { m_scout_token.at(player) = value; }
 
    inline void set_battle_mode(bool value) { m_battle_mode = value; }
+   inline void set_battle_resolution_mode(bool value) { m_battle_resolution_mode = value; }
    inline void set_attacker(Player player) { m_attacker = player; }
 
    inline void reset_attacker() { m_attacker.reset(); }
@@ -229,7 +230,7 @@ class State {
    Player m_starting_player;
    std::optional< Player > m_attacker;
    bool m_battle_mode = false;
-   bool m_battle_resolution_flag = false;
+   bool m_battle_resolution_mode = false;
    size_t m_round = 0;
    size_t m_turn;
    Status m_terminal = Status::ONGOING;

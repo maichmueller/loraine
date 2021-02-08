@@ -76,7 +76,65 @@ class EventListener {
          clear_listener_lambda(RED);
       }
    }
-};  // namespace events
+   template < events::EventType event_type, typename... Params >
+   constexpr inline void trigger_event(Params... params)
+   {
+      using namespace events;
+      if constexpr(event_type == EventType::NONE) {
+         _trigger_event(NoneEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::ATTACK) {
+         _trigger_event(AttackEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::BEHOLD) {
+         _trigger_event(BeholdEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::CAPTURE) {
+         _trigger_event(CaptureEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::CAST) {
+         _trigger_event(CastEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::BLOCK) {
+         _trigger_event(BlockEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::DAYBREAK) {
+         _trigger_event(DaybreakEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::DIE) {
+         _trigger_event(DieEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::DISCARD) {
+         _trigger_event(DiscardEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::DRAW_CARD) {
+         _trigger_event(DrawCardEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::ENLIGHTENMENT) {
+         _trigger_event(EnlightenmentEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::GAIN_MANAGEM) {
+         _trigger_event(GainManagemEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::HEAL_UNIT) {
+         _trigger_event(HealUnitEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::LEVEL_UP) {
+         _trigger_event(LevelUpEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::NEXUS_STRIKE) {
+         _trigger_event(NexusStrikeEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::NIGHTFALL) {
+         _trigger_event(NightfallEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::PLAY) {
+         _trigger_event(PlayEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::RECALL) {
+         _trigger_event(RecallEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::ROUND_END) {
+         _trigger_event(RoundEndEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::ROUND_START) {
+         _trigger_event(RoundStartEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::SCOUT) {
+         _trigger_event(ScoutEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::STRIKE) {
+         _trigger_event(StrikeEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::STUN) {
+         _trigger_event(StunEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::SUMMON) {
+         _trigger_event(SummonEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::TARGET) {
+         _trigger_event(TargetEvent(std::forward< Params... >(params...)));
+      } else if constexpr(event_type == EventType::UNIT_TAKE_DAMAGE) {
+         _trigger_event(UnitTakeDamageEvent(std::forward< Params... >(params...)));
+      }
+   }
+};
 
 }  // namespace events
 
