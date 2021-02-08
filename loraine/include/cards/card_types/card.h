@@ -9,8 +9,8 @@
 
 #include "cards/card_defs.h"
 #include "cards/effect.h"
-#include "event/event.h"
-#include "event/event_types.h"
+#include "events/event.h"
+#include "events/event_types.h"
 #include "types.h"
 #include "uuid_gen.h"
 

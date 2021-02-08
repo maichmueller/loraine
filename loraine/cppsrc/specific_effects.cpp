@@ -6,7 +6,7 @@
 #include "target.h"
 
 void effects::fading_memories_cast(
-   Game& game, const events::CastEvent& /*event*/, Effect& source_container)
+   Game& game, const events::CastEvent& /*events*/, Effect& source_container)
 {
    auto targets = source_container.get_targets();
    if(targets.empty()) {

@@ -9,9 +9,9 @@
 #include "agent.h"
 #include "cards/card_types/all_card_types.h"
 #include "cards/filter.h"
-#include "cards/grant.h"
-#include "event/event_listener.h"
-#include "factory.h"
+#include "events/event_listener.h"
+#include "grants/grant.h"
+#include "grants/grantfactory.h"
 #include "rulesets.h"
 #include "state.h"
 #include "types.h"
@@ -61,7 +61,7 @@ class Game {
       Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
 
    /*
-    * An api for triggering an event mainly externally. Which event is supposed to be triggered
+    * An api for triggering an events mainly externally. Which events is supposed to be triggered
     * needs to be known at compile time.
     */
    template < events::EventType event_type, typename... Params >
@@ -172,6 +172,7 @@ class Game {
    void _play_event_triggers(const sptr< Card >& card, const Player& player);
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit);
+   void _set_battle_resolution_mode(bool battle_resolution_flag);
 };
 
 template < events::EventType event_type, typename... Params >

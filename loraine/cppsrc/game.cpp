@@ -5,7 +5,7 @@
 
 #include <utility>
 
-#include "cards/grant.h"
+#include "grants/grant.h"
 #include "rulesets.h"
 #include "utils.h"
 
@@ -143,7 +143,8 @@ bool Game::_do_action(const sptr< AnyAction >& action)
    if(action_type == ActionType::PASS) {
       // this case has to be handled separately to combine the pass counter
       // reset for all other cases
-      if(m_state->pass()) {
+      bool round_ends = m_state->pass();
+      if(round_ends) {
          _end_round();
          _start_round();
       }
@@ -292,6 +293,7 @@ void Game::_resolve_spell_stack(bool burst)
 }
 void Game::_resolve_battle()
 {
+   _set_battle_resolution_mode(true);
    auto attacker = m_state->get_attacker().value();
    auto defender = Player(1 - attacker);
    auto& battlefield_att = m_state->m_board->get_battlefield(attacker);
@@ -462,7 +464,7 @@ void Game::_end_round()
    _trigger_event(
       events::RoundEndEvent(active_player, std::make_shared< long >(m_state->get_round())));
 
-   SymArr< std::vector< sptr< Unit > > > regenerators;
+   SymArr< std::vector< sptr< Unit > > > regenerating_units;
    auto end_round_procedure = [&](Player player) {
       // kill ephemeral units
       for(auto& unit : m_state->m_board->get_camp(player)) {
@@ -473,13 +475,13 @@ void Game::_end_round()
          // undo temporary buffs/nerfs and possibly heal the units if applicable
          auto temp_grants = unit->get_mutable_attrs().grants_temp;
          for(auto&& grant : temp_grants) {
-            grant->undo(unit);
+            grant->undo();
          }
          temp_grants.clear();
 
          // REGENERATION units will regenerate after removing grants etc.
          if(unit->has_keyword(Keyword::REGENERATION)) {
-            regenerators[player].emplace_back(to_unit(unit));
+            regenerating_units[player].emplace_back(to_unit(unit));
          }
       }
 
@@ -489,7 +491,7 @@ void Game::_end_round()
 
    auto regenerate_units = [&](Player player) {
       // regenerate the units with regeneration
-      for(auto& unit : regenerators[player]) {
+      for(auto& unit : regenerating_units[player]) {
          if(unit->get_unit_mutable_attrs().alive) {
             heal(unit->get_mutable_attrs().owner, unit, unit->get_unit_mutable_attrs().damage);
          }
@@ -516,7 +518,7 @@ void Game::_start_round()
    m_state->set_scout_token(BLUE, false);
    m_state->set_scout_token(RED, false);
 
-   // the round start event is to be triggered by the player that also ended the previous round.
+   // the round start events is to be triggered by the player that also ended the previous round.
    _trigger_event(
       events::RoundStartEvent(m_state->get_active_player(), std::make_shared< long >(round)));
    for(int player = BLUE; player != RED; ++player) {
@@ -600,7 +602,7 @@ void Game::play_to_camp(const sptr< Card >& card, std::optional< size_t > replac
    } else {
       camp.at(m_state->m_board->count_units(player, true) - 1) = card;
    }
-   card->move(Location::CAMP);
+   card->move(Location::CAMP, has_value(replaces) ? replaces.value() : camp.size() - 1 );
    m_event_listener.register_card(card);
    _play_event_triggers(card, player);
 }
@@ -881,6 +883,9 @@ void Game::cast_spellstack()
       }
    }
    stack.clear();
+}
+void Game::_set_battle_resolution_mode(bool battle_resolution_flag) {
+   m_battle_resolution_flag = battle_resolution_flag;
 }
 
 // void Game::level_up_champion(sptr<Champion> champ)

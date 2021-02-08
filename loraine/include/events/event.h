@@ -250,7 +250,7 @@ class UnitTakeDamageEvent: public AnyEvent {
    }
 };
 
-//// The most recent happening event
+//// The most recent happening events
 // using VariantEvent = std::variant<
 //   AnyEvent,
 //   NoneEvent,
@@ -280,7 +280,7 @@ class UnitTakeDamageEvent: public AnyEvent {
 //   TargetEvent,
 //   UnitTakeDamageEvent >;
 //
-//// visitors to access the data depending on the event
+//// visitors to access the data depending on the events
 // struct VisitorEventType {
 //   template < typename event_t >
 //   EventType operator()(const event_t& eve) const
@@ -289,15 +289,15 @@ class UnitTakeDamageEvent: public AnyEvent {
 //   }
 //};
 
-// inline EventType get_event_type(const VariantEvent& event)
+// inline EventType get_event_type(const VariantEvent& events)
 //{
-//   return std::visit(VisitorEventType{}, event);
+//   return std::visit(VisitorEventType{}, events);
 //}
 
 // template< typename Event>
-// inline auto get_event_data(const AnyEvent& event)
+// inline auto get_event_data(const AnyEvent& events)
 //{
-//   return event.get_event_data();
+//   return events.get_event_data();
 //}
 
 }  // namespace events

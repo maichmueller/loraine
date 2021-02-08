@@ -3,7 +3,7 @@
 
 #include "cards/card_types/all_card_types.h"
 #include "cards/effect.h"
-#include "event/event.h"
+#include "events/event.h"
 #include "game.h"
 #include "rulesets.h"
 

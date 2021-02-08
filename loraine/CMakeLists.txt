@@ -18,6 +18,9 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/spell.cpp
         ${LORAINE_SRC_DIR}/landmark.cpp
 
+        ${LORAINE_SRC_DIR}/grant.cpp
+        ${LORAINE_SRC_DIR}/grantmodifier.cpp
+
         )
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")

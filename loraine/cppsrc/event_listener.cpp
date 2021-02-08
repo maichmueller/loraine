@@ -1,5 +1,5 @@
 
-#include "event/event_listener.h"
+#include "events/event_listener.h"
 
 namespace events {
 
@@ -18,7 +18,7 @@ void EventListener::on_event(Game& game, Player player, const events::AnyEvent& 
       };
 
       if(opt_causing_cards.has_value()) {
-         // causing cards get preferential treatment in terms of execution order of the event
+         // causing cards get preferential treatment in terms of execution order of the events
          // trigger. This allows the order to be correct for e.g. Play-effects of the played card
          // first
          auto causing_cards = opt_causing_cards.value();
@@ -33,7 +33,7 @@ void EventListener::on_event(Game& game, Player player, const events::AnyEvent& 
             }
          }
       }
-      // trigger now every remaining card that is listening to this event
+      // trigger now every remaining card that is listening to this events
       std::for_each(registered_cards.begin(), registered_cards.end(), trigger_card_lambda);
    }
 }

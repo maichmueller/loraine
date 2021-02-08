@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "cards/card_types/all_card_types.h"
-#include "event/event.h"
+#include "events/event.h"
 #include "event_types.h"
 #include "types.h"
 
@@ -41,7 +41,7 @@ class EventListener {
 
    inline void register_card(const sptr< Card >& card)
    {
-      for(const auto& [eve_type, effects] : card->get_effects_map()) {
+      for(const auto& [eve_type, effects] : card->get_mutable_attrs().effects) {
          bool has_unconsumed_effects = false;
          for(const auto& effect : effects) {
             if(not effect.is_consumed()) {

@@ -25,7 +25,7 @@ class TestUnit1: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -48,7 +48,7 @@ class TestUnit2: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -70,7 +70,7 @@ class TestUnit3: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -92,7 +92,7 @@ class TestUnit4: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -114,7 +114,7 @@ class TestUnit5: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -136,7 +136,7 @@ class TestUnit6: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };
@@ -157,7 +157,7 @@ class TestSpell: public Spell {
              CardType::SPELL,
              1,
           },
-          Card::MutableData{true, Location::DECK, owner})
+          Card::MutableData{owner, Location::DECK,0, true})
    {
    }
 };

@@ -10,7 +10,7 @@ enum class EventType {
    ATTACK,  // declaring attacker
    BEHOLD,  // the player has an 8+ mana unit in hand or in play
    CAPTURE,  // A unit has captured another unit
-   CAST,  // casting spells/skills (activation event, not committing event)
+   CAST,  // casting spells/skills (activation events, not committing events)
    BLOCK,  // declaring blockers
    DAYBREAK,  // the played card is the first to be played in this round
    DIE,  // a unit dies

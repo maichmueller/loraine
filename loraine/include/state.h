@@ -206,8 +206,7 @@ class State {
 
   private:
    // player symmetric attributes
-
-   SymArr< Player > m_nexus_ids{BLUE, RED};
+   SymArr< Player > nexus_ids{BLUE, RED};
    SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
    SymArr< size_t > m_mana{0, 0};
    SymArr< size_t > m_managems{0, 0};
@@ -230,6 +229,7 @@ class State {
    Player m_starting_player;
    std::optional< Player > m_attacker;
    bool m_battle_mode = false;
+   bool m_battle_resolution_flag = false;
    size_t m_round = 0;
    size_t m_turn;
    Status m_terminal = Status::ONGOING;

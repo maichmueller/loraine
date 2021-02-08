@@ -1,10 +1,9 @@
 
-#include "cards/card_types/all_card_types.h"
-
 #include <utility>
 
-#include "cards/grant.h"
+#include "cards/card_types/all_card_types.h"
 #include "game.h"
+#include "grants/grant.h"
 #include "utils.h"
 
 Card::Card(
