@@ -18,7 +18,6 @@
 
 class Game {
   public:
-   [[nodiscard]] const auto& get_active_event() const { return m_last_event; }
    [[nodiscard]] auto get_state() const { return m_state; }
    [[nodiscard]] inline auto& get_agent(Player player) const { return m_agents[player]; }
    [[nodiscard]] inline auto& get_grantfactory(Player player) const
@@ -130,13 +129,7 @@ class Game {
    sptr< State > m_state;
    SymArr< sptr< Agent > > m_agents;
    events::EventListener m_event_listener;
-   sptr< events::AnyEvent > m_last_event;
    SymArr< sptr< GrantFactory > > m_grant_factory;
-   inline void _trigger_event(events::AnyEvent&& event)
-   {
-      m_last_event = std::make_shared< events::AnyEvent >(std::move(event));
-      m_event_listener.on_event(*m_state, *m_last_event);
-   }
 
    void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
 
@@ -174,65 +167,6 @@ class Game {
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit);
 };
-
-template < events::EventType event_type, typename... Params >
-constexpr inline void Game::trigger_event(Params... params)
-{
-   using namespace events;
-   if constexpr(event_type == EventType::NONE) {
-      _trigger_event(NoneEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::ATTACK) {
-      _trigger_event(AttackEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::BEHOLD) {
-      _trigger_event(BeholdEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::CAPTURE) {
-      _trigger_event(CaptureEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::CAST) {
-      _trigger_event(CastEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::BLOCK) {
-      _trigger_event(BlockEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::DAYBREAK) {
-      _trigger_event(DaybreakEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::DIE) {
-      _trigger_event(DieEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::DISCARD) {
-      _trigger_event(DiscardEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::DRAW_CARD) {
-      _trigger_event(DrawCardEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::ENLIGHTENMENT) {
-      _trigger_event(EnlightenmentEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::GAIN_MANAGEM) {
-      _trigger_event(GainManagemEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::HEAL_UNIT) {
-      _trigger_event(HealUnitEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::LEVEL_UP) {
-      _trigger_event(LevelUpEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::NEXUS_STRIKE) {
-      _trigger_event(NexusStrikeEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::NIGHTFALL) {
-      _trigger_event(NightfallEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::PLAY) {
-      _trigger_event(PlayEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::RECALL) {
-      _trigger_event(RecallEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::ROUND_END) {
-      _trigger_event(RoundEndEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::ROUND_START) {
-      _trigger_event(RoundStartEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::SCOUT) {
-      _trigger_event(ScoutEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::STRIKE) {
-      _trigger_event(StrikeEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::STUN) {
-      _trigger_event(StunEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::SUMMON) {
-      _trigger_event(SummonEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::TARGET) {
-      _trigger_event(TargetEvent(std::forward< Params... >(params...)));
-   } else if constexpr(event_type == EventType::UNIT_TAKE_DAMAGE) {
-      _trigger_event(UnitTakeDamageEvent(std::forward< Params... >(params...)));
-   }
-}
 
 template < Location range >
 std::vector< Target > Game::filter_targets(const Filter& filter, std::optional< Player > opt_player)

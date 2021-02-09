@@ -22,7 +22,7 @@ namespace events {
 class AnyEvent {
    const EventType m_event_type;
    const Player m_causing_player;
-   const std::optional< const std::vector< sptr< Card > > > m_causing_cards;
+   const std::optional< const sptr< Card > > m_causing_card;
    const std::optional< const std::vector< Target > > m_targets;
    const std::optional< const std::vector< sptr< long > > > m_values;
 
@@ -31,21 +31,21 @@ class AnyEvent {
    AnyEvent(
       EventType type,
       Player causing_player,
-      std::vector< sptr< Card > > causing_cards = {},
+      const std::optional<sptr< Card >>& causing_card = {},
       std::vector< Target > targets = {},
       std::vector< sptr< long > > values = {})
        : m_event_type(type),
          m_causing_player(causing_player),
-         m_causing_cards(causing_cards),
+         m_causing_card(causing_card),
          m_targets(targets),
          m_values(values)
    {
    }
-   [[nodiscard]] inline auto get_event_type() const { return m_event_type; }
-   [[nodiscard]] inline auto get_player() const { return m_causing_player; }
-   [[nodiscard]] inline auto get_causing_cards() const { return m_causing_cards; }
-   [[nodiscard]] inline auto get_targets() const { return m_targets; }
-   [[nodiscard]] inline auto get_values() const { return m_values; }
+   [[nodiscard]] inline auto event_type() const { return m_event_type; }
+   [[nodiscard]] inline auto player() const { return m_causing_player; }
+   [[nodiscard]] inline auto causing_card() const { return m_causing_card; }
+   [[nodiscard]] inline auto targets() const { return m_targets; }
+   [[nodiscard]] inline auto values() const { return m_values; }
 };
 
 class NoneEvent: public AnyEvent {
@@ -72,7 +72,7 @@ class CaptureEvent: public AnyEvent {
    static const EventType event_type = EventType::CAPTURE;
    CaptureEvent(Player player, const sptr< Card >& causing_card, Target captor, Target captee)
        : AnyEvent(
-          EventType::CAPTURE, player, {causing_card}, {std::move(captor), std::move(captee)})
+          EventType::CAPTURE, player, causing_card, {std::move(captor), std::move(captee)})
    {
    }
 };
@@ -87,19 +87,20 @@ class DaybreakEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::DAYBREAK;
    DaybreakEvent(Player player, sptr< Card > causing_card)
-       : AnyEvent(EventType::DAYBREAK, player, {std::move(causing_card)})
+       : AnyEvent(EventType::DAYBREAK, player, std::move(causing_card))
    {
    }
 };
 class DieEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::DIE;
-   DieEvent(Player player, Target killed, sptr< Card > killer)
-       : AnyEvent(EventType::DIE, player, {std::move(killer)}, {std::move(killed)})
+   DieEvent(Player player, sptr< Card > killer, Target killed)
+       : AnyEvent(EventType::DIE, player, std::move(killer), {std::move(killed)})
    {
    }
-   DieEvent(Player player, const std::vector< Target >& killed_units, sptr< Card > killer)
-       : AnyEvent(EventType::DIE, player, {std::move(killer)}, killed_units)
+   DieEvent(Player player, sptr< Card > killer,
+            const std::vector< Target >& killed_units)
+       : AnyEvent(EventType::DIE, player, std::move(killer), killed_units)
    {
    }
 };
@@ -107,7 +108,7 @@ class DiscardEvent: public AnyEvent {
   public:
    DiscardEvent(Player player, sptr< Card > causing_card, Target discarded_card)
        : AnyEvent(
-          EventType::DISCARD, player, {std::move(causing_card)}, {std::move(discarded_card)})
+          EventType::DISCARD, player, std::move(causing_card), {std::move(discarded_card)})
    {
    }
 };
@@ -289,7 +290,7 @@ class UnitTakeDamageEvent: public AnyEvent {
 //   }
 //};
 
-// inline EventType get_event_type(const VariantEvent& events)
+// inline EventType event_type(const VariantEvent& events)
 //{
 //   return std::visit(VisitorEventType{}, events);
 //}

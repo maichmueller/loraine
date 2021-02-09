@@ -10,6 +10,7 @@
 #include "board.h"
 //#include "cards/card.h"
 #include "deck.h"
+#include "events/event_listener.h"
 #include "rng_machine.h"
 #include "rulesets.h"
 #include "types.h"
@@ -64,6 +65,9 @@ class State {
       bool terminal_checked,
       SpellStackType spell_stack = {},
       SpellStackType spell_prestack = {});
+
+   auto event_listener(Player player) { return m_event_listener[player]; }
+   auto event_listener(Player player) const { return m_event_listener[player]; }
 
    inline void set_nexus_health(long int value, Player player) { m_nexus_health[player] = value; }
    inline void damage_nexus(size_t amount, Player player) { m_nexus_health[player] -= amount; }
@@ -218,6 +222,7 @@ class State {
    SymArr< bool > m_can_plunder{false, false};
    SymArr< bool > m_passed{false, false};
 
+   SymArr< events::EventListener > m_event_listener;
    SymArr< HandType > m_hand;
    SymArr< DeckType > m_deck_cont;
    SymArr< std::map< size_t, std::vector< sptr< Card > > > > m_graveyard{};

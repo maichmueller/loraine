@@ -13,128 +13,128 @@
 #include "events/event.h"
 #include "types.h"
 
-class Game;
+class State;
 
 namespace events {
 
 class EventListener {
   public:
-   using ListenerType = std::unordered_set< sptr< Card > >;
+   // we use raw pointers for the cards here, since the EventListener is supposed to
+   // be a member of the State object. As such, all cards in this state will be deleted
+   // when the State is deleted and the listener doesn't have to care about that.
+
+   // This also implies that every deleted card object has to be properly unsubscribed
+   // from the listener!
+
+   using ListenerType = std::unordered_set< Card* >;
    using ListenerArrType = std::array< ListenerType, n_events >;
-   using ListenerQueueType = std::queue< sptr< Card > >;
 
-  private:
-   SymArr< ListenerArrType > m_listeners;
-
-  public:
-   template < typename T >
-   auto& access_listeners(const T& accessor)
+   auto& listener(size_t index) { return m_listener[index]; }
+   const auto& listener(size_t index) const { return m_listener[index]; }
+   auto& listener(const events::EventType& et) { return m_listener[static_cast< size_t >(et)]; }
+   const auto& listener(const events::EventType& et) const
    {
-      return m_listeners[accessor];
+      return m_listener[static_cast< size_t >(et)];
    }
-   template < typename T >
-   auto& access_listeners(const T& accessor) const
-   {
-      return m_listeners[accessor];
-   }
-   void on_event(State& state, const AnyEvent& event);
 
-   inline void register_card(const sptr< Card >& card)
+   template < events::EventType event_type, typename... Params >
+   void on_event(State& state, Params... params);
+
+   inline void subscribe(Card& card)
    {
-      for(const auto& [eve_type, effects] : card->get_mutable_attrs().effects) {
-         bool has_unconsumed_effects = false;
+      for(const auto& [eve_type, effects] : card.get_mutable_attrs().effects) {
          for(const auto& effect : effects) {
             if(not effect.is_consumed()) {
-               has_unconsumed_effects = true;
+               listener(eve_type).emplace(&card);
                break;
             }
          }
-         if(has_unconsumed_effects) {
-            register_effects_for_event(card, eve_type);
-         }
       }
    }
-   inline void register_effects_for_event(const sptr< Card >& card, EventType event_type)
-   {
-      for(const auto& effect : card->get_effects(event_type)) {
-         access_listeners(card->get_mutable_attrs().owner).at(size_t(event_type)).emplace(card);
-      }
-   }
-   void unregister_card(const sptr< Card >& card);
+   void unsubscribe(Card& card);
 
-   inline void clear_registers(std::optional< Player > opt_player)
+   inline void clear_registers()
    {
-      auto clear_listener_lambda = [&](Player player) {
-         for(auto& listener : access_listeners(player)) {
-            listener.clear();
-         }
-      };
-      if(opt_player.has_value()) {
-         clear_listener_lambda(opt_player.value());
-      } else {
-         clear_listener_lambda(BLUE);
-         clear_listener_lambda(RED);
+      for(auto& listener : m_listener) {
+         listener.clear();
       }
    }
+
+  private:
+   ListenerArrType m_listener;
+
    template < events::EventType event_type, typename... Params >
-   constexpr inline void trigger_event(Params... params)
-   {
-      using namespace events;
-      if constexpr(event_type == EventType::NONE) {
-         _trigger_event(NoneEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::ATTACK) {
-         _trigger_event(AttackEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::BEHOLD) {
-         _trigger_event(BeholdEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::CAPTURE) {
-         _trigger_event(CaptureEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::CAST) {
-         _trigger_event(CastEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::BLOCK) {
-         _trigger_event(BlockEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::DAYBREAK) {
-         _trigger_event(DaybreakEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::DIE) {
-         _trigger_event(DieEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::DISCARD) {
-         _trigger_event(DiscardEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::DRAW_CARD) {
-         _trigger_event(DrawCardEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::ENLIGHTENMENT) {
-         _trigger_event(EnlightenmentEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::GAIN_MANAGEM) {
-         _trigger_event(GainManagemEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::HEAL_UNIT) {
-         _trigger_event(HealUnitEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::LEVEL_UP) {
-         _trigger_event(LevelUpEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::NEXUS_STRIKE) {
-         _trigger_event(NexusStrikeEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::NIGHTFALL) {
-         _trigger_event(NightfallEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::PLAY) {
-         _trigger_event(PlayEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::RECALL) {
-         _trigger_event(RecallEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::ROUND_END) {
-         _trigger_event(RoundEndEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::ROUND_START) {
-         _trigger_event(RoundStartEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::SCOUT) {
-         _trigger_event(ScoutEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::STRIKE) {
-         _trigger_event(StrikeEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::STUN) {
-         _trigger_event(StunEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::SUMMON) {
-         _trigger_event(SummonEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::TARGET) {
-         _trigger_event(TargetEvent(std::forward< Params... >(params...)));
-      } else if constexpr(event_type == EventType::UNIT_TAKE_DAMAGE) {
-         _trigger_event(UnitTakeDamageEvent(std::forward< Params... >(params...)));
-      }
-   }
+   AnyEvent _build_event(Params... params);
 };
+
+template < events::EventType event_type, typename... Params >
+void EventListener::on_event(State& state, Params... params)
+{
+   // trigger the event construction first
+   auto event = _build_event< event_type >(std::forward< Params >(params)...);
+   const auto& registered_cards = listener(event->event_type());
+   // trigger every card that is subscribed to this event
+   for(const auto& card : registered_cards) {
+      card(state, event);
+   }
+}
+
+template < events::EventType event_type, typename... Params >
+AnyEvent EventListener::_build_event(Params... params)
+{
+   using namespace events;
+   if constexpr(event_type == EventType::ATTACK) {
+      return AttackEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::BEHOLD) {
+      return BeholdEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::CAPTURE) {
+      return CaptureEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::CAST) {
+      return CastEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::BLOCK) {
+      return BlockEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::DAYBREAK) {
+      return DaybreakEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::DIE) {
+      return DieEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::DISCARD) {
+      return DiscardEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::DRAW_CARD) {
+      return DrawCardEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::ENLIGHTENMENT) {
+      return EnlightenmentEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::GAIN_MANAGEM) {
+      return GainManagemEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::HEAL_UNIT) {
+      return HealUnitEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::LEVEL_UP) {
+      return LevelUpEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::NEXUS_STRIKE) {
+      return NexusStrikeEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::NIGHTFALL) {
+      return NightfallEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::PLAY) {
+      return PlayEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::RECALL) {
+      return RecallEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::ROUND_END) {
+      return RoundEndEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::ROUND_START) {
+      return RoundStartEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::SCOUT) {
+      return ScoutEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::STRIKE) {
+      return StrikeEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::STUN) {
+      return StunEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::SUMMON) {
+      return SummonEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::TARGET) {
+      return TargetEvent(std::forward< Params... >(params...));
+   } else if constexpr(event_type == EventType::UNIT_TAKE_DAMAGE) {
+      return UnitTakeDamageEvent(std::forward< Params... >(params...));
+   }
+}
 
 }  // namespace events
 

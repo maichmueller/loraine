@@ -67,14 +67,16 @@ void Card::store_grant(const sptr< Grant >& grant)
       m_mutables.grants_temp.emplace_back(grant);
    }
 }
-bool Card::operator()(Game& game, const events::AnyEvent& event)
+void Card::operator()(State& state, const events::AnyEvent& event)
 {
    bool all_consumed = true;
-   for(auto& effect : m_mutables.effects.at(event.get_event_type())) {
+   for(auto& effect : m_mutables.effects.at(event.event_type())) {
       if(not effect.is_consumed()) {
-         effect(game, event);
+         effect(state, event);
          all_consumed = false;
       }
    }
-   return all_consumed;
+   if(all_consumed) {
+      state.event_listener(m_mutables.owner).unsubscribe(*this);
+   }
 }

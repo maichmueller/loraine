@@ -83,7 +83,7 @@ class Card {
       std::vector< sptr< Grant > > grants_temp = {};
    };
 
-   bool operator()(Game& game, const events::AnyEvent& event);
+   void operator()(State& state, const events::AnyEvent& event);
 
    [[nodiscard]] inline auto& get_const_attrs() const { return m_immutables; }
    [[nodiscard]] inline auto& get_const_attrs() { return m_immutables; }

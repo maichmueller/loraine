@@ -36,7 +36,7 @@ enum class EventType {
    COUNTER
 };
 
-constexpr const static size_t n_events = size_t (EventType::COUNTER) + 1;
+constexpr const static size_t n_events = static_cast<size_t>(EventType::COUNTER) + 1;
 }
 
 #endif  // LORAINE_EVENT_TYPES_H
