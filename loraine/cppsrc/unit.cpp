@@ -1,5 +1,5 @@
 
-#include "cards/card_types/unit.h"
+#include "cards/types/unit.h"
 #include "game.h"
 
 bool Unit::_check_play_condition(const Game& game) const

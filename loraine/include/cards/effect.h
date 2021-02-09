@@ -26,8 +26,8 @@ class Effect {
   public:
    enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
-   using EffectFunc = std::function< void(Game&, const events::AnyEvent&, Effect&) >;
-   using ConditionFunc = std::function< bool(const Game&, const Effect&) >;
+   using EffectFunc = std::function< void(State&, const events::AnyEvent&, Effect&) >;
+   using ConditionFunc = std::function< bool(const State&, const Effect&) >;
 
    [[nodiscard]] bool is_null() const { return m_is_null; }
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
@@ -48,11 +48,11 @@ class Effect {
 
    inline void consume() { m_consumed = true; }
 
-   bool operator()(Game& game, const events::AnyEvent& event);
+   bool operator()(State& state, const events::AnyEvent& event);
 
-   [[nodiscard]] inline bool check_condition(const Game& game) const
+   [[nodiscard]] inline bool check_condition(const State& state) const
    {
-      return m_con_func(game, *this);
+      return m_con_func(state, *this);
    }
    [[nodiscard]] virtual bool target(const State& state, Agent& agent, Player player);
 
@@ -92,14 +92,14 @@ class Effect {
    sptr< BaseTargeter > m_targeter;
    std::vector< Target > m_targets;
 
-   virtual void _call(Game& game, const events::AnyEvent& event);
+   virtual void _call(State& state, const events::AnyEvent& event);
 };
 
 class TargetingEffect: public Effect {
   public:
    bool target(const State& state, Agent& agent, Player player) override;
   private:
-   void _call(Game& game, const events::AnyEvent& event) override;
+   void _call(State& state, const events::AnyEvent& event) override;
 };
 
 #endif  // LORAINE_EFFECT_H

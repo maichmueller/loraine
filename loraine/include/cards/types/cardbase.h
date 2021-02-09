@@ -245,4 +245,4 @@ struct hash< sptr< Card > > {
 };
 }  // namespace std
 
-#endif  // LORAINE_CARD_H
+#endif  // LORAINE_BASE_H

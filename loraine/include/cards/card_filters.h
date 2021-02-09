@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card_types/card.h"
 
 inline bool filter_trivial(const sptr< Card >& card)
 {

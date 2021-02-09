@@ -8,9 +8,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "cards/card_types/all_card_types.h"
-#include "events/event.h"
+#include "cards/card.h"
 #include "event_types.h"
+#include "events/event.h"
 #include "types.h"
 
 class Game;
@@ -37,7 +37,7 @@ class EventListener {
    {
       return m_listeners[accessor];
    }
-   void on_event(Game& game, Player player, const AnyEvent& event);
+   void on_event(State& state, const AnyEvent& event);
 
    inline void register_card(const sptr< Card >& card)
    {

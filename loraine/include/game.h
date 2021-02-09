@@ -7,7 +7,7 @@
 #include <optional>
 
 #include "agent.h"
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "cards/filter.h"
 #include "events/event_listener.h"
 #include "grants/grant.h"
@@ -135,7 +135,7 @@ class Game {
    inline void _trigger_event(events::AnyEvent&& event)
    {
       m_last_event = std::make_shared< events::AnyEvent >(std::move(event));
-      m_event_listener.on_event(*this, m_state->get_active_player(), *m_last_event);
+      m_event_listener.on_event(*m_state, *m_last_event);
    }
 
    void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);

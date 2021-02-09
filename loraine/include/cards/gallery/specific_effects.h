@@ -1,7 +1,7 @@
 #ifndef LORAINE_SPECIFIC_EFFECTS_H
 #define LORAINE_SPECIFIC_EFFECTS_H
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "cards/effect.h"
 #include "events/event.h"
 #include "game.h"

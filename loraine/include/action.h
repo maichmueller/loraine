@@ -3,12 +3,10 @@
 #ifndef LORAINE_ACTION_H
 #define LORAINE_ACTION_H
 
-#include <cards/card_types/card.h>
-
 #include <map>
 #include <utility>
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "rulesets.h"
 #include "types.h"
 

@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "card.h"
+#include "cardbase.h"
 
 class Unit: public Card {
   public:

@@ -7,7 +7,7 @@
 #include "agent.h"
 #include "board.h"
 #include "cards/card_defs.h"
-#include "cards/card_types/all_card_types.h"
+#include "cards/card_types/card.h"
 #include "game.h"
 #include "grants/grant.h"
 #include "rng_machine.h"

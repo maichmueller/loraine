@@ -3,10 +3,10 @@
 
 #include <utility>
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
+#include "events/event.h"
 #include "types.h"
 #include "uuid_gen.h"
-#include "events/event.h"
 
 enum GrantType { STATS, MANA, KEYWORD, EFFECT };
 

@@ -2,7 +2,7 @@
 #ifndef LORAINE_LANDMARK_H
 #define LORAINE_LANDMARK_H
 
-#include "card.h"
+#include "cardbase.h"
 
 class Landmark: public Card {
   public:

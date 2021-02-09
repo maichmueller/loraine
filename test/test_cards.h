@@ -5,7 +5,7 @@
 #ifndef LORAINE_TEST_CARDS_H
 #define LORAINE_TEST_CARDS_H
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card_types/card.h"
 
 class TestUnit1: public Unit {
   public:

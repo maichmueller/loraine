@@ -1,4 +1,4 @@
 
-#include "cards/card_types/landmark.h"
+#include "cards/types/landmark.h"
 
 

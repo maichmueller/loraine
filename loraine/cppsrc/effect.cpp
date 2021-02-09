@@ -2,18 +2,18 @@
 #include "cards/effect.h"
 
 #include "agent.h"
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "game.h"
 
 Player Effect::get_owner() const
 {
    return m_assoc_card->get_mutable_attrs().owner;
 }
-bool Effect::operator()(Game& game, const events::AnyEvent& event)
+bool Effect::operator()(State& state, const events::AnyEvent& event)
 {
-   bool castable = check_condition(game);
+   bool castable = check_condition(state);
    if(castable) {
-      _call(game, event);
+      _call(state, event);
    }
    return castable;
 }
@@ -28,15 +28,15 @@ bool Effect::operator!=(const Effect& effect) const
 {
    return ! (*this == effect);
 }
-void Effect::_call(Game& game, const events::AnyEvent& event)
+void Effect::_call(State& state, const events::AnyEvent& event)
 {
-   m_effect_func(game, event, *this);
+   m_effect_func(state, event, *this);
 }
 bool Effect::target(const State& state, Agent& agent, Player player)
 {
    return true;
 }
-void TargetingEffect::_call(Game& game, const events::AnyEvent& event)
+void TargetingEffect::_call(State& state, const events::AnyEvent& event)
 {
    if(has_targets()) {
       // in case something has changed in between playing and casting the targets need to be
@@ -49,7 +49,7 @@ void TargetingEffect::_call(Game& game, const events::AnyEvent& event)
    //      Player player = get_owner();
    //      set_targets(std::move(find_available_targets(*game.get_state(), player)));
    //   }
-   get_effect_func()(game, event, *this);
+   get_effect_func()(state, event, *this);
 }
 bool TargetingEffect::target(const State& state, Agent& agent, Player player)
 {

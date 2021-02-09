@@ -1,6 +1,6 @@
 
 
-#include "cards/card_types/spell.h"
+#include "cards/types/spell.h"
 #include "game.h"
 
 bool Spell::_check_play_condition(const Game& game) const

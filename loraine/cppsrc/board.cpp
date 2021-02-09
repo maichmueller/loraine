@@ -2,7 +2,7 @@
 
 #include "board.h"
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "utils.h"
 
 

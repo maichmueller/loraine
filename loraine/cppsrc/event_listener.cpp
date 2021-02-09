@@ -3,15 +3,16 @@
 
 namespace events {
 
-void EventListener::on_event(Game& game, Player player, const events::AnyEvent& event)
+void EventListener::on_event(State& state, const events::AnyEvent& event)
 {
+   Player player = event.get_player();
    for(auto& listeners :
        std::array{access_listeners(player), access_listeners(Player(1 - player))}) {
       auto& registered_cards = listeners.at(size_t(event.get_event_type()));
       auto opt_causing_cards = event.get_causing_cards();
 
       auto trigger_card_lambda = [&](const sptr< Card >& card) {
-         bool all_consumed = (*card)(game, event);
+         bool all_consumed = (*card)(state, event);
          if(all_consumed) {
             registered_cards.erase(card);
          }

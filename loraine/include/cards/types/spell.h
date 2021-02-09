@@ -2,7 +2,7 @@
 #ifndef LORAINE_SPELL_H
 #define LORAINE_SPELL_H
 
-#include "card.h"
+#include "cardbase.h"
 
 class Spell: public Card {
    [[nodiscard]] bool _check_play_condition(const Game& game) const override;

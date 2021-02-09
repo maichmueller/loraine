@@ -1,7 +1,7 @@
 
 #include <utility>
 
-#include "cards/card_types/all_card_types.h"
+#include "cards/card.h"
 #include "game.h"
 #include "grants/grant.h"
 #include "utils.h"
