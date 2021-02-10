@@ -19,6 +19,62 @@ class Spell;
 
 namespace events {
 
+// an event holds a vector of subscribers
+// when it fires, each is called
+
+// our Listener will derive from EventListener<Listener>
+// which holds a list of events it is subscribed to.
+// As these events will have different sigs, we need a base-class.
+// We will store pointers to this base-class.
+class EventBase {
+   virtual void unsubscribe(void* t) = 0;
+};
+
+template < class Subscriber, class Context, EventType e_type, class... Args >
+class Event: public EventBase {
+  private:
+   std::vector< Subscriber* > subscribers;
+
+  public:
+   void trigger(Context& context, Args... args)
+   {
+      for(auto& subscriber : subscribers) {
+         subscriber(context, e_type, std::forward<Args>(args)...);
+      }
+   }
+
+   void subscribe(Subscriber* t) { subscribers.push_back(t); }
+
+   void unsubscribe(Subscriber* t) final
+   {
+      auto to_remove = std::remove(subscribers.begin(), subscribers.end(), t);
+      subscribers.erase(to_remove, subscribers.end());
+   }
+};
+
+// derive the listener classes: struct MyListener : EventListener<MyListener>, i.e. CRTP
+template < class Derived >
+class EventListener {
+  private:
+   std::vector< EventBase* > events;
+
+  public:
+   template < EventType e_type, class Context, class... Args >
+   void connect(Event< Derived, Context, e_type, Args... >& event)
+   {
+      event.subscribe(dynamic_cast< Derived* >(this));
+      events.push_back(&event);
+   }
+
+   // when the listener dies, we must notify the events to remove subscription
+   ~EventListener()
+   {
+      for(auto& e : events) {
+         e->unsubscribe((void*)this);
+      }
+   }
+};
+
 class AnyEvent {
    const EventType m_event_type;
    const Player m_causing_player;
@@ -31,7 +87,7 @@ class AnyEvent {
    AnyEvent(
       EventType type,
       Player causing_player,
-      const std::optional<sptr< Card >>& causing_card = {},
+      const std::optional< sptr< Card > >& causing_card = {},
       std::vector< Target > targets = {},
       std::vector< sptr< long > > values = {})
        : m_event_type(type),
@@ -71,8 +127,7 @@ class CaptureEvent: public AnyEvent {
   public:
    static const EventType event_type = EventType::CAPTURE;
    CaptureEvent(Player player, const sptr< Card >& causing_card, Target captor, Target captee)
-       : AnyEvent(
-          EventType::CAPTURE, player, causing_card, {std::move(captor), std::move(captee)})
+       : AnyEvent(EventType::CAPTURE, player, causing_card, {std::move(captor), std::move(captee)})
    {
    }
 };
@@ -98,8 +153,7 @@ class DieEvent: public AnyEvent {
        : AnyEvent(EventType::DIE, player, std::move(killer), {std::move(killed)})
    {
    }
-   DieEvent(Player player, sptr< Card > killer,
-            const std::vector< Target >& killed_units)
+   DieEvent(Player player, sptr< Card > killer, const std::vector< Target >& killed_units)
        : AnyEvent(EventType::DIE, player, std::move(killer), killed_units)
    {
    }
@@ -107,8 +161,7 @@ class DieEvent: public AnyEvent {
 class DiscardEvent: public AnyEvent {
   public:
    DiscardEvent(Player player, sptr< Card > causing_card, Target discarded_card)
-       : AnyEvent(
-          EventType::DISCARD, player, std::move(causing_card), {std::move(discarded_card)})
+       : AnyEvent(EventType::DISCARD, player, std::move(causing_card), {std::move(discarded_card)})
    {
    }
 };
@@ -163,7 +216,8 @@ class NexusStrikeEvent: public AnyEvent {
 };
 class NightfallEvent: public AnyEvent {
   public:
-   NightfallEvent(Player player, sptr< Card > card) : AnyEvent(EventType::NIGHTFALL, player, {std::move(card)})
+   NightfallEvent(Player player, sptr< Card > card)
+       : AnyEvent(EventType::NIGHTFALL, player, {std::move(card)})
    {
    }
 };
@@ -233,7 +287,7 @@ class TargetEvent: public AnyEvent {
        : AnyEvent(EventType::TARGET, player, {std::move(cause)}, {std::move(target)})
    {
    }
-   TargetEvent(Player player, const sptr< Card >& cause, const std::vector<Target>& targets)
+   TargetEvent(Player player, const sptr< Card >& cause, const std::vector< Target >& targets)
        : AnyEvent(EventType::TARGET, player, {cause}, targets)
    {
    }
