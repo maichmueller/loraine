@@ -23,11 +23,11 @@ void Unit::add_health(long amount, bool permanent)
       m_unit_mutables.health_delta += amount;
    }
 }
-void Unit::set_health(size_t health)
+void Unit::health(size_t health)
 {
    m_unit_mutables.health_delta = static_cast< decltype(m_unit_mutables.health_delta) >(health - m_unit_mutables.health_base);
 }
-void Unit::set_power(size_t power, bool as_delta)
+void Unit::power(size_t power, bool as_delta)
 {
    if(as_delta) {
       m_unit_mutables.power_delta = static_cast< decltype(m_unit_mutables.power_delta) >(power - m_unit_mutables.power_base);

@@ -313,16 +313,16 @@ void Game::_resolve_battle()
             // attacker, it needs to battle the attacker
             auto unit_def = to_unit(unit_def_opt);
 
-            if(unit_def->get_unit_mutable_attrs().alive) {
+            if(unit_def->unit_mutable_attrs().alive) {
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
                bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
 
                long health_def_after = 0;
-               long attack_power = unit_att->get_power();
+               long attack_power = unit_att->power();
 
                if(quick_attacks || double_attacks) {
                   strike(unit_att, unit_def);
-                  if(unit_def->get_health() > 0) {
+                  if(unit_def->health() > 0) {
                      // we cant check for the unit being alive, but have to
                      // check via the health instead, because the unit is
                      // only killed later on. The health is an intermediary.
@@ -340,11 +340,11 @@ void Game::_resolve_battle()
                }
 
                // check whether to kill the attacking unit
-               if(unit_att->get_health() == 0) {
+               if(unit_att->health() == 0) {
                   kill_unit(defender, unit_att, unit_att);
                }
                // check whether to kill defending unit
-               if(unit_def->get_health() == 0) {
+               if(unit_def->health() == 0) {
                   kill_unit(attacker, unit_def, unit_att);
                }
             }
@@ -362,7 +362,7 @@ void Game::_resolve_battle()
 }
 void Game::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
-   sptr< long > damage = std::make_shared< long >(unit_att->get_power());
+   sptr< long > damage = std::make_shared< long >(unit_att->power());
    if(*damage > 0) {
       _trigger_event(events::StrikeEvent(unit_att->get_mutable_attrs().owner, unit_att, unit_def));
       deal_damage_to_unit(unit_att, unit_def, damage);
@@ -375,7 +375,7 @@ void Game::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 void Game::deal_damage_to_unit(
    const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage)
 {
-   long health_def = unit->get_health();
+   long health_def = unit->health();
    _trigger_event(
       events::UnitTakeDamageEvent(cause->get_mutable_attrs().owner, cause, Target(unit), damage));
    unit->take_damage(*damage);
@@ -386,7 +386,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
 {
    killed_unit->kill();
    _trigger_event(events::DieEvent(killer, Target(killed_unit), cause));
-   if(not killed_unit->get_unit_mutable_attrs().alive) {
+   if(not killed_unit->unit_mutable_attrs().alive) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->add_to_graveyard(killed_unit);
@@ -396,7 +396,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
 
 void Game::nexus_strike(Player attacked_nexus, const sptr< Unit >& striking_unit)
 {
-   sptr< long > att_power = std::make_shared< long >(striking_unit->get_power());
+   sptr< long > att_power = std::make_shared< long >(striking_unit->power());
    if(*att_power > 0) {
       _trigger_event(events::NexusStrikeEvent(
          striking_unit->get_mutable_attrs().owner, striking_unit, attacked_nexus, att_power));
@@ -487,8 +487,8 @@ void Game::_end_round()
    auto regenerate_units = [&](Player player) {
       // regenerate the units with regeneration
       for(auto& unit : regenerating_units[player]) {
-         if(unit->get_unit_mutable_attrs().alive) {
-            heal(unit->get_mutable_attrs().owner, unit, unit->get_unit_mutable_attrs().damage);
+         if(unit->unit_mutable_attrs().alive) {
+            heal(unit->get_mutable_attrs().owner, unit, unit->unit_mutable_attrs().damage);
          }
       }
    };

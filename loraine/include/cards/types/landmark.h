@@ -2,12 +2,12 @@
 #ifndef LORAINE_LANDMARK_H
 #define LORAINE_LANDMARK_H
 
-#include "cardbase.h"
+#include "fieldcard.h"
 
-class Landmark: public Card {
+class Landmark: public FieldCard {
   public:
    // use base class constructors
-   using Card::Card;
+   using FieldCard::FieldCard;
 
    [[nodiscard]] bool is_landmark() const override { return true; }
    [[nodiscard]] bool is_unit() const override { return false; }

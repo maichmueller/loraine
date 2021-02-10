@@ -15,6 +15,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/target.cpp
 
         ${LORAINE_SRC_DIR}/cardbase.cpp
+        ${LORAINE_SRC_DIR}/fieldcard.cpp
         ${LORAINE_SRC_DIR}/unit.cpp
         ${LORAINE_SRC_DIR}/spell.cpp
         ${LORAINE_SRC_DIR}/landmark.cpp
