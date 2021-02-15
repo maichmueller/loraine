@@ -7,7 +7,7 @@
 
 Player Effect::get_owner() const
 {
-   return m_assoc_card->get_mutable_attrs().owner;
+   return m_assoc_card->mutables().owner;
 }
 bool Effect::operator()(State& state, const events::AnyEvent& event)
 {

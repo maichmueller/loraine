@@ -27,18 +27,18 @@ void State::_check_terminal()
    m_terminal_checked = true;
 }
 
-void State::commit_to_history(sptr< AnyAction > action)
+void State::commit_to_history(sptr< Action > action)
 {
    m_history[action->get_player()][action->get_round()].emplace_back(std::move(action));
 }
 
-void State::add_to_graveyard(const sptr< Card >& unit)
+void State::to_graveyard(const sptr< Card >& unit)
 {
-   m_graveyard.at(unit->get_mutable_attrs().owner).at(m_round).emplace_back(unit);
+   m_graveyard.at(unit->mutables().owner).at(m_round).emplace_back(unit);
 }
-void State::add_to_tossed(const sptr< Card >& card)
+void State::to_tossed(const sptr< Card >& card)
 {
-   m_tossed_cards.at(card->get_mutable_attrs().owner).emplace_back(card);
+   m_tossed_cards.at(card->mutables().owner).emplace_back(card);
 }
 State::State(
    Player starting_player,
@@ -54,7 +54,7 @@ State::State(
    SymArr< bool > can_plunder,
    SymArr< std::map< size_t, std::vector< sptr< Card > > > > graveyard,
    SymArr< std::vector< sptr< Card > > > tossed_cards,
-   SymArr< std::map< size_t, std::vector< sptr< AnyAction > > > > history,
+   SymArr< std::map< size_t, std::vector< sptr< Action > > > > history,
    std::optional< Player > attacker,
    bool battle_mode,
    size_t round,
@@ -91,16 +91,16 @@ State::State(
 }
 std::tuple< Location, long > State::find(const sptr< Card >& card) const
 {
-   auto location = card->get_mutable_attrs().location;
+   auto location = card->mutables().location;
    long index = 0;
    if(location == Location::BATTLEFIELD) {
-      index = algo::find_index(m_board->get_battlefield(card->get_mutable_attrs().owner), card);
+      index = algo::find_index(m_board->get_battlefield(card->mutables().owner), card);
    } else if(location == Location::CAMP) {
-      index = algo::find_index(m_board->get_camp(card->get_mutable_attrs().owner), card);
+      index = algo::find_index(m_board->get_camp(card->mutables().owner), card);
    } else if(location == Location::HAND) {
-      index = algo::find_index(get_hand(card->get_mutable_attrs().owner), card);
+      index = algo::find_index(hand(card->mutables().owner), card);
    } else if(location == Location::DECK) {
-      index = algo::find_index(get_deck(card->get_mutable_attrs().owner), card);
+      index = algo::find_index(deck(card->mutables().owner), card);
    }
    return {location, index};
 }

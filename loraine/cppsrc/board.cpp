@@ -47,11 +47,11 @@ std::vector< sptr<Unit> > Board::get_camp_units(Player player) const
 }
 void Board::add_to_queue(const sptr< Card >& card)
 {
-   m_camp_queue[card->get_mutable_attrs().owner].emplace(card);
+   m_camp_queue[card->mutables().owner].emplace(card);
 }
 void Board::add_to_queue(std::vector< sptr<Card> >&& cards)
 {
    for(auto&& card : cards) {
-      m_camp_queue[card->get_mutable_attrs().owner].emplace(std::move(card));
+      m_camp_queue[card->mutables().owner].emplace(std::move(card));
    }
 }

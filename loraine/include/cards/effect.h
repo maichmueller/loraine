@@ -11,6 +11,7 @@
 #include "types.h"
 #include "utils.h"
 #include "uuid_gen.h"
+#include "events/lor_events/all_events.h"
 
 // forward-declarations
 class Game;
@@ -18,15 +19,12 @@ class Card;
 class Target;
 class Agent;
 
-namespace events {
-class AnyEvent;
-}
-
+template <typename... Args>
 class Effect {
   public:
    enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
-   using EffectFunc = std::function< void(State&, const events::AnyEvent&, Effect&) >;
+   using EffectFunc = std::function< void(State&, Effect&, std::tuple<Args...>) >;
    using ConditionFunc = std::function< bool(const State&, const Effect&) >;
 
    [[nodiscard]] bool is_null() const { return m_is_null; }

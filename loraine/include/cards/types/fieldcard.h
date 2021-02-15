@@ -13,15 +13,7 @@ class FieldCard: public Card {
   public:
    using Card::Card;  // use base class constructors
 
-   struct MutableFieldCardData {
-      long index = -1;  // the index in the camp this card occupies
-   };
-
-   [[nodiscard]] inline auto& fieldcard_mutable_attrs() const { return m_fieldcard_mutables; }
-   [[nodiscard]] inline auto& fieldcard_mutable_attrs() { return m_fieldcard_mutables; }
-
-  private:
-   MutableFieldCardData m_fieldcard_mutables;
+   [[nodiscard]] bool is_fieldcard() const override { return true;}
 };
 
 inline sptr< FieldCard > to_fieldcard(const sptr< Card >& card)

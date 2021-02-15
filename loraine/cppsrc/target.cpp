@@ -3,4 +3,4 @@
 
 #include "cards/card.h"
 
-Target::Target(const sptr< Card >& card) : player(card->get_mutable_attrs().owner) {}
+Target::Target(const sptr< Card >& card) : player(card->mutables().owner) {}

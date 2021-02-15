@@ -6,8 +6,7 @@
 namespace events {
 
 enum class EventType {
-   NONE = 0,
-   ATTACK,  // declaring attacker
+   ATTACK = 0,  // declaring attacker
    BEHOLD,  // the player has an 8+ mana unit in hand or in play
    CAPTURE,  // A unit has captured another unit
    CAST,  // casting spells/skills (activation events, not committing events)
@@ -36,7 +35,8 @@ enum class EventType {
    COUNTER
 };
 
-constexpr const static size_t n_events = static_cast<size_t>(EventType::COUNTER) + 1;
-}
+constexpr const static size_t n_events = static_cast< size_t >(EventType::COUNTER) + 1;
+
+}  // namespace lor_events
 
 #endif  // LORAINE_EVENT_TYPES_H

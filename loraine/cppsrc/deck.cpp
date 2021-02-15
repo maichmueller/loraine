@@ -23,21 +23,21 @@ std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) con
 std::vector< sptr< Card > > CardContainer::find_spells(const FilterFunc& filter)
 {
    return _pop_cards([&](const sptr< Card >& card) {
-      return card->get_const_attrs().card_type == CardType::SPELL && filter(card);
+      return card->immutables().card_type == CardType::SPELL && filter(card);
    });
 }
 
 std::vector< sptr< Card > > CardContainer::find_units(const FilterFunc& filter)
 {
    return _pop_cards([&](const sptr< Card >& card) {
-      return card->get_const_attrs().card_type == CardType::UNIT && filter(card);
+      return card->immutables().card_type == CardType::UNIT && filter(card);
    });
 }
 sptr< Card > CardContainer::draw_specific_card(const char* card_sid)
 {
    auto indices = _find_indices(
-      [&card_sid](const sptr< Card >& card) { return card->get_const_attrs().code == card_sid; });
-   std::shuffle(indices.begin(), indices.end(), rng::get_engine());
+      [&card_sid](const sptr< Card >& card) { return card->immutables().code == card_sid; });
+   std::shuffle(indices.begin(), indices.end(), rng::engine());
    return draw_card_by_index(indices[0]);
 }
 
@@ -85,7 +85,7 @@ void CardContainer::shuffle_into(const sptr< Card >& card, size_t top_n)
    }
    auto max = std::min(top_n, deck_size);
    std::uniform_int_distribution< size_t > dist(0, max);
-   auto pos = m_cards.begin() + (deck_size - dist(rng::get_engine()));
+   auto pos = m_cards.begin() + (deck_size - dist(rng::engine()));
    m_cards.insert(pos, card);
 }
 

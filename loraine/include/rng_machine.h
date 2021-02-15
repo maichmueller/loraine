@@ -6,7 +6,7 @@
 
 class rng {
   public:
-   static auto& get_engine() {return rng_default_engine;}
+   static auto& engine() {return rng_default_engine;}
   private:
    static std::mt19937_64 rng_default_engine;
 };

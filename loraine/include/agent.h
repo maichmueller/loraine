@@ -16,7 +16,7 @@ class Agent {
   public:
    virtual ~Agent() = default;
    [[nodiscard]] auto get_uuid() const { return m_uuid; }
-   virtual sptr< AnyAction > decide_action(const State& state) = 0;
+   virtual sptr< Action > decide_action(const State& state) = 0;
    virtual sptr< MulliganAction > decide_mulligan(
       State& state, std::vector< sptr< Card > > hand) = 0;
    virtual std::optional<std::vector< Target >> decide_targets(

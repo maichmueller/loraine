@@ -2,9 +2,9 @@
 #include "cards/types/unit.h"
 #include "game.h"
 
-bool Unit::_check_play_condition(const Game& game) const
+bool Unit::_check_play_condition(const State &state) const
 {
-   return game.get_state()->get_mana(get_mutable_attrs().owner) >= get_mana_cost();
+   return state.get_state()->mana(mutables().owner) >= mana_cost();
 }
 void Unit::add_power(long amount, bool permanent)
 {

@@ -14,7 +14,7 @@ Grant::Grant(
 std::string Grant::explain() const
 {
    std::stringstream ss;
-   ss << m_bestowing_card->get_const_attrs().name;
+   ss << m_bestowing_card->immutables().name;
    if(std::string sub_explanation = _explain(); not sub_explanation.empty()) {
       ss << "\n" << sub_explanation;
    }

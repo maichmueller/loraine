@@ -9,7 +9,6 @@
 #include "agent.h"
 #include "cards/card.h"
 #include "cards/filter.h"
-#include "events/event_listener.h"
 #include "grants/grant.h"
 #include "grants/grantfactory.h"
 #include "rulesets.h"
@@ -77,9 +76,9 @@ class Game {
    // inline methods
    inline void shuffle_card_into_deck(const sptr< Card >& card, Player player)
    {
-      auto& deck = m_state->get_deck(player);
+      auto& deck = m_state->deck(player);
       std::uniform_int_distribution< size_t > dist(0, deck.size());
-      auto pos = deck.begin() + static_cast< long >(dist(rng::get_engine()));
+      auto pos = deck.begin() + static_cast< long >(dist(rng::engine()));
       deck.insert(pos, card);
    }
 
@@ -88,7 +87,7 @@ class Game {
       uncover_card(card);
       _remove(card);
    }
-   static inline void uncover_card(const sptr< Card >& card) { card->get_mutable_attrs().hidden = false; }
+   static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
    /*
     * The optional player parameter decides whose cards are to be filtered. If
     * left as empty, then both players' cards are filtered
@@ -128,8 +127,6 @@ class Game {
 
    sptr< State > m_state;
    SymArr< sptr< Agent > > m_agents;
-   events::EventListener m_event_listener;
-   SymArr< sptr< GrantFactory > > m_grant_factory;
 
    void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
 
@@ -140,7 +137,7 @@ class Game {
 
    std::vector< sptr< Card > > _draw_n_cards(Player player, int n = 1);
 
-   bool _do_action(const sptr< AnyAction >& action);
+   bool _do_action(const sptr< Action >& action);
 
    /*
     * Start the next round.

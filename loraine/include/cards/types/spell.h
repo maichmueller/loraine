@@ -5,7 +5,7 @@
 #include "cardbase.h"
 
 class Spell: public Card {
-   [[nodiscard]] bool _check_play_condition(const Game& game) const override;
+   [[nodiscard]] bool _check_play_condition(const State& state) const override;
    [[nodiscard]] virtual bool _check_cast_condition(const Game& game) const;
 
   public:

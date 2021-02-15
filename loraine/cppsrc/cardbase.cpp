@@ -1,4 +1,6 @@
 
+#include <cards/types/cardbase.h>
+
 #include <utility>
 
 #include "cards/card.h"
@@ -6,18 +8,17 @@
 #include "grants/grant.h"
 #include "utils.h"
 
-Card::Card(
-   ConstData const_attrs,
-   MutableData var_attrs)
-    : m_immutables(std::move(const_attrs)),
-      m_mutables(std::move(var_attrs))
+Card::Card(ConstData const_attrs, MutableData var_attrs)
+    : m_immutables(std::move(const_attrs)), m_mutables(std::move(var_attrs))
 {
 }
 
 void Card::remove_effect(events::EventType e_type, const Effect& effect)
 {
    if(auto eff_vec_iter = std::find_if(
-         m_mutables.effects.begin(), m_mutables.effects.end(), [&](const auto& val) { return val.first == e_type; });
+         m_mutables.effects.begin(),
+         m_mutables.effects.end(),
+         [&](const auto& val) { return val.first == e_type; });
       eff_vec_iter != m_mutables.effects.end()) {
       auto& eff_vec = (*eff_vec_iter).second;
       auto position = std::find(eff_vec.begin(), eff_vec.end(), effect);
@@ -39,25 +40,24 @@ void Card::add_effect(events::EventType e_type, Effect effect)
    }
    m_mutables.effects[e_type].emplace_back(std::move(effect));
 }
-void Card::set_effect_vec(events::EventType e_type, std::vector< Effect > effects)
+void Card::effects(events::EventType e_type, std::vector< Effect > effects)
 {
    auto& curr_vec = m_mutables.effects[e_type];
    for(auto&& eff : effects) {
       curr_vec.emplace_back(std::move(eff));
    }
 }
-bool Card::check_play_tribute(const Game& game) const
+bool Card::check_play_tribute(const State& state) const
 {
-   auto state = game.get_state();
-   size_t total_mana = state->get_mana(this->get_mutable_attrs().owner);
-   if(this->is_spell()) {
-      total_mana += state->get_spell_mana(this->get_mutable_attrs().owner);
+   size_t total_mana = state.mana(m_mutables.owner);
+   if(is_spell()) {
+      total_mana += state.spell_mana(m_mutables.owner);
    }
-   return this->get_mana_cost() <= total_mana && _check_play_condition(game);
+   return mana_cost() <= total_mana && _check_play_condition(state);
 }
-std::vector< sptr< Grant > > Card::get_all_grants() const
+std::vector< sptr< Grant > > Card::all_grants() const
 {
-   return get_mutable_attrs().grants_temp + get_mutable_attrs().grants;
+   return mutables().grants_temp + mutables().grants;
 }
 void Card::store_grant(const sptr< Grant >& grant)
 {
@@ -67,16 +67,13 @@ void Card::store_grant(const sptr< Grant >& grant)
       m_mutables.grants_temp.emplace_back(grant);
    }
 }
-void Card::operator()(State& state, const events::AnyEvent& event)
+bool Card::has_effect(events::EventType e_type, const Effect& effect) const
 {
-   bool all_consumed = true;
-   for(auto& effect : m_mutables.effects.at(event.event_type())) {
-      if(not effect.is_consumed()) {
-         effect(state, event);
-         all_consumed = false;
-      }
+   auto found_effects = m_mutables.effects.find(e_type);
+   bool found = found_effects != m_mutables.effects.end();
+   if(found) {
+      const auto& effects = found_effects->second;
+      return std::find(effects.begin(), effects.end(), effect) != effects.end();
    }
-   if(all_consumed) {
-      state.event_listener(m_mutables.owner).unsubscribe(*this);
-   }
+   return false;
 }

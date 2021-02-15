@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
+        ${LORAINE_SRC_DIR}/all_events.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
 
@@ -13,6 +14,8 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/effect.cpp
         ${LORAINE_SRC_DIR}/targeter.cpp
         ${LORAINE_SRC_DIR}/target.cpp
+
+        ${LORAINE_SRC_DIR}/cardfactory.cpp
 
         ${LORAINE_SRC_DIR}/cardbase.cpp
         ${LORAINE_SRC_DIR}/fieldcard.cpp

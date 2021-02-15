@@ -10,6 +10,7 @@
 #include "cards/card_defs.h"
 #include "cards/effect.h"
 #include "events/event.h"
+#include "events/event_listener.h"
 #include "events/event_types.h"
 #include "types.h"
 #include "uuid_gen.h"
@@ -17,19 +18,12 @@
 // forward-declarations
 class State;
 class Grant;
-class Game;
 
 /*
  * Abstract base class (abc) for LOR cards.
  */
-class Card {
+class Card : public EventListener<Card> {
   public:
-
-   class Creator {
-      std::optional< const char* const > _creator_code = {};
-      [[nodiscard]] bool is_created() const { return has_value(_creator_code); }
-      [[nodiscard]] auto code() const { return _creator_code.value(); }
-   };
 
    struct ConstData {
       // the card code
@@ -54,8 +48,8 @@ class Card {
       const size_t mana_cost_ref;
       // whether a card is collectible (i.e. can be added to a deck)
       const bool is_collectible = true;
-      // was the card created by an effect
-      const Creator creator = Creator();
+      // was the card created by another
+      const std::optional< const char* const> creator = {};
       // the unique id used to identify this specific instance of a card
       const UUID uuid = new_uuid();
    };
@@ -83,35 +77,38 @@ class Card {
       std::vector< sptr< Grant > > grants_temp = {};
    };
 
-   void operator()(State& state, const events::AnyEvent& event);
-
-   [[nodiscard]] inline auto& get_const_attrs() const { return m_immutables; }
-   [[nodiscard]] inline auto& get_const_attrs() { return m_immutables; }
-   [[nodiscard]] inline auto& get_mutable_attrs() const { return m_mutables; }
-   [[nodiscard]] inline auto& get_mutable_attrs() { return m_mutables; }
-   [[nodiscard]] inline auto get_mana_cost() const
+   [[nodiscard]] inline auto& immutables() const { return m_immutables; }
+   [[nodiscard]] inline auto& immutables() { return m_immutables; }
+   [[nodiscard]] inline auto& mutables() const { return m_mutables; }
+   [[nodiscard]] inline auto& mutables() { return m_mutables; }
+   [[nodiscard]] inline auto mana_cost() const
    {
       return std::max(0L, m_mutables.mana_cost_base + m_mutables.mana_cost_delta);
    }
-   [[nodiscard]] inline auto& get_effects(events::EventType etype)
+   void effects(events::EventType e_type, std::vector< Effect > effects);
+   [[nodiscard]] inline auto& effects(events::EventType etype)
    {
       return m_mutables.effects.at(etype);
    }
-   [[nodiscard]] inline auto& get_effects(events::EventType etype) const
+   [[nodiscard]] inline auto& effects(events::EventType etype) const
    {
       return m_mutables.effects.at(etype);
    }
 
-   [[nodiscard]] std::vector< sptr< Grant > > get_all_grants() const;
+   [[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
 
    // status requests
 
    [[nodiscard]] virtual bool is_unit() const { return false; }
    [[nodiscard]] virtual bool is_spell() const { return false; }
    [[nodiscard]] virtual bool is_skill() const { return false; }
+   [[nodiscard]] virtual bool is_fieldcard() const { return false; }
    [[nodiscard]] virtual bool is_champion() const { return false; }
    [[nodiscard]] virtual bool is_landmark() const { return false; }
    [[nodiscard]] virtual bool is_follower() const { return false; }
+
+   [[nodiscard]] bool is_created() const { return has_value(m_immutables.creator); }
+   [[nodiscard]] auto creator() const { return m_immutables.creator.value(); }
 
    inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
    inline void move(Location loc, size_t index)
@@ -128,23 +125,11 @@ class Card {
    {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
    }
-   [[nodiscard]] inline bool has_effect(events::EventType e_type, const Effect& effect) const
-   {
-      auto found_effects = m_mutables.effects.find(e_type);
-      bool found = found_effects != m_mutables.effects.end();
-      if(found) {
-         const auto& effects = found_effects->second;
-         return std::find(effects.begin(), effects.end(), effect) != effects.end();
-      }
-      return false;
-   }
+   [[nodiscard]] inline bool has_effect(events::EventType e_type, const Effect& effect) const;
 
    // manipulations
 
-   void set_effect_vec(events::EventType e_type, std::vector< Effect > effects);
-
    void add_effect(events::EventType e_type, Effect effect);
-
    void remove_effect(events::EventType e_type, const Effect& effect);
 
    void store_grant(const sptr< Grant >& grant);
@@ -171,22 +156,22 @@ class Card {
       }
    }
 
-   inline bool operator!=(const Card& rhs) const { return *this == rhs; }
    inline bool operator==(const Card& rhs) const
    {
-      return m_immutables.uuid == rhs.get_const_attrs().uuid;
+      return m_immutables.uuid == rhs.immutables().uuid;
    }
+   inline bool operator!=(const Card& rhs) const { return not (*this == rhs); }
    /*
     * This function returns the boolean indicator for whether the current card has a play condition
     * that can be fulfilled at the present moment.
     */
-   [[nodiscard]] bool check_play_tribute(const Game& game) const;
+   [[nodiscard]] bool check_play_tribute(const State& state) const;
 
    /*
     * The play condition function represents a potential 'cost' the player has to pay to play this
     * card (e.g. discarding another card in hand)
     */
-   virtual inline void pay_play_tribute(Game& /*unused*/) {}
+   virtual inline void pay_play_tribute(State& /*unused*/) {}
 
    /*
     * A defaulted virtual destructor needed bc of inheritance
@@ -219,12 +204,12 @@ class Card {
    Card(Card&& card) = delete;
 
   private:
-   // fixed attributes of the cards
+   // fixed attributes of the card
    ConstData m_immutables;
-   // variable attributes of the cards
+   // variable attributes of the card
    MutableData m_mutables;
 
-   [[nodiscard]] virtual bool _check_play_condition(const Game& game) const = 0;
+   [[nodiscard]] virtual bool _check_play_condition(const State& state) const = 0;
 };
 
 template < typename T >
@@ -237,7 +222,7 @@ inline sptr< Card > to_card(const sptr< T >& card)
 namespace std {
 template <>
 struct hash< Card > {
-   size_t operator()(const Card& x) const { return std::hash< UUID >()(x.get_const_attrs().uuid); }
+   size_t operator()(const Card& x) const { return std::hash< UUID >()(x.immutables().uuid); }
 };
 template <>
 struct hash< sptr< Card > > {

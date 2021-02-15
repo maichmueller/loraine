@@ -95,7 +95,7 @@ std::vector< T, Allocator >& operator+(
 template < typename Container >
 void shuffle_inplace(Container& container)
 {
-   std::shuffle(container.begin(), container.end(), rng::get_engine());
+   std::shuffle(container.begin(), container.end(), rng::engine());
 }
 
 /*
@@ -130,7 +130,7 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 inline bool bernoulli_sample(double p)
 {
    std::bernoulli_distribution ber(p);
-   return ber(rng::get_engine());
+   return ber(rng::engine());
 }
 
 template < class BiIter, typename Distribution = std::uniform_int_distribution< uint64_t > >
@@ -141,7 +141,7 @@ void shuffle_inplace_limited(
    size_t N = std::distance(begin, end);
    while(num_random--) {
       BiIter r = begin;
-      std::advance(r, weight_dist(rng::get_engine()) % N);
+      std::advance(r, weight_dist(rng::engine()) % N);
       std::swap(*begin, *r);
       ++begin;
       --N;

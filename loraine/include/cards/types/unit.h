@@ -84,7 +84,7 @@ class Unit: public FieldCard {
    MutableUnitData m_unit_mutables;
    ConstUnitData m_unit_immutables;
 
-   [[nodiscard]] bool _check_play_condition(const Game& game) const override;
+   [[nodiscard]] bool _check_play_condition(const State& state) const override;
    static void _default_kill(Unit& unit) { unit.unit_mutable_attrs().alive = false; }
 };
 
