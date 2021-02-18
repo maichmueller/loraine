@@ -7,11 +7,13 @@
 #include <variant>
 #include <vector>
 
+#include "engine/rulesets.h"
 #include "event_types.h"
-#include "rulesets.h"
 #include "target.h"
-#include "types.h"
+#include "utils/types.h"
 
+template < typename... Args >
+class Effect;
 
 // an event holds a vector of subscribers
 // when it fires, each is called
@@ -20,16 +22,16 @@
 // which holds a list of events it is subscribed to.
 // As these events will have different sigs, we need a base-class.
 // We will store pointers to this base-class.
-template < typename Subscriber >
 class EventBase {
   public:
-   virtual void unsubscribe(Subscriber* t) = 0;
+   virtual void unsubscribe(void* t) = 0;
 };
 
-template < class Subscriber, class Context, events::EventType e_type, class... Args >
-class Event: public EventBase< Subscriber > {
+template < class Context, events::EventType e_type, class... Args >
+class Event: public EventBase {
   public:
-   using signature = std::tuple<Args...>;
+   using SignatureTuple = std::tuple< Args... >;
+   using Subscriber = Effect< Args... >;
 
   private:
    std::vector< Subscriber* > subscribers;
@@ -52,12 +54,12 @@ class Event: public EventBase< Subscriber > {
    }
    void subscribe(Subscriber* t) { subscribers.push_back(t); }
 
-   void unsubscribe(Subscriber* t) final
+   void unsubscribe(void* t) final
    {
-      auto to_remove = std::remove(subscribers.begin(), subscribers.end(), t);
+      auto to_remove = std::remove(
+         subscribers.begin(), subscribers.end(), static_cast< Subscriber* >(t));
       subscribers.erase(to_remove, subscribers.end());
    }
 };
-
 
 #endif  // LORAINE_EVENT_H

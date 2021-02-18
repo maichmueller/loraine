@@ -7,7 +7,7 @@
 #include <variant>
 
 #include "rulesets.h"
-#include "types.h"
+#include "utils/types.h"
 
 class Card;
 class Unit;

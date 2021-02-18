@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "events/event.h"
-#include "types.h"
+#include "utils/types.h"
 
 // derive the listener classes:
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
@@ -13,11 +13,11 @@ template < class Derived >
 class EventListener {
 
   private:
-   std::vector< EventBase< Derived >* > events;
+   std::vector< EventBase* > events;
 
   public:
    template < events::EventType e_type, class Context, class... Args >
-   void connect(Event< Derived, Context, e_type, Args... >& event)
+   void connect(Event< Context, e_type, Args... >& event)
    {
       event.subscribe(dynamic_cast< Derived* >(this));
       events.push_back(&event);
@@ -27,7 +27,7 @@ class EventListener {
    ~EventListener()
    {
       for(auto& event : events) {
-         event->unsubscribe(this);
+         event->unsubscribe(dynamic_cast<void*>(this));
       }
    }
 };

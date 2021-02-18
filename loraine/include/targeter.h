@@ -4,30 +4,22 @@
 
 #include <utility>
 
-#include "cards/filter.h"
+#include "filters/filter.h"
 #include "target.h"
 
 class State;
 
-class BaseTargeter {
+enum class TargetAffiliation { enemy = 0, own, any };
+enum class TargetMode {
+   Manual = 0,
+   Automatic,
+};
+
+class TargeterBase {
   public:
-   enum class Affiliation { enemy = 0, own, any };
-   enum class Type {
-      manual = 0,
-      automatic,
-   };
+   TargeterBase(Filter filter = {}) : m_filter(std::move(filter)) {}
 
-   BaseTargeter(
-      Type type, Affiliation affiliation, Location range, long n_targets, Filter filter = {})
-       : m_affiliation(affiliation),
-         m_type(type),
-         m_range(range),
-         m_nr_targets(n_targets),
-         m_filter(std::move(filter))
-   {
-   }
-
-   std::vector< Target > operator()(const State& state, Player player)
+   virtual std::vector< Target > operator()(const State& state, Player player)
    {
       return _target(state, player);
    }
@@ -42,42 +34,46 @@ class BaseTargeter {
          targets.end());
    }
 
-   [[nodiscard]] auto get_type() const { return m_type; }
-   [[nodiscard]] auto get_affiliation() const { return m_affiliation; }
-   [[nodiscard]] auto get_range() const { return m_range; }
-   [[nodiscard]] auto get_nr_targets() const { return m_nr_targets; }
-   [[nodiscard]] auto get_filter() const { return m_filter; }
+   [[nodiscard]] auto filter() const { return m_filter; }
 
   private:
-   Type m_type;
-   Affiliation m_affiliation;
-   Location m_range;
-   long m_nr_targets;
    Filter m_filter;
 
    virtual std::vector< Target > _target(const State& state, Player player) = 0;
 };
 
-class NoneTargeter: public BaseTargeter {
+template < TargetMode mode, TargetAffiliation affiliation, Location range >
+class Targeter: public TargeterBase {
+};
+
+template <TargetAffiliation affiliation, Location range >
+class AutomaticTargeter : public Targeter< TargetMode::Automatic, affiliation, range > {
+
+};
+
+
+class NoneTargeter: public TargeterBase {
   public:
-   NoneTargeter() : BaseTargeter(Type::automatic, Affiliation::any, Location::EVERYWHERE, 0) {}
+//   NoneTargeter()
+//       : TargeterBase(TargetMode::automatic, TargetAffiliation::any, Location::EVERYWHERE, 0)
+//   {
+//   }
 
   private:
-   std::vector< Target > _target(
-      const State& /*state*/, Player /*player*/) override
+   std::vector< Target > _target(const State& /*state*/, Player /*player*/) override
    {
       return std::vector< Target >();
    }
 };
 
-class EnemyCampManTargeter: public BaseTargeter {
-   EnemyCampManTargeter(Affiliation affiliation, long n_targets, Filter filter = {})
-       : BaseTargeter(Type::manual, affiliation, Location::CAMP, n_targets, std::move(filter))
-   {
-   }
-
-  private:
-   std::vector< Target > _target(const State& state, Player acting_player) override;
-};
+//class EnemyCampManTargeter: public TargeterBase {
+//   EnemyCampManTargeter(TargetAffiliation affiliation, long n_targets, Filter filter = {})
+//       : TargeterBase(TargetMode::manual, affiliation, Location::CAMP, n_targets, std::move(filter))
+//   {
+//   }
+//
+//  private:
+//   std::vector< Target > _target(const State& state, Player acting_player) override;
+//};
 
 #endif  // LORAINE_TARGETER_H

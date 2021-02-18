@@ -2,10 +2,10 @@
 #ifndef LORAINE_AGENT_H
 #define LORAINE_AGENT_H
 
-#include "action.h"
-#include "rulesets.h"
-#include "state.h"
-#include "types.h"
+#include "engine/action.h"
+#include "engine/rulesets.h"
+#include "engine/state.h"
+#include "utils/types.h"
 
 class Target;
 class Card;

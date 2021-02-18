@@ -12,8 +12,8 @@
 #include "events/event.h"
 #include "events/event_listener.h"
 #include "events/event_types.h"
-#include "types.h"
-#include "uuid_gen.h"
+#include "utils/types.h"
+#include "utils/utils.h"
 
 // forward-declarations
 class State;
@@ -70,7 +70,7 @@ class Card : public EventListener<Card> {
       // all the keywords pertaining to the cards
       KeywordMap keywords = {};
       // all effects
-      std::map< events::EventType, std::vector< Effect > > effects = {};
+      std::map< events::EventType, std::vector< sptr<EffectBase> > > effects = {};
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants
@@ -85,7 +85,7 @@ class Card : public EventListener<Card> {
    {
       return std::max(0L, m_mutables.mana_cost_base + m_mutables.mana_cost_delta);
    }
-   void effects(events::EventType e_type, std::vector< Effect > effects);
+   void effects(events::EventType e_type, std::vector< sptr< EffectBase > > effects);
    [[nodiscard]] inline auto& effects(events::EventType etype)
    {
       return m_mutables.effects.at(etype);
@@ -125,12 +125,12 @@ class Card : public EventListener<Card> {
    {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
    }
-   [[nodiscard]] inline bool has_effect(events::EventType e_type, const Effect& effect) const;
+   [[nodiscard]] bool has_effect(events::EventType e_type, const EffectBase& effect) const;
 
    // manipulations
 
-   void add_effect(events::EventType e_type, Effect effect);
-   void remove_effect(events::EventType e_type, const Effect& effect);
+   void add_effect(events::EventType e_type, sptr< EffectBase > effect);
+   void remove_effect(events::EventType e_type, const EffectBase& effect);
 
    void store_grant(const sptr< Grant >& grant);
    inline void store_grant(const std::vector< sptr< Grant > >& grants)

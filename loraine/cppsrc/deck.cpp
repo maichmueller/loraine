@@ -2,7 +2,7 @@
 // Created by michael on 30.05.20.
 //
 
-#include "deck.h"
+#include "engine/deck.h"
 
 #include <algorithm>
 #include <sstream>

@@ -2,10 +2,19 @@
 #ifndef LORAINE_UTIlS_H
 #define LORAINE_UTIlS_H
 
+#include <uuid.h>
+
 #include <optional>
 
 #include "rng_machine.h"
 #include "types.h"
+
+inline UUID new_uuid()
+{
+   // safer to wrap static variable in function call, in case of exception throw.
+   static auto generator = uuids::uuid_random_generator();
+   return generator();
+}
 
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)

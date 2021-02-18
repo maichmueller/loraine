@@ -9,24 +9,26 @@
 #include <utility>
 #include <vector>
 
+#include "action_mode.h"
 #include "board.h"
+#include "config.h"
 #include "deck.h"
 #include "events/event_listener.h"
 #include "rng_machine.h"
 #include "rulesets.h"
-#include "types.h"
+#include "utils/types.h"
 
 class Card;
 class Action;
-class Game;
+class Logic;
 
 class State {
-   friend Game;
-
   public:
    using HandType = std::vector< sptr< Card > >;
    using DeckType = std::vector< sptr< Card > >;
    using SpellStackType = std::vector< sptr< Spell > >;
+
+   bool handle(const sptr< Action >& action);
 
    State(
       Player starting_player,
@@ -68,31 +70,19 @@ class State {
       SpellStackType spell_prestack = {});
 
    auto& events() { return m_events; }
-   auto& events() const { return m_events; }
+   [[nodiscard]] auto& events() const { return m_events; }
 
    inline void nexus_health(long int value, Player player) { m_nexus_health[player] = value; }
+   inline auto& nexus_health(Player player) { return m_nexus_health[player]; }
    [[nodiscard]] inline auto nexus_health(Player player) const { return m_nexus_health[player]; }
-   inline void damage_nexus(size_t amount, Player player) { m_nexus_health[player] -= amount; }
-   inline void heal_nexus(size_t amount, Player player)
-   {
-      m_nexus_health[player] = std::min(
-         m_nexus_health[player] + long(amount), long(START_NEXUS_HEALTH));
-   }
 
-   inline void mana(size_t value, Player player)
-   {
-      m_mana[player] = std::max(std::min(MAX_MANA, value), size_t(0));
-   }
+   inline void mana(size_t value, Player player) { m_mana[player] = value; }
    [[nodiscard]] inline auto mana(Player player) const { return m_mana[player]; }
 
    inline void managems(size_t value, Player player) { m_managems[player] = value; }
    [[nodiscard]] inline auto managems(Player player) const { return m_managems[player]; }
 
-   inline void spell_mana(size_t value, Player player)
-   {
-      m_spell_mana[player] = std::max(
-         std::min(static_cast< size_t >(MAX_SPELL_MANA), value), size_t(0));
-   }
+   inline void spell_mana(size_t value, Player player) { m_spell_mana[player] = value; }
    [[nodiscard]] inline auto spell_mana(Player player) const { return m_spell_mana[player]; }
 
    inline void hand(HandType hand, Player player) { m_hand[player] = std::move(hand); }
@@ -113,7 +103,7 @@ class State {
    [[nodiscard]] inline auto graveyard(Player player) const { return m_graveyard[player]; }
    [[nodiscard]] inline auto tossed_cards(Player player) const { return m_tossed_cards[player]; }
    [[nodiscard]] inline auto board() const { return m_board; }
-   [[nodiscard]] inline auto* history() const { return &m_history; }
+   [[nodiscard]] inline auto& history() const { return m_history; }
    [[nodiscard]] inline auto round() const { return m_round; }
 
    inline void turn(size_t turn) { m_turn = turn; }
@@ -122,6 +112,8 @@ class State {
    inline void attacker(Player player) { m_attacker = player; }
    [[nodiscard]] inline auto attacker() const { return m_attacker; }
    inline void reset_attacker() { m_attacker.reset(); }
+
+   [[nodiscard]] auto& config() const { return m_config; }
 
    inline void starting_player(Player player)
    {
@@ -132,45 +124,24 @@ class State {
    [[nodiscard]] inline auto starting_player() const { return m_starting_player; }
    [[nodiscard]] inline auto active_player() const { return Player(m_turn % 2); }
 
-   [[nodiscard]] inline auto is_enlightened(Player player) const
-   {
-      return m_managems[player] == MAX_MANA;
-   }
-
    [[nodiscard]] inline auto& spell_stack() { return m_spell_stack; }
    [[nodiscard]] inline auto spell_stack() const { return m_spell_stack; }
    [[nodiscard]] inline auto& spell_prestack() { return m_spell_prestack; }
    [[nodiscard]] inline auto spell_prestack() const { return m_spell_prestack; }
    inline void incr_managems(Player player, size_t amount = 1)
    {
-      managems(std::min(m_managems[player] + amount, MAX_MANA), player);
+      managems(std::min(m_managems[player] + amount, m_config.MAX_MANA), player);
    }
 
-   [[nodiscard]] inline bool round_ended() const
-   {
-      return m_passed[Player::BLUE] && m_passed[Player::RED];
-   }
-   inline bool pass()
-   {
-      m_passed[active_player()] = true;
-      return round_ended();
-   }
-   inline void reset_pass(Player player) { m_passed[player] = false; }
-   inline void reset_pass() { m_passed[active_player()] = false; }
-   inline void reset_pass_all() { m_passed = {false, false}; }
-   inline void fill_mana(Player player, size_t amount) { m_mana[player] += amount; }
-   inline void fill_mana(Player player) { m_mana[player] = m_managems[player]; }
+   auto& pass_flag(Player player) { return m_passed[player];}
+   auto pass_flag(Player player) const { return m_passed[player];}
+
+   inline void add_mana(Player player, size_t amount) { m_mana[player] += amount; }
 
    /*
-    * Check if the current game state is terminal
+    * Return the status of the current game state
     */
-   inline int is_terminal()
-   {
-      if(not m_terminal_checked) {
-         _check_terminal();
-      }
-      return m_terminal;
-   }
+   Status status();
 
    void commit_to_history(sptr< Action > action);
 
@@ -181,7 +152,7 @@ class State {
 
   private:
    // player symmetric attributes
-   SymArr< Player > nexus_ids{BLUE, RED};
+   SymArr< Player > nexus_ids{Player::BLUE, Player::RED};
    SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
    SymArr< size_t > m_mana{0, 0};
    SymArr< size_t > m_managems{0, 0};
@@ -192,8 +163,6 @@ class State {
    SymArr< bool > m_can_plunder{false, false};
    SymArr< bool > m_passed{false, false};
 
-   std::array<uptr< EventBase<Effect> >, events::n_events> m_events;
-
    SymArr< HandType > m_hand;
    SymArr< DeckType > m_deck_cont;
    SymArr< GrantFactory > m_grant_factory;
@@ -202,12 +171,13 @@ class State {
    SymArr< std::map< size_t, std::vector< sptr< Action > > > > m_history;
 
    sptr< Board > m_board = std::make_shared< Board >();
+   uptr< Logic > m_logic;
+   std::array< uptr< EventBase >, events::n_events > m_events;
 
    // state attributes
+   Config m_config;
    Player m_starting_player;
    std::optional< Player > m_attacker;
-   bool m_battle_mode = false;
-   bool m_battle_resolution_mode = false;
    size_t m_round = 0;
    size_t m_turn;
    Status m_terminal = Status::ONGOING;
@@ -216,6 +186,8 @@ class State {
    SpellStackType m_spell_prestack = {};
 
    void _check_terminal();
+
+   std::array< uptr< EventBase >, events::n_events > init_events();
 };
 
 #endif  // LORAINE_STATE_H

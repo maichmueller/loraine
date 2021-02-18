@@ -1,10 +1,9 @@
 
 
-#include "board.h"
+#include "engine/board.h"
 
 #include "cards/card.h"
-#include "utils.h"
-
+#include "utils/utils.h"
 
 size_t Board::count_units(
    Player player, bool in_camp, const std::function< bool(const sptr< Card >&) >& filter) const

@@ -31,11 +31,11 @@ enum class EventType {
    SUMMON,  // summoning a unit
    SUPPORT,  // supporting the unit on the right of the attacking unit
    TARGET,  // targeting a unit with a spell/skill
-   UNIT_TAKE_DAMAGE,  // any unit on the field takes damage
+   UNIT_DAMAGE,  // any unit on the field takes damage
    COUNTER
 };
 
-constexpr const static size_t n_events = static_cast< size_t >(EventType::COUNTER) + 1;
+constexpr const size_t n_events = static_cast< size_t >(EventType::COUNTER) + 1;
 
 }  // namespace lor_events
 

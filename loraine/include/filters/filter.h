@@ -4,10 +4,10 @@
 
 #include <utility>
 
-#include "card_defs.h"
-#include "rulesets.h"
-#include "types.h"
+#include "cards/card_defs.h"
+#include "engine/rulesets.h"
 #include "target.h"
+#include "utils/types.h"
 
 class Card;
 

@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
+        ${LORAINE_SRC_DIR}/action_mode.cpp
         ${LORAINE_SRC_DIR}/all_events.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
+        ${LORAINE_SRC_DIR}/config.cpp
 
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/logic.cpp

@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "cards/card.h"
-#include "types.h"
+#include "utils/types.h"
 
 class CardContainer {
   public:

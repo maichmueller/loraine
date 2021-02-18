@@ -1,11 +1,11 @@
 #ifndef LORAINE_CARD_DEFS_H
 #define LORAINE_CARD_DEFS_H
 
-#include "types.h"
+#include "utils/types.h"
 
 enum struct Rarity { NONE = 0, CHAMPION, COMMON, EPIC, RARE };
 
-constexpr const static size_t n_rarities = static_cast< size_t >(Rarity::RARE) + 1;
+constexpr const size_t n_rarities = static_cast< size_t >(Rarity::RARE) + 1;
 
 enum struct Group {
    NONE = 0,
@@ -20,15 +20,15 @@ enum struct Group {
    YETI
 };
 
-constexpr const static size_t n_groups = static_cast< size_t >(Group::YETI) + 1;
+constexpr const size_t n_groups = static_cast< size_t >(Group::YETI) + 1;
 
 enum struct CardType { SPELL, UNIT, LANDMARK };
 
-constexpr const static size_t n_cardtypes = static_cast< size_t >(CardType::LANDMARK) + 1;
+constexpr const size_t n_cardtypes = static_cast< size_t >(CardType::LANDMARK) + 1;
 
 enum struct CardSuperType { NONE, CHAMPION, SKILL };
 
-constexpr const static size_t n_cardsupertypes = static_cast< size_t >(CardSuperType::SKILL) + 1;
+constexpr const size_t n_cardsupertypes = static_cast< size_t >(CardSuperType::SKILL) + 1;
 
 enum struct Region {
    BILGEWATER = 0,
@@ -41,7 +41,7 @@ enum struct Region {
    TARGON,
 };
 
-constexpr const static size_t n_regions = static_cast< size_t >(Region::TARGON) + 1;
+constexpr const size_t n_regions = static_cast< size_t >(Region::TARGON) + 1;
 
 enum class Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
@@ -92,7 +92,7 @@ enum class Keyword {
    WEAKEST,
 };
 
-constexpr const static size_t n_keywords = static_cast< size_t >(Keyword::WEAKEST);
+constexpr const size_t n_keywords = static_cast< size_t >(Keyword::WEAKEST);
 
 // This is intended to be used as lookup table for keywords:
 // Does the card have the keyword 'lifesteal'?

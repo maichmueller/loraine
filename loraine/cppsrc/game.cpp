@@ -5,9 +5,9 @@
 
 #include <utility>
 
+#include "engine/rulesets.h"
 #include "grants/grant.h"
-#include "rulesets.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 void Game::_move_units(const std::vector< size_t >& positions, Player player, bool to_bf)
 {
@@ -87,7 +87,7 @@ bool Game::_move_spell(const sptr< Spell >& spell, bool to_stack)
       spell_pre_stack.emplace_back(spell);
       spell->move(Location::SPELLSTACK, spell_pre_stack.size() - 1);
       for(auto& effect : cast_effects) {
-         if(not effect.target(*m_state, *get_agent(player), player)) {
+         if(not effect.target(*m_state, *agent(player), player)) {
             // the agent has cancelled playing the spell, we thus return handling to the action
             // method
             return false;
@@ -130,7 +130,7 @@ bool Game::run_game()
          m_state->incr_turn();
       }
 
-      if(auto terminality = m_state->is_terminal() != ONGOING) {
+      if(auto terminality = m_state->status() != ONGOING) {
          return terminality;
       }
    }
@@ -377,7 +377,7 @@ void Game::deal_damage_to_unit(
 {
    long health_def = unit->health();
    _trigger_event(
-      events::UnitTakeDamageEvent(cause->mutables().owner, cause, Target(unit), damage));
+      events::UnitDamageEvent(cause->mutables().owner, cause, Target(unit), damage));
    unit->take_damage(*damage);
    // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
    *damage += -health_def;
@@ -518,8 +518,8 @@ void Game::_start_round()
    for(int player = BLUE; player != RED; ++player) {
       incr_managems(Player(player));
    }
-   m_state->fill_mana(BLUE);
-   m_state->fill_mana(RED);
+   m_state->refill_mana(BLUE);
+   m_state->refill_mana(RED);
 
    draw_card(BLUE);
    draw_card(RED);

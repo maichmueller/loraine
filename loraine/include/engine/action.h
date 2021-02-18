@@ -7,8 +7,8 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "rulesets.h"
-#include "types.h"
+#include "engine/rulesets.h"
+#include "utils/types.h"
 
 enum ActionType { ACCEPT, ATTACK, BLOCK, CANCEL, MOVE_UNIT, MOVE_SPELL, MULLIGAN, PASS, PLAY };
 

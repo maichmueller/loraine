@@ -6,14 +6,14 @@
 #include "cards/card.h"
 #include "game.h"
 #include "grants/grant.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 Card::Card(ConstData const_attrs, MutableData var_attrs)
     : m_immutables(std::move(const_attrs)), m_mutables(std::move(var_attrs))
 {
 }
 
-void Card::remove_effect(events::EventType e_type, const Effect& effect)
+void Card::remove_effect(events::EventType e_type, const EffectBase& effect)
 {
    if(auto eff_vec_iter = std::find_if(
          m_mutables.effects.begin(),
@@ -31,7 +31,7 @@ void Card::remove_effect(events::EventType e_type, const Effect& effect)
       }
    }
 }
-void Card::add_effect(events::EventType e_type, Effect effect)
+void Card::add_effect(events::EventType e_type, sptr< EffectBase > effect)
 {
    // if the key is already found in the effects map, delete the previous
    // effect. This essentially implies we overwrite preexisting effects
@@ -40,7 +40,7 @@ void Card::add_effect(events::EventType e_type, Effect effect)
    }
    m_mutables.effects[e_type].emplace_back(std::move(effect));
 }
-void Card::effects(events::EventType e_type, std::vector< Effect > effects)
+void Card::effects(events::EventType e_type, std::vector< sptr< EffectBase > > effects)
 {
    auto& curr_vec = m_mutables.effects[e_type];
    for(auto&& eff : effects) {
@@ -67,7 +67,7 @@ void Card::store_grant(const sptr< Grant >& grant)
       m_mutables.grants_temp.emplace_back(grant);
    }
 }
-bool Card::has_effect(events::EventType e_type, const Effect& effect) const
+bool Card::has_effect(events::EventType e_type, const EffectBase& effect) const
 {
    auto found_effects = m_mutables.effects.find(e_type);
    bool found = found_effects != m_mutables.effects.end();

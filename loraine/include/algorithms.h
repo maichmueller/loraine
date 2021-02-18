@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <utility>
 
-#include "types.h"
-#include "utils.h"
+#include "utils/types.h"
+#include "utils/utils.h"
 
 namespace algo {
 

@@ -2,7 +2,7 @@
 #include "targeter.h"
 
 #include "agent.h"
-#include "state.h"
+#include "engine/state.h"
 
 std::vector< Target > EnemyCampManTargeter::_target(
    const State& state, Player acting_player)
@@ -11,7 +11,7 @@ std::vector< Target > EnemyCampManTargeter::_target(
    auto& camp = board->get_camp(Player(1 - acting_player));
    std::vector< sptr< Card > > camp_copy;
     std::vector< Target > targets;
-    auto&& filter = get_filter();
+    auto&& filter = filter();
     for(const auto& card : camp) {
        auto target = Target(card);
        if(filter(target)) {

@@ -2,11 +2,11 @@
 #ifndef LORAINE_TARGET_H
 #define LORAINE_TARGET_H
 
-#include <utility>
 #include <optional>
+#include <utility>
 
-#include "rulesets.h"
-#include "types.h"
+#include "engine/rulesets.h"
+#include "utils/types.h"
 
 class Card;
 

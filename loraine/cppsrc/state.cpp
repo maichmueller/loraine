@@ -1,10 +1,10 @@
 
 
-#include "state.h"
+#include "engine/state.h"
 
 #include <algorithms.h>
 
-#include "action.h"
+#include "engine/action.h"
 
 void State::_check_terminal()
 {
@@ -103,4 +103,22 @@ std::tuple< Location, long > State::find(const sptr< Card >& card) const
       index = algo::find_index(deck(card->mutables().owner), card);
    }
    return {location, index};
+}
+std::array< uptr< EventBase >, events::n_events > State::init_events()
+{
+   std::array< uptr< EventBase >, events::n_events > arr;
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique<events::AttackEvent>();
+}
+Status State::status()
+{
+   if(not m_terminal_checked) {
+      _check_terminal();
+   }
+   return m_terminal;
 }

@@ -1,7 +1,6 @@
-#include <rulesets.h>
+#include <engine/rulesets.h>
 
-#include "state.h"
-
+#include "engine/state.h"
 
 int main() {
 

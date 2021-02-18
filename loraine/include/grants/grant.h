@@ -5,8 +5,8 @@
 
 #include "cards/card.h"
 #include "events/event.h"
-#include "types.h"
-#include "uuid_gen.h"
+#include "utils/types.h"
+#include "utils/utils.h"
 
 enum GrantType { STATS, MANA, KEYWORD, EFFECT };
 
@@ -132,13 +132,13 @@ class EffectGrant: public Grant {
       const sptr< Card >& bestowing_card,
       const sptr< Card >& bestowed_card,
       bool permanent,
-      Effect effect,
+      sptr<EffectBase> effect,
       events::EventType event_type);
 
    void _undo() override
    {
-      if(get_bestowed_card()->has_effect(m_event_type, m_effect)) {
-         get_bestowed_card()->remove_effect(m_event_type, m_effect);
+      if(get_bestowed_card()->has_effect(m_event_type, *m_effect)) {
+         get_bestowed_card()->remove_effect(m_event_type, *m_effect);
       }
    }
    void apply() override
@@ -147,13 +147,13 @@ class EffectGrant: public Grant {
    }
 
    void set_event_type(events::EventType e_type) { m_event_type = e_type; }
-   void set_effect(Effect effect) { m_effect = std::move(effect); }
+   void set_effect(sptr<EffectBase> effect) { m_effect = std::move(effect); }
 
    [[nodiscard]] inline auto get_effect() const { return m_effect; }
    [[nodiscard]] inline auto get_event_type() const { return m_event_type; }
 
   private:
-   Effect m_effect;
+   sptr<EffectBase> m_effect;
    events::EventType m_event_type;
 };
 
