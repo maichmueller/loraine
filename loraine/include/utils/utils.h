@@ -5,6 +5,7 @@
 #include <uuid.h>
 
 #include <optional>
+#include <tuple>
 
 #include "rng_machine.h"
 #include "types.h"
@@ -15,6 +16,14 @@ inline UUID new_uuid()
    static auto generator = uuids::uuid_random_generator();
    return generator();
 }
+
+template < template < typename... > class, typename >
+struct pass_args;
+
+template < template < typename... > class OutClass, typename... T >
+struct pass_args< OutClass, std::tuple< T... > > {
+   using type = OutClass< T... >;
+};
 
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)

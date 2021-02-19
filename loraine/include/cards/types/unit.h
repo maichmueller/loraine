@@ -29,27 +29,26 @@ class Unit: public FieldCard {
       size_t damage = 0;
       // whether the unit is dead
       bool alive = true;
-      // whether the unit is stunned (cant block or attack)
-      bool stunned = false;
-      // the function to kill the unit with (e.g. needs to be changed by Unyielding Spirit)
+      // the function to damage the unit with (e.g. needs to be flexible for Armored Elephant)
+      std::function< long(Unit&, long) > take_damage_func = &_default_damage;
+      // the function to kill the unit with (e.g. needs to be flexible for Unyielding Spirit)
       std::function< void(Unit&) > kill_func = &_default_kill;
    };
 
-   [[nodiscard]] inline auto& unit_mutable_attrs() const { return m_unit_mutables; }
-   [[nodiscard]] inline auto& unit_mutable_attrs() { return m_unit_mutables; }
-   [[nodiscard]] inline auto& unit_const_attrs() const { return m_unit_immutables; }
-   [[nodiscard]] inline auto& unit_const_attrs() { return m_unit_immutables; }
-   inline void kill() { m_unit_mutables.kill_func(*this); }
-
+   [[nodiscard]] inline auto& unit_mutables() const { return m_unit_mutables; }
+   [[nodiscard]] inline auto& unit_mutables() { return m_unit_mutables; }
+   [[nodiscard]] inline auto& unit_immutables() const { return m_unit_immutables; }
+   [[nodiscard]] inline auto& unit_immutables() { return m_unit_immutables; }
    void power(size_t power, bool as_delta = true);
+
    [[nodiscard]] inline auto power_raw() const
    {
       return m_unit_mutables.power_base + static_cast< size_t >(m_unit_mutables.power_delta);
    }
    [[nodiscard]] inline auto power() const { return std::max(size_t(0), power_raw()); }
    void add_power(long int amount, bool permanent);
-
    void health(size_t health);
+
    [[nodiscard]] inline auto health_raw() const
    {
       long health_base = static_cast< long int >(m_unit_mutables.health_base);
@@ -58,7 +57,11 @@ class Unit: public FieldCard {
    }
    [[nodiscard]] inline auto health() const { return std::max(long(0), health_raw()); }
    void add_health(long int amount, bool permanent);
-   inline void take_damage(size_t amount) { m_unit_mutables.damage += amount; }
+   inline auto take_damage(size_t amount)
+   {
+      return m_unit_mutables.take_damage_func(*this, amount);
+   }
+   inline void kill() { m_unit_mutables.kill_func(*this); }
 
    inline void heal(size_t amount)
    {
@@ -85,7 +88,12 @@ class Unit: public FieldCard {
    ConstUnitData m_unit_immutables;
 
    [[nodiscard]] bool _check_play_condition(const State& state) const override;
-   static void _default_kill(Unit& unit) { unit.unit_mutable_attrs().alive = false; }
+   static void _default_kill(Unit& unit) { unit.unit_mutables().alive = false; }
+   static long _default_damage(Unit& unit, long amount)
+   {
+      unit.unit_mutables().damage += amount;
+      return amount;
+   }
 };
 
 inline sptr< Unit > to_unit(const sptr< Card >& card)

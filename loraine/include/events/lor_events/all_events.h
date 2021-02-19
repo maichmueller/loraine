@@ -2,6 +2,8 @@
 #ifndef LORAINE_ALL_EVENTS_H
 #define LORAINE_ALL_EVENTS_H
 
+#include <variant>
+
 #include "events/event.h"
 
 // forward-declare
@@ -143,10 +145,36 @@ class TargetEvent: public Event< State, EventType::TARGET, Player, Card&, Card& 
  * 2nd Arg: Card& = The damaged card
  * 3rd Arg: long = The damage amount
  */
-class UnitDamageEvent:
-    public Event< State, EventType::UNIT_DAMAGE, Player, Card&, Card&, long > {
+class UnitDamageEvent: public Event< State, EventType::UNIT_DAMAGE, Player, Card&, Card&, long > {
 };
 
+using LOREvent = std::variant<
+   AttackEvent,
+   BeholdEvent,
+   BlockEvent,
+   CaptureEvent,
+   CastEvent,
+   DaybreakEvent,
+   DieEvent,
+   DiscardEvent,
+   DrawCardEvent,
+   EnlightenmentEvent,
+   GainManagemEvent,
+   HealUnitEvent,
+   LevelUpEvent,
+   NexusStrikeEvent,
+   NightfallEvent,
+   PlayEvent,
+   RecallEvent,
+   RoundEndEvent,
+   RoundStartEvent,
+   ScoutEvent,
+   StrikeEvent,
+   SummonEvent,
+   StunEvent,
+   SupportEvent,
+   TargetEvent,
+   UnitDamageEvent >;
 
 }  // namespace events
 

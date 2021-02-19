@@ -313,7 +313,7 @@ void Game::_resolve_battle()
             // attacker, it needs to battle the attacker
             auto unit_def = to_unit(unit_def_opt);
 
-            if(unit_def->unit_mutable_attrs().alive) {
+            if(unit_def->unit_mutables().alive) {
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
                bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
 
@@ -386,7 +386,7 @@ void Game::kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr<
 {
    killed_unit->kill();
    _trigger_event(events::DieEvent(killer, Target(killed_unit), cause));
-   if(not killed_unit->unit_mutable_attrs().alive) {
+   if(not killed_unit->unit_mutables().alive) {
       // we need to check for the card being truly dead, in case it had an
       // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
       m_state->to_graveyard(killed_unit);
@@ -486,8 +486,8 @@ void Game::_end_round()
    auto regenerate_units = [&](Player player) {
       // regenerate the units with regeneration
       for(auto& unit : regenerating_units[player]) {
-         if(unit->unit_mutable_attrs().alive) {
-            heal(unit->mutables().owner, unit, unit->unit_mutable_attrs().damage);
+         if(unit->unit_mutables().alive) {
+            heal(unit->mutables().owner, unit, unit->unit_mutables().damage);
          }
       }
    };

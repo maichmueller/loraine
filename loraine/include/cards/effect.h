@@ -20,55 +20,51 @@ class Agent;
 
 class EffectBase {
   public:
-   virtual ~EffectBase() = default;
+   ~virtual EffectBase() = default;
 };
 
 template < typename... Args >
-class Effect {
+class Effect : public EffectBase {
   public:
-   enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
    using SignatureTuple = std::tuple< Args... >;
-   using EffectFunc = std::function< void(State&, Effect&, SignatureTuple) >;
-   using ConditionFunc = std::function< bool(const State&, const Effect&) >;
+   enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
+   /**
+    * The call to trigger the effect's changes on the status. Calls internally the private function
+    * `_event_call`.
+    * @param state State,
+    *   the state of the associated game
+    * @param args Parameter-Pack,
+    *   the specific arguments of the subscribed to event
+    */
+   void event_call(State& state, Args&&... args);
+   [[nodiscard]] inline bool check_condition(const State& state) const { return _condition(state); }
+   [[nodiscard]] virtual bool target(const State& state, Agent& agent, Player player);
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
 
-   [[nodiscard]] auto effect_func() const { return m_effect_func; }
-   [[nodiscard]] auto condition_func() const { return m_con_func; }
    [[nodiscard]] auto associated_card() const { return m_assoc_card; }
    [[nodiscard]] auto effect_type() const { return m_effect_type; }
-   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
-   [[nodiscard]] auto targets() const { return m_targets; }
-   [[nodiscard]] auto& targets() { return m_targets; }
-   [[nodiscard]] auto get_targeter() const { return m_targeter; }
-   [[nodiscard]] auto& get_targeter() { return m_targeter; }
 
-   [[nodiscard]] auto& uuid() { return m_uuid; }
-   inline void set_targets(std::vector< Target > targets) { m_targets = std::move(targets); }
+   inline void targets(std::vector< Target > targets) { m_targets = std::move(targets); }
+   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
+   [[nodiscard]] auto& targets() { return m_targets; }
+   [[nodiscard]] auto targets() const { return m_targets; }
 
    inline void reset_targets() { m_targets.clear(); }
+   [[nodiscard]] auto targeter() const { return m_targeter; }
+   [[nodiscard]] auto& targeter() { return m_targeter; }
 
-   bool operator()(State& state, SignatureTuple arg_tuple);
-
-   [[nodiscard]] inline bool check_condition(const State& state) const
-   {
-      return m_con_func(state, *this);
-   }
-   [[nodiscard]] virtual bool target(const State& state, Agent& agent, Player player);
+   [[nodiscard]] auto& uuid() { return m_uuid; }
 
    bool operator==(const Effect& effect) const;
    bool operator!=(const Effect& effect) const;
 
    Effect(
-      EffectFunc effect_func,
-      ConditionFunc cast_condition_func,
       sptr< Card > card_ptr,
       sptr< TargeterBase > targeter = std::make_shared< NoneTargeter >(),
       Type effect_type = Type::SIMPLE)
-       : m_effect_func(std::move(effect_func)),
-         m_con_func(std::move(cast_condition_func)),
-         m_effect_type(effect_type),
+       : m_effect_type(effect_type),
          m_assoc_card(std::move(card_ptr)),
          m_targeter(std::move(targeter)),
          m_uuid(new_uuid())
@@ -80,24 +76,37 @@ class Effect {
    Effect& operator=(const Effect& rhs) = default;
 
   private:
-   const EffectFunc m_effect_func;
-   const ConditionFunc m_con_func;
    Type m_effect_type;
    bool m_consumed = false;
    sptr< Card > m_assoc_card;
    sptr< TargeterBase > m_targeter;
    std::vector< Target > m_targets;
    UUID m_uuid;
+
+   /**
+    * The actual effect function to trigger upon the depending event happening.
+    * @param state State,
+    *   the current state of the associated game
+    * @param args: Parameter-Pack,
+    *   the specific arguments of the subscribed to event
+    */
+   virtual void _event_call(State& state, Args&&... args) = 0;
+   /**
+    * Provides the boolean status of the condition for this effect to be executed.
+    * @param state State,
+    *   the current state of the associated game
+    * @return boolean,
+    *   whether this effect can be casted
+    */
+   virtual bool _condition(State& state) { return true; };
 };
 
 template < typename... Args >
-bool Effect< Args... >::operator()(State& state, SignatureTuple arg_tuple)
+void Effect< Args... >::event_call(State& state, Args&&... args)
 {
-   bool executable = check_condition(state);
-   if(executable) {
-      m_effect_func(state, *this, std::move(arg_tuple));
+   if(check_condition(state)) {
+      _event_call(state, *this, std::forward< Args >(args)...);
    }
-   return executable;
 }
 template < typename... Args >
 bool Effect< Args... >::operator==(const Effect& effect) const
@@ -110,57 +119,60 @@ bool Effect< Args... >::operator!=(const Effect& effect) const
    return not (*this == effect);
 }
 
-class AttackEffect: public Effect< events::AttackEvent::SignatureTuple > {
-};
-class BeholdEffect: public Effect< events::BeholdEvent::SignatureTuple > {
-};
-class BlockEffect: public Effect< events::BlockEvent::SignatureTuple > {
-};
-class CaptureEffect: public Effect< events::CaptureEvent::SignatureTuple > {
-};
-class CastEffect: public Effect< events::CastEvent::SignatureTuple > {
-};
-class DaybreakEffect: public Effect< events::DaybreakEvent::SignatureTuple > {
-};
-class DieEffect: public Effect< events::DieEvent::SignatureTuple > {
-};
-class DiscardEffect: public Effect< events::DiscardEvent::SignatureTuple > {
-};
-class DrawEffect: public Effect< events::DrawCardEvent::SignatureTuple > {
-};
-class EnlightenmentEffect: public Effect< events::EnlightenmentEvent::SignatureTuple > {
-};
-class GainManagemEffect: public Effect< events::GainManagemEvent::SignatureTuple > {
-};
-class HealUnitEffect: public Effect< events::HealUnitEvent::SignatureTuple > {
-};
-class LevelUpEffect: public Effect< events::LevelUpEvent::SignatureTuple > {
-};
-class NexusStrikeEffect: public Effect< events::NexusStrikeEvent::SignatureTuple > {
-};
-class NightfallEffect: public Effect< events::NightfallEvent::SignatureTuple > {
-};
-class PlayEffect: public Effect< events::PlayEvent::SignatureTuple > {
-};
-class RecallEffect: public Effect< events::RecallEvent::SignatureTuple > {
-};
-class RoundEndEffect: public Effect< events::RoundEndEvent::SignatureTuple > {
-};
-class RoundStartEffect: public Effect< events::RoundStartEvent::SignatureTuple > {
-};
-class ScoutEffect: public Effect< events::ScoutEvent::SignatureTuple > {
-};
-class StrikeEffect: public Effect< events::StrikeEvent::SignatureTuple > {
-};
-class SummonEffect: public Effect< events::SummonEvent::SignatureTuple > {
-};
-class StunEffect: public Effect< events::StunEvent::SignatureTuple > {
-};
-class SupportEffect: public Effect< events::SupportEvent::SignatureTuple > {
-};
-class TargetEffect: public Effect< events::TargetEvent::SignatureTuple > {
-};
-class UnitDamageEffect: public Effect< events::UnitDamageEvent::SignatureTuple > {
-};
+using AttackEffect = pass_args< Effect, events::AttackEvent::SignatureTuple >::type;
+using BeholdEffect = pass_args< Effect, events::BeholdEvent::SignatureTuple >::type;
+using BlockEffect = pass_args< Effect, events::BlockEvent::SignatureTuple >::type;
+using CaptureEffect = pass_args< Effect, events::CaptureEvent::SignatureTuple >::type;
+using CastEffect = pass_args< Effect, events::CastEvent::SignatureTuple >::type;
+using DaybreakEffect = pass_args< Effect, events::DaybreakEvent::SignatureTuple >::type;
+using DieEffect = pass_args< Effect, events::DieEvent::SignatureTuple >::type;
+using DiscardEffect = pass_args< Effect, events::DiscardEvent::SignatureTuple >::type;
+using DrawEffect = pass_args< Effect, events::DrawCardEvent::SignatureTuple >::type;
+using EnlightenmentEffect = pass_args< Effect, events::EnlightenmentEvent::SignatureTuple >::type;
+using GainManagemEffect = pass_args< Effect, events::GainManagemEvent::SignatureTuple >::type;
+using HealUnitEffect = pass_args< Effect, events::HealUnitEvent::SignatureTuple >::type;
+using LevelUpEffect = pass_args< Effect, events::LevelUpEvent::SignatureTuple >::type;
+using NexusStrikeEffect = pass_args< Effect, events::NexusStrikeEvent::SignatureTuple >::type;
+using NightfallEffect = pass_args< Effect, events::NightfallEvent::SignatureTuple >::type;
+using PlayEffect = pass_args< Effect, events::PlayEvent::SignatureTuple >::type;
+using RecallEffect = pass_args< Effect, events::RecallEvent::SignatureTuple >::type;
+using RoundEndEffect = pass_args< Effect, events::RoundEndEvent::SignatureTuple >::type;
+using RoundStartEffect = pass_args< Effect, events::RoundStartEvent::SignatureTuple >::type;
+using ScoutEffect = pass_args< Effect, events::ScoutEvent::SignatureTuple >::type;
+using StrikeEffect = pass_args< Effect, events::StrikeEvent::SignatureTuple >::type;
+using SummonEffect = pass_args< Effect, events::SummonEvent::SignatureTuple >::type;
+using StunEffect = pass_args< Effect, events::StunEvent::SignatureTuple >::type;
+using SupportEffect = pass_args< Effect, events::SupportEvent::SignatureTuple >::type;
+using TargetEffect = pass_args< Effect, events::TargetEvent::SignatureTuple >::type;
+using UnitDamageEffect = pass_args< Effect, events::UnitDamageEvent::SignatureTuple >::type;
+
+using LOREffect = std::variant<
+   AttackEffect,
+   BeholdEffect,
+   BlockEffect,
+   CaptureEffect,
+   CastEffect,
+   DaybreakEffect,
+   DieEffect,
+   DiscardEffect,
+   DrawEffect,
+   EnlightenmentEffect,
+   GainManagemEffect,
+   HealUnitEffect,
+   AttackEffect,
+   LevelUpEffect,
+   NexusStrikeEffect,
+   NightfallEffect,
+   PlayEffect,
+   RecallEffect,
+   RoundEndEffect,
+   RoundStartEffect,
+   ScoutEffect,
+   StrikeEffect,
+   SummonEffect,
+   StunEffect,
+   SupportEffect,
+   TargetEffect,
+   UnitDamageEffect >;
 
 #endif  // LORAINE_EFFECT_H

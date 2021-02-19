@@ -21,6 +21,8 @@ struct Config {
    const size_t SPELL_STACK_LIMIT = 10;
    const size_t MAX_MANA = 10;
    const size_t MAX_SPELL_MANA = 3;
+   const size_t MANA_START = 0;
+   const size_t SPELL_MANA_START = 0;
    const size_t INITIAL_HAND_SIZE = 4;
    const size_t MAX_ROUNDS = 40;
 };

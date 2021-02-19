@@ -7,6 +7,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
         ${LORAINE_SRC_DIR}/config.cpp
+        ${LORAINE_SRC_DIR}/nexus.cpp
 
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/logic.cpp

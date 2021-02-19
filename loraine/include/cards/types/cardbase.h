@@ -71,6 +71,8 @@ class Card : public EventListener<Card> {
       KeywordMap keywords = {};
       // all effects
       std::map< events::EventType, std::vector< sptr<EffectBase> > > effects = {};
+      // condition
+      sptr<EffectBase> tribute = {};
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants
@@ -95,27 +97,20 @@ class Card : public EventListener<Card> {
       return m_mutables.effects.at(etype);
    }
 
+   [[nodiscard]] auto creator() const { return m_immutables.creator.value(); }
+
    [[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
 
    // status requests
-
    [[nodiscard]] virtual bool is_unit() const { return false; }
    [[nodiscard]] virtual bool is_spell() const { return false; }
    [[nodiscard]] virtual bool is_skill() const { return false; }
    [[nodiscard]] virtual bool is_fieldcard() const { return false; }
    [[nodiscard]] virtual bool is_champion() const { return false; }
    [[nodiscard]] virtual bool is_landmark() const { return false; }
+
    [[nodiscard]] virtual bool is_follower() const { return false; }
-
    [[nodiscard]] bool is_created() const { return has_value(m_immutables.creator); }
-   [[nodiscard]] auto creator() const { return m_immutables.creator.value(); }
-
-   inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
-   inline void move(Location loc, size_t index)
-   {
-      m_mutables.location = loc;
-      m_mutables.position = index;
-   }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
@@ -125,7 +120,15 @@ class Card : public EventListener<Card> {
    {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
    }
+
    [[nodiscard]] bool has_effect(events::EventType e_type, const EffectBase& effect) const;
+   inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
+
+   inline void move(Location loc, size_t index)
+   {
+      m_mutables.location = loc;
+      m_mutables.position = index;
+   }
 
    // manipulations
 
@@ -161,17 +164,6 @@ class Card : public EventListener<Card> {
       return m_immutables.uuid == rhs.immutables().uuid;
    }
    inline bool operator!=(const Card& rhs) const { return not (*this == rhs); }
-   /*
-    * This function returns the boolean indicator for whether the current card has a play condition
-    * that can be fulfilled at the present moment.
-    */
-   [[nodiscard]] bool check_play_tribute(const State& state) const;
-
-   /*
-    * The play condition function represents a potential 'cost' the player has to pay to play this
-    * card (e.g. discarding another card in hand)
-    */
-   virtual inline void pay_play_tribute(State& /*unused*/) {}
 
    /*
     * A defaulted virtual destructor needed bc of inheritance

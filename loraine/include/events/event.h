@@ -37,16 +37,16 @@ class Event: public EventBase {
    std::vector< Subscriber* > subscribers;
 
   protected:
-   void _notify(Subscriber* subscriber, Context& context, Args... args)
+   void _notify(Subscriber* subscriber, Context& context, Args&&... args)
    {
-      (*subscriber)(context, std::make_tuple(std::forward< Args >(args)...));
+      subscriber->event_call(context, std::make_tuple(std::forward< Args >(args)...));
    }
 
   public:
    constexpr static events::EventType event_type() { return e_type; };
    const auto& get_subscribers() const { return subscribers; }
 
-   virtual void trigger(Context& context, Args... args)
+   virtual void trigger(Context& context, Args&&... args)
    {
       for(auto& subscriber : subscribers) {
          _notify(subscriber, context, std::forward< Args >(args)...);

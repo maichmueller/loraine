@@ -37,7 +37,6 @@ class Logic {
 
    /**
     * Play a fieldcard onto the board
-    *
     * @param card: shared_ptr<Card>,
     *    the card to play
     * @param replaces: optional<size_t>,
@@ -51,15 +50,12 @@ class Logic {
    void play_spells();
    /**
     * Cast the given spell. This does not check whether the given spell is also played.
-    *
     * @param: spell: shared_ptr<Spell>,
     *    The spell to cast.
-    *
     */
    void cast(const sptr< Spell >& spell);
    /**
     * Summon a specific unit card to either the camp or the battlefield.
-    *
     * @param: unit: shared_ptr<Unit>,
     *    the unit to summon
     * @param: to_bf: boolean,
@@ -68,14 +64,12 @@ class Logic {
    void summon(const sptr< Unit >& unit, bool to_bf);
    /**
     * Increase/Decrease the managems of the given player.
-    *
     * @param: player: The player whose managems are changed.
     * @param: amount: (optional) the number of gems to add/remove. Defaults to 1.
     */
    void give_managems(Player player, long amount = 1);
    /**
     * Creates a card as determined by the code.
-    *
     * @param player: shared_ptr<Card>,
     *    the player who will own the new card
     * @param card_code: const char*,
@@ -85,8 +79,7 @@ class Logic {
     */
    sptr< Card > create(Player player, const char* card_code);
    /**
-    * Copy a given card
-    *
+    * Copy the given card (basic or exact).
     * @param card: shared_ptr<Card>,
     *    the card to copy
     * @param exact_copy: boolean,
@@ -96,13 +89,28 @@ class Logic {
     */
    sptr< Card > copy(const sptr< Card >& card, bool exact_copy = false);
    /** Recall the chosen card.
-    *
-    * @param recalled_card
+    * @param recalled_card: shared_ptr<Card>,
+    *   the card to recall.
+    * @param recaller: Player,
+    *   the player who recalled the card.
     */
    void recall(const sptr< Card >& recalled_card, Player recaller);
-
+   /**
+    * Let a unit strike another.
+    * @param unit_att: shared_ptr<Unit>,
+    *   the striking unit.
+    * @param unit_def: shared_ptr<Unit>,
+    *   the struck unit.
+    */
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
-   void nexus_strike(Player attacked_nexus, const sptr< Unit >& striking_unit);
+   /**
+    * Let a unit strike another.
+    * @param unit_att: shared_ptr<Unit>,
+    *   the striking unit.
+    * @param unit_def: shared_ptr<Unit>,
+    *   the struck unit.
+    */
+   void nexus_strike(const sptr< Unit >& striking_unit);
 
    void heal(Player player, const sptr< Unit >& unit, long amount);
    void damage_unit(
@@ -161,7 +169,7 @@ class Logic {
     * needs to be known at compile time.
     */
    template < events::EventType event_type, typename... Params >
-   constexpr inline void trigger_event(event_type, Params... params);
+   constexpr inline void trigger_event(Params... params);
 
    template < Location range >
    std::vector< Target > filter_targets(const Filter& filter, std::optional< Player > opt_player);
@@ -302,6 +310,11 @@ void Logic::clamp_mana()
          state()->mana(clamped_mana, player);
       }
    }
+}
+template < events::EventType event_type, typename... Params >
+constexpr void Logic::trigger_event(Params... params)
+{
+   m_state->events()[static_cast<size_t>(event_type)]->trigger
 }
 
 #endif  // LORAINE_LOGIC_H

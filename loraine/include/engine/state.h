@@ -14,6 +14,7 @@
 #include "config.h"
 #include "deck.h"
 #include "events/event_listener.h"
+#include "nexus.h"
 #include "rng_machine.h"
 #include "rulesets.h"
 #include "utils/types.h"
@@ -72,9 +73,8 @@ class State {
    auto& events() { return m_events; }
    [[nodiscard]] auto& events() const { return m_events; }
 
-   inline void nexus_health(long int value, Player player) { m_nexus_health[player] = value; }
-   inline auto& nexus_health(Player player) { return m_nexus_health[player]; }
-   [[nodiscard]] inline auto nexus_health(Player player) const { return m_nexus_health[player]; }
+   inline auto& nexus(Player player) { return m_nexus[player]; }
+   [[nodiscard]] inline auto& nexus(Player player) const { return m_nexus[player]; }
 
    inline void mana(size_t value, Player player) { m_mana[player] = value; }
    [[nodiscard]] inline auto mana(Player player) const { return m_mana[player]; }
@@ -134,7 +134,7 @@ class State {
    }
 
    auto& pass_flag(Player player) { return m_passed[player];}
-   auto pass_flag(Player player) const { return m_passed[player];}
+   [[nodiscard]] auto pass_flag(Player player) const { return m_passed[player];}
 
    inline void add_mana(Player player, size_t amount) { m_mana[player] += amount; }
 
@@ -152,17 +152,16 @@ class State {
 
   private:
    // player symmetric attributes
-   SymArr< Player > nexus_ids{Player::BLUE, Player::RED};
-   SymArr< long > m_nexus_health{START_NEXUS_HEALTH, START_NEXUS_HEALTH};
-   SymArr< size_t > m_mana{0, 0};
-   SymArr< size_t > m_managems{0, 0};
-   SymArr< size_t > m_spell_mana{0, 0};
+   SymArr< size_t > m_mana;
+   SymArr< size_t > m_managems;
+   SymArr< size_t > m_spell_mana;
 
    SymArr< bool > m_can_attack{false, false};
    SymArr< bool > m_scout_token{false, false};
    SymArr< bool > m_can_plunder{false, false};
    SymArr< bool > m_passed{false, false};
 
+   SymArr< Nexus > m_nexus;
    SymArr< HandType > m_hand;
    SymArr< DeckType > m_deck_cont;
    SymArr< GrantFactory > m_grant_factory;
