@@ -2,6 +2,8 @@
 #ifndef LORAINE_CARD_H
 #define LORAINE_CARD_H
 
+#include <cards/tribute.h>
+
 #include <map>
 #include <set>
 #include <utility>
@@ -72,7 +74,7 @@ class Card : public EventListener<Card> {
       // all effects
       std::map< events::EventType, std::vector< sptr<EffectBase> > > effects = {};
       // condition
-      sptr<EffectBase> tribute = {};
+      uptr< PlayCondition > play_condition = {};
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants
