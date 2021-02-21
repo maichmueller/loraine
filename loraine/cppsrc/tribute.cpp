@@ -1,0 +1,2 @@
+
+#include "cards/tribute.h"

@@ -25,7 +25,7 @@ class Grant;
 class Card : public EventListener<Card> {
   public:
 
-   struct ConstData {
+   struct ConstState {
       // the card code
       const char* const code;
       // the cards' name
@@ -54,7 +54,7 @@ class Card : public EventListener<Card> {
       const UUID uuid = new_uuid();
    };
 
-   struct MutableData {
+   struct MutableState {
       // the player whose card this is
       Player owner;
       // the current location of the card in the game
@@ -104,12 +104,12 @@ class Card : public EventListener<Card> {
    // status requests
    [[nodiscard]] virtual bool is_unit() const { return false; }
    [[nodiscard]] virtual bool is_spell() const { return false; }
-   [[nodiscard]] virtual bool is_skill() const { return false; }
    [[nodiscard]] virtual bool is_fieldcard() const { return false; }
+   [[nodiscard]] virtual bool is_trap() const { return false; }
+   [[nodiscard]] virtual bool is_skill() const { return false; }
    [[nodiscard]] virtual bool is_champion() const { return false; }
-   [[nodiscard]] virtual bool is_landmark() const { return false; }
-
    [[nodiscard]] virtual bool is_follower() const { return false; }
+   [[nodiscard]] virtual bool is_landmark() const { return false; }
    [[nodiscard]] bool is_created() const { return has_value(m_immutables.creator); }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
@@ -173,7 +173,7 @@ class Card : public EventListener<Card> {
    /*
     *  Basic constructor
     */
-   Card(ConstData const_attrs, MutableData var_attrs);
+   Card(ConstState const_attrs, MutableState var_attrs);
 
    /*
     * Copy Constructor
@@ -197,9 +197,9 @@ class Card : public EventListener<Card> {
 
   private:
    // fixed attributes of the card
-   ConstData m_immutables;
+   const ConstState m_immutables;
    // variable attributes of the card
-   MutableData m_mutables;
+   MutableState m_mutables;
 
    [[nodiscard]] virtual bool _check_play_condition(const State& state) const = 0;
 };

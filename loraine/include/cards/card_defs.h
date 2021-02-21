@@ -9,6 +9,8 @@ constexpr const size_t n_rarities = static_cast< size_t >(Rarity::RARE) + 1;
 
 enum struct Group {
    NONE = 0,
+   ASCENDED,
+   CELESTIAL,
    DRAGON,
    ELITE,
    ELNUK,

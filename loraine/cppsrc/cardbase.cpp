@@ -8,7 +8,7 @@
 #include "grants/grant.h"
 #include "utils/utils.h"
 
-Card::Card(ConstData const_attrs, MutableData var_attrs)
+Card::Card(ConstState const_attrs, MutableState var_attrs)
     : m_immutables(std::move(const_attrs)), m_mutables(std::move(var_attrs))
 {
 }

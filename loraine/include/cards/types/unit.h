@@ -9,14 +9,14 @@
 
 class Unit: public FieldCard {
   public:
-   struct ConstUnitData {
+   struct ConstUnitState {
       // the fixed reference damage the unit deals.
       const size_t power_ref;
       // the fixed reference health of the unit
       const size_t health_ref;
    };
 
-   struct MutableUnitData {
+   struct MutableUnitState {
       // the permanent base power of the unit (can be moved by e.g. effects)
       size_t power_base;
       // the permanent base health of the unit (can be moved by e.g. effects)
@@ -70,11 +70,14 @@ class Unit: public FieldCard {
 
    [[nodiscard]] bool is_unit() const override { return true; }
 
-   template < typename... Args >
-   Unit(ConstUnitData const_unit_data, MutableUnitData mutable_unit_data, Args&&... args)
-       : Card(std::forward< Args >(args)...),
-         m_unit_mutables(std::move(mutable_unit_data)),
-         m_unit_immutables(std::move(const_unit_data))
+   Unit(
+      ConstState const_state,
+      MutableState mutable_state,
+      ConstUnitState const_unit_state,
+      MutableUnitState mutable_unit_state)
+       : FieldCard(const_state, std::move(mutable_state)),
+         m_unit_mutables(std::move(mutable_unit_state)),
+         m_unit_immutables(std::move(const_unit_state))
    {
    }
    ~Unit() override = default;
@@ -84,8 +87,8 @@ class Unit: public FieldCard {
    Unit& operator=(Unit&&) = delete;
 
   private:
-   MutableUnitData m_unit_mutables;
-   ConstUnitData m_unit_immutables;
+   const ConstUnitState m_unit_immutables;
+   MutableUnitState m_unit_mutables;
 
    [[nodiscard]] bool _check_play_condition(const State& state) const override;
    static void _default_kill(Unit& unit) { unit.unit_mutables().alive = false; }

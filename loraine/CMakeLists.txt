@@ -8,6 +8,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/state.cpp
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/nexus.cpp
+        ${LORAINE_SRC_DIR}/tribute.cpp
 
         ${LORAINE_SRC_DIR}/game.cpp
         ${LORAINE_SRC_DIR}/logic.cpp
@@ -25,6 +26,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/unit.cpp
         ${LORAINE_SRC_DIR}/spell.cpp
         ${LORAINE_SRC_DIR}/landmark.cpp
+        ${LORAINE_SRC_DIR}/trap.cpp
 
         ${LORAINE_SRC_DIR}/grant.cpp
         ${LORAINE_SRC_DIR}/grantmodifier.cpp

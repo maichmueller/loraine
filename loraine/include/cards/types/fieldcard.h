@@ -5,9 +5,10 @@
 
 #include "cardbase.h"
 
-/*
+/**
  * The base class for camp-based cards, i.e. cards that are played onto
  * the board and remain there to occupy space in the camp, until removed.
+ * This class is mostly used to distinguish parameters for specific functions.
  */
 class FieldCard: public Card {
   public:
