@@ -20,24 +20,24 @@ class State;
  *    1. Active-mode: Handle actions for
  *          i)    moving units onto the battlefield
  *          ii)   placing spells on the stack
- *          iii)  playing a field card or the placed spells or a burst spell
+ *          iii)  playing a field card or the placed spells or a burst floating
  *          iv)   passing
  *    2. Attack-mode: Handle actions for
  *          i)    declaring an attack with the moved units
  *          ii)   dragging opponent units onto the battlefield
  *          iii)  moving (fast, burst) spells onto the stack
- *          iv)   playing the placed spells or a burst spell
+ *          iv)   playing the placed spells or a burst floating
  *    3. Block-mode: Handle actions for
  *          i)    moving units onto the attacking positions on the battlefield
  *          ii)   moving (fast, burst) spells onto the stack
- *          iii)  playing a burst spell
+ *          iii)  playing a burst floating
  *    4. Combat-mode: Handle actions for
- *          i)    placing a (fast, burst) spell on the stack
- *          ii)   playing the placed spells or a burst spell
+ *          i)    placing a (fast, burst) floating on the stack
+ *          ii)   playing the placed spells or a burst floating
  *          ii)   accepting
  *    5. Passive-mode: Handle actions for
  *          i)    placing spells on the stack
- *          ii)   playing a field card or spell
+ *          ii)   playing a field card or floating
  *          iii)  passing
  *    6. Targeting-mode: Handle actions for
  *          i)    targeting a specific amount of cards

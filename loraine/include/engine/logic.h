@@ -49,35 +49,35 @@ class Logic {
     */
    void play_spells();
    /**
-    * Cast the given spell. This does not check whether the given spell is also played.
+    * Cast the given floating. This does not check whether the given floating is also played.
     * @param: spell: shared_ptr<Spell>,
-    *    The spell to cast.
+    *    The floating to cast.
     */
    void cast(const sptr< Spell >& spell);
    /**
-    * Summon a specific unit card to either the camp or the battlefield.
+    * Summon a specific common card to either the camp or the battlefield.
     * @param: unit: shared_ptr<Unit>,
-    *    the unit to summon
+    *    the common to summon
     * @param: to_bf: boolean,
     *    to decide whether to summon it to the camp or battlefield.
     */
    void summon(const sptr< Unit >& unit, bool to_bf);
    /**
-    * Increase/Decrease the managems of the given player.
-    * @param: player: The player whose managems are changed.
+    * Increase/Decrease the managems of the given team.
+    * @param: team: The team whose managems are changed.
     * @param: amount: (optional) the number of gems to add/remove. Defaults to 1.
     */
-   void give_managems(Player player, long amount = 1);
+   void give_managems(Team team, long amount = 1);
    /**
     * Creates a card as determined by the code.
-    * @param player: shared_ptr<Card>,
-    *    the player who will own the new card
+    * @param team: shared_ptr<Card>,
+    *    the team who will own the new card
     * @param card_code: const char*,
     *    the character code determining which card is created
     * @returns: shared_ptr<Card>,
     *    The created card
     */
-   sptr< Card > create(Player player, const char* card_code);
+   sptr< Card > create(Team team, const char* card_code);
    /**
     * Copy the given card (basic or exact).
     * @param card: shared_ptr<Card>,
@@ -91,78 +91,78 @@ class Logic {
    /** Recall the chosen card.
     * @param recalled_card: shared_ptr<Card>,
     *   the card to recall.
-    * @param recaller: Player,
-    *   the player who recalled the card.
+    * @param recaller: Team,
+    *   the team who recalled the card.
     */
-   void recall(const sptr< Card >& recalled_card, Player recaller);
+   void recall(const sptr< Card >& recalled_card, Team recaller);
    /**
-    * Let a unit strike another.
+    * Let a common strike another.
     * @param unit_att: shared_ptr<Unit>,
-    *   the striking unit.
+    *   the striking common.
     * @param unit_def: shared_ptr<Unit>,
-    *   the struck unit.
+    *   the struck common.
     */
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
    /**
-    * Let a unit strike another.
+    * Let a common strike another.
     * @param unit_att: shared_ptr<Unit>,
-    *   the striking unit.
+    *   the striking common.
     * @param unit_def: shared_ptr<Unit>,
-    *   the struck unit.
+    *   the struck common.
     */
    void nexus_strike(const sptr< Unit >& striking_unit);
 
-   void heal(Player player, const sptr< Unit >& unit, long amount);
+   void heal(Team team, const sptr< Unit >& unit, long amount);
    void damage_unit(
       const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
-   void kill_unit(Player killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
+   void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
 
-   void damage_nexus(size_t amount, Player player);
-   void heal_nexus(size_t amount, Player player);
+   void damage_nexus(size_t amount, Team team);
+   void heal_nexus(size_t amount, Team team);
 
-   template < bool spell_mana = false >
+   template < bool floating_mana = false >
    void clamp_mana();
 
-   [[nodiscard]] auto is_enlightened(Player player) const;
+   [[nodiscard]] auto is_enlightened(Team team) const;
 
    [[nodiscard]] bool round_ended() const;
    bool pass();
-   void reset_pass(Player player);
+   void reset_pass(Team team);
 
    template < GrantType grant_type, typename... Params >
    inline void grant(
-      Player player,
+      Team team,
       const sptr< Card >& bestowing_card,
       const sptr< Card >& card_to_bestow,
       Params&&... params)
    {
-      //      auto grant = m_grant_factory[player]->grant< grant_type >(
-      //         player, bestowing_card, card_to_bestow, std::forward< Params... >(params...));
+      //      auto grant = m_grant_factory[team]->grant< grant_type >(
+      //         team, bestowing_card, card_to_bestow, std::forward< Params... >(params...));
       //      card_to_bestow->store_grant(grant);
       //      grant->apply(card_to_bestow);
    }
 
    /*
-    * The optional player parameter decides whose cards are to be filtered. If
-    * left as empty, then both players' cards are filtered
+    * The optional team parameter decides whose cards are to be filtered. If
+    * left as empty, then both teams' cards are filtered
     */
    std::vector< Target > filter_targets_bf(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_camp(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_board(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_hand(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_deck(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_everywhere(
-      const Filter& filter, std::optional< Player > opt_player);
+      const Filter& filter, std::optional< Team > opt_team);
 
    /*
     * An api for triggering an events mainly externally. Which events is supposed to be triggered
@@ -172,17 +172,17 @@ class Logic {
    constexpr inline void trigger_event(Params... params);
 
    template < Location range >
-   std::vector< Target > filter_targets(const Filter& filter, std::optional< Player > opt_player);
+   std::vector< Target > filter_targets(const Filter& filter, std::optional< Team > opt_team);
 
-   void retreat_to_camp(Player player);
+   void retreat_to_camp(Team team);
 
-   void process_camp_queue(Player player);
-   void draw_card(Player player);
+   void process_camp_queue(Team team);
+   void draw_card(Team team);
 
-   void spend_mana(Player player, size_t cost, bool spell_mana);
+   void spend_mana(Team team, size_t cost, bool floating_mana);
    // inline methods
 
-   void shuffle_card_into_deck(const sptr< Card >& card, Player player);
+   void shuffle_card_into_deck(const sptr< Card >& card, Team team);
 
    inline void obliterate(const sptr< Card >& card)
    {
@@ -191,21 +191,21 @@ class Logic {
    }
    static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
 
-   [[nodiscard]] bool check_daybreak(Player player) const;
-   [[nodiscard]] bool check_nightfall(Player player) const;
+   [[nodiscard]] bool check_daybreak(Team team) const;
+   [[nodiscard]] bool check_nightfall(Team team) const;
 
   private:
    State* m_state;
 
-   void _move_units(const std::vector< size_t >& positions, Player player, bool to_bf);
-   void _move_units_opp(const std::map< size_t, size_t >& positions, Player player, bool to_bf);
+   void _move_units(const std::vector< size_t >& positions, Team team, bool to_bf);
+   void _move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf);
    bool _move_spell(const sptr< Spell >& spell, bool to_stack);
    void _mulligan(
       State& state,
       const std::vector< sptr< Card > >& hand_blue,
       const std::vector< sptr< Card > >& hand_red);
 
-   std::vector< sptr< Card > > _draw_n_cards(Player player, int n = 1);
+   std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
    /*
     * Start the next round.
@@ -219,7 +219,7 @@ class Logic {
 
    void _cast_spellstack(State& state);
 
-   void _activate_battlemode(Player attack_player);
+   void _activate_battlemode(Team attack_team);
    void _deactivate_battlemode(State& state);
 
    void _remove(const sptr< Card >& card);
@@ -227,8 +227,8 @@ class Logic {
    void _resolve_battle(State& state);
    void _resolve_spell_stack(bool burst);
 
-   void _check_enlightenment(Player player);
-   void _play_event_triggers(const sptr< Card >& card, const Player& player);
+   void _check_enlightenment(Team team);
+   void _play_event_triggers(const sptr< Card >& card, const Team& team);
    void _copy_grants(
       State& state,
       const std::vector< sptr< Grant > >& grants,
@@ -237,20 +237,20 @@ class Logic {
 
 template < Location range >
 std::vector< Target > Logic::filter_targets(
-   const Filter& filter, std::optional< Player > opt_player)
+   const Filter& filter, std::optional< Team > opt_team)
 {
    if constexpr(range == Location::BATTLEFIELD) {
-      return filter_targets_bf(filter, opt_player);
+      return filter_targets_bf(filter, opt_team);
    } else if constexpr(range == Location::CAMP) {
-      return filter_targets_camp(filter, opt_player);
+      return filter_targets_camp(filter, opt_team);
    } else if constexpr(range == Location::BOARD) {
-      return filter_targets_board(filter, opt_player);
+      return filter_targets_board(filter, opt_team);
    } else if constexpr(range == Location::HAND) {
-      return filter_targets_hand(filter, opt_player);
+      return filter_targets_hand(filter, opt_team);
    } else if constexpr(range == Location::DECK) {
-      return filter_targets_deck(filter, opt_player);
+      return filter_targets_deck(filter, opt_team);
    } else {
-      return filter_targets_everywhere(filter, opt_player);
+      return filter_targets_everywhere(filter, opt_team);
    }
 }
 
@@ -285,29 +285,29 @@ class MulliganModeLogic: public Logic {
 
 #include "state.h"
 
-template < bool spell_mana >
+template < bool floating_mana >
 void Logic::clamp_mana()
 {
-   for(int p = 0; p < n_players; ++p) {
-      Player player = static_cast< Player >(p);
-      if constexpr(spell_mana) {
-         auto clamped_spell_mana = std::max(
+   for(int p = 0; p < n_teams; ++p) {
+      Team team = static_cast< Team >(p);
+      if constexpr(floating_mana) {
+         auto clamped_floating_mana = std::max(
             std::min(
-               static_cast< size_t >(state()->config().MAX_SPELL_MANA),
-               state()->spell_mana(player)),
+               static_cast< size_t >(state()->config().MAX_FLOATING_MANA),
+               state()->player(team).mana()->floating),
             size_t(0));
-         state()->spell_mana(clamped_spell_mana, player);
+         state()->player(team).mana()->floating += clamped_floating_mana;
       } else {
          auto clamped_mana = std::max(
             std::min(
                std::min(
-                  // MIN(max mana possible, current managems of player)
+                  // MIN(max mana possible, current managems of team)
                   state()->config().MAX_MANA,
-                  state()->managems(player)),
-               // MIN(previous val, current mana of player)
-               state()->mana(player)),
+                  state()->player(team).mana()->gems),
+               // MIN(previous val, current mana of team)
+               state()->player(team).mana()->common),
             size_t(0));
-         state()->mana(clamped_mana, player);
+         state()->player(team).mana()->common += clamped_mana;
       }
    }
 }

@@ -3,14 +3,13 @@
 
 #include "cards/card.h"
 #include "cards/effect.h"
-#include "engine/rulesets.h"
+#include "engine/gamedefs.h"
 #include "events/event.h"
-#include "game.h"
+#include "gamemode.h"
 
 namespace effects {
 
-void fading_memories_cast(
-   Game& game,
+void fading_memories_cast(GameMode& game,
    const events::CastEvent& event, Effect& source_container);
 
 

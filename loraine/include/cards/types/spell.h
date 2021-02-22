@@ -6,14 +6,14 @@
 
 class Spell: public Card {
    [[nodiscard]] bool _check_play_condition(const State& state) const override;
-   [[nodiscard]] virtual bool _check_cast_condition(const Game& game) const;
+   [[nodiscard]] virtual bool _check_cast_condition(const GameMode& game) const;
 
   public:
    // use base class constructors
    using Card::Card;
 
    [[nodiscard]] bool is_spell() const override { return true; }
-   [[nodiscard]] virtual bool check_cast_condition(const Game& game) const;
+   [[nodiscard]] virtual bool check_cast_condition(const GameMode& game) const;
 };
 
 inline sptr< Spell > to_spell(const sptr< Card >& card)

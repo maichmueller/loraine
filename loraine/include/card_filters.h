@@ -14,11 +14,11 @@ inline bool filter_noone(const sptr< Card >& card)
 {
    return false;
 }
-inline bool filter_ally(const sptr< Card >& card, Player ally)
+inline bool filter_ally(const sptr< Card >& card, Team ally)
 {
    return card->get_mutable_attrs().owner == ally;
 }
-inline bool filter_enemy(const sptr< Card >& card, Player ally)
+inline bool filter_enemy(const sptr< Card >& card, Team ally)
 {
    return card->get_mutable_attrs().owner != ally;
 }

@@ -9,8 +9,9 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/nexus.cpp
         ${LORAINE_SRC_DIR}/tribute.cpp
+        ${LORAINE_SRC_DIR}/player.cpp
 
-        ${LORAINE_SRC_DIR}/game.cpp
+        ${LORAINE_SRC_DIR}/gamemode.cpp
         ${LORAINE_SRC_DIR}/logic.cpp
         ${LORAINE_SRC_DIR}/board.cpp
         ${LORAINE_SRC_DIR}/specific_effects.cpp

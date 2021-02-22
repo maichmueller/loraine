@@ -19,9 +19,9 @@ class TargeterBase {
   public:
    TargeterBase(Filter filter = {}) : m_filter(std::move(filter)) {}
 
-   virtual std::vector< Target > operator()(const State& state, Player player)
+   virtual std::vector< Target > operator()(const State& state, Team team)
    {
-      return _target(state, player);
+      return _target(state, team);
    }
 
    void filter_targets(std::vector< Target >& targets)
@@ -39,7 +39,7 @@ class TargeterBase {
   private:
    Filter m_filter;
 
-   virtual std::vector< Target > _target(const State& state, Player player) = 0;
+   virtual std::vector< Target > _target(const State& state, Team team) = 0;
 };
 
 template < TargetMode mode, TargetAffiliation affiliation, Location range >
@@ -60,7 +60,7 @@ class NoneTargeter: public TargeterBase {
 //   }
 
   private:
-   std::vector< Target > _target(const State& /*state*/, Player /*player*/) override
+   std::vector< Target > _target(const State& /*state*/, Team /*team*/) override
    {
       return std::vector< Target >();
    }
@@ -73,7 +73,7 @@ class NoneTargeter: public TargeterBase {
 //   }
 //
 //  private:
-//   std::vector< Target > _target(const State& state, Player acting_player) override;
+//   std::vector< Target > _target(const State& state, Team acting_team) override;
 //};
 
 #endif  // LORAINE_TARGETER_H

@@ -6,7 +6,7 @@ class State;
 class Card;
 
 /**
- * The tribute class executes a non-mana cost or condition a player has to pay/  
+ * The tribute class executes a non-mana cost or condition a team has to pay/
  */
 class PlayCondition {
    virtual void pay(State& state, Card& card) {}  // the default tribute is no tribute at all

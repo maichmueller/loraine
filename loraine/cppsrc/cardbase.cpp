@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "game.h"
+#include "gamemode.h"
 #include "grants/grant.h"
 #include "utils/utils.h"
 
@@ -51,7 +51,7 @@ bool Card::check_play_tribute(const State& state) const
 {
    size_t total_mana = state.mana(m_mutables.owner);
    if(is_spell()) {
-      total_mana += state.spell_mana(m_mutables.owner);
+      total_mana += state.floating_mana(m_mutables.owner);
    }
    return mana_cost() <= total_mana && _check_play_condition(state);
 }

@@ -10,28 +10,28 @@
 class Unit: public FieldCard {
   public:
    struct ConstUnitState {
-      // the fixed reference damage the unit deals.
+      // the fixed reference damage the common deals.
       const size_t power_ref;
-      // the fixed reference health of the unit
+      // the fixed reference health of the common
       const size_t health_ref;
    };
 
    struct MutableUnitState {
-      // the permanent base power of the unit (can be moved by e.g. effects)
+      // the permanent base power of the common (can be moved by e.g. effects)
       size_t power_base;
-      // the permanent base health of the unit (can be moved by e.g. effects)
+      // the permanent base health of the common (can be moved by e.g. effects)
       size_t health_base;
-      // the current change to the unit power (temporary buffs/nerfs).
+      // the current change to the common power (temporary buffs/nerfs).
       long int power_delta = 0;
-      // the current change to the unit health (temporary buffs/nerfs).
+      // the current change to the common health (temporary buffs/nerfs).
       long int health_delta = 0;
-      // the damage the unit has taken
+      // the damage the common has taken
       size_t damage = 0;
-      // whether the unit is dead
+      // whether the common is dead
       bool alive = true;
-      // the function to damage the unit with (e.g. needs to be flexible for Armored Elephant)
+      // the function to damage the common with (e.g. needs to be flexible for Armored Elephant)
       std::function< long(Unit&, long) > take_damage_func = &_default_damage;
-      // the function to kill the unit with (e.g. needs to be flexible for Unyielding Spirit)
+      // the function to kill the common with (e.g. needs to be flexible for Unyielding Spirit)
       std::function< void(Unit&) > kill_func = &_default_kill;
    };
 

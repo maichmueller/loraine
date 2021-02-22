@@ -6,21 +6,21 @@
 #include <functional>
 #include <utility>
 
-#include "engine/rulesets.h"
+#include "engine/gamedefs.h"
 #include "events/lor_events/all_events.h"
 #include "targeter.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
 // forward-declarations
-class Game;
+class GameMode;
 class Card;
 class Target;
-class Agent;
+class Controller;
 
 class EffectBase {
   public:
-   ~virtual EffectBase() = default;
+   virtual ~EffectBase() = default;
 };
 
 template < typename... Args >
@@ -37,9 +37,9 @@ class Effect : public EffectBase {
     * @param args Parameter-Pack,
     *   the specific arguments of the subscribed to event
     */
-   void event_call(State& state, Args&&... args);
+   void event_call(State& state, Args... args);
    [[nodiscard]] inline bool check_condition(const State& state) const { return _condition(state); }
-   [[nodiscard]] virtual bool target(const State& state, Agent& agent, Player player);
+   [[nodiscard]] virtual bool target(const State& state, Controller& agent, Team team);
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
 
@@ -90,7 +90,7 @@ class Effect : public EffectBase {
     * @param args: Parameter-Pack,
     *   the specific arguments of the subscribed to event
     */
-   virtual void _event_call(State& state, Args&&... args) = 0;
+   virtual void _event_call(State& state, Args... args) = 0;
    /**
     * Provides the boolean status of the condition for this effect to be executed.
     * @param state State,
@@ -98,14 +98,14 @@ class Effect : public EffectBase {
     * @return boolean,
     *   whether this effect can be casted
     */
-   virtual bool _condition(State& state) { return true; };
+   [[nodiscard]] virtual bool _condition(const State& state) const { return true; };
 };
 
 template < typename... Args >
-void Effect< Args... >::event_call(State& state, Args&&... args)
+void Effect< Args... >::event_call(State& state, Args... args)
 {
    if(check_condition(state)) {
-      _event_call(state, *this, std::forward< Args >(args)...);
+      _event_call(state, args...);
    }
 }
 template < typename... Args >
@@ -119,32 +119,32 @@ bool Effect< Args... >::operator!=(const Effect& effect) const
    return not (*this == effect);
 }
 
-using AttackEffect = pass_args< Effect, events::AttackEvent::SignatureTuple >::type;
-using BeholdEffect = pass_args< Effect, events::BeholdEvent::SignatureTuple >::type;
-using BlockEffect = pass_args< Effect, events::BlockEvent::SignatureTuple >::type;
-using CaptureEffect = pass_args< Effect, events::CaptureEvent::SignatureTuple >::type;
-using CastEffect = pass_args< Effect, events::CastEvent::SignatureTuple >::type;
-using DaybreakEffect = pass_args< Effect, events::DaybreakEvent::SignatureTuple >::type;
-using DieEffect = pass_args< Effect, events::DieEvent::SignatureTuple >::type;
-using DiscardEffect = pass_args< Effect, events::DiscardEvent::SignatureTuple >::type;
-using DrawEffect = pass_args< Effect, events::DrawCardEvent::SignatureTuple >::type;
-using EnlightenmentEffect = pass_args< Effect, events::EnlightenmentEvent::SignatureTuple >::type;
-using GainManagemEffect = pass_args< Effect, events::GainManagemEvent::SignatureTuple >::type;
-using HealUnitEffect = pass_args< Effect, events::HealUnitEvent::SignatureTuple >::type;
-using LevelUpEffect = pass_args< Effect, events::LevelUpEvent::SignatureTuple >::type;
-using NexusStrikeEffect = pass_args< Effect, events::NexusStrikeEvent::SignatureTuple >::type;
-using NightfallEffect = pass_args< Effect, events::NightfallEvent::SignatureTuple >::type;
-using PlayEffect = pass_args< Effect, events::PlayEvent::SignatureTuple >::type;
-using RecallEffect = pass_args< Effect, events::RecallEvent::SignatureTuple >::type;
-using RoundEndEffect = pass_args< Effect, events::RoundEndEvent::SignatureTuple >::type;
-using RoundStartEffect = pass_args< Effect, events::RoundStartEvent::SignatureTuple >::type;
-using ScoutEffect = pass_args< Effect, events::ScoutEvent::SignatureTuple >::type;
-using StrikeEffect = pass_args< Effect, events::StrikeEvent::SignatureTuple >::type;
-using SummonEffect = pass_args< Effect, events::SummonEvent::SignatureTuple >::type;
-using StunEffect = pass_args< Effect, events::StunEvent::SignatureTuple >::type;
-using SupportEffect = pass_args< Effect, events::SupportEvent::SignatureTuple >::type;
-using TargetEffect = pass_args< Effect, events::TargetEvent::SignatureTuple >::type;
-using UnitDamageEffect = pass_args< Effect, events::UnitDamageEvent::SignatureTuple >::type;
+using AttackEffect = events::AttackEvent::Subscriber;
+using BeholdEffect = events::BeholdEvent::Subscriber;
+using BlockEffect = events::BlockEvent::Subscriber;
+using CaptureEffect = events::CaptureEvent::Subscriber;
+using CastEffect = events::CastEvent::Subscriber;
+using DaybreakEffect = events::DaybreakEvent::Subscriber;
+using DieEffect = events::DieEvent::Subscriber;
+using DiscardEffect = events::DiscardEvent::Subscriber;
+using DrawEffect = events::DrawCardEvent::Subscriber;
+using EnlightenmentEffect = events::EnlightenmentEvent::Subscriber;
+using GainManagemEffect = events::GainManagemEvent::Subscriber;
+using HealUnitEffect = events::HealUnitEvent::Subscriber;
+using LevelUpEffect = events::LevelUpEvent::Subscriber;
+using NexusStrikeEffect = events::NexusStrikeEvent::Subscriber;
+using NightfallEffect = events::NightfallEvent::Subscriber;
+using PlayEffect = events::PlayEvent::Subscriber;
+using RecallEffect = events::RecallEvent::Subscriber;
+using RoundEndEffect = events::RoundEndEvent::Subscriber;
+using RoundStartEffect = events::RoundStartEvent::Subscriber;
+using ScoutEffect = events::ScoutEvent::Subscriber;
+using StrikeEffect = events::StrikeEvent::Subscriber;
+using SummonEffect = events::SummonEvent::Subscriber;
+using StunEffect = events::StunEvent::Subscriber;
+using SupportEffect = events::SupportEvent::Subscriber;
+using TargetEffect = events::TargetEvent::Subscriber;
+using UnitDamageEffect = events::UnitDamageEvent::Subscriber;
 
 using LOREffect = std::variant<
    AttackEffect,

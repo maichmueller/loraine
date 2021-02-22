@@ -73,7 +73,7 @@ class StatsGrant: public Grant {
 
   private:
    long int m_power_change;
-   // health can only be granted. Otherwise the unit is meant to take damage,
+   // health can only be granted. Otherwise the common is meant to take damage,
    // which is not a StatsGrant!
    long m_health_change;
 

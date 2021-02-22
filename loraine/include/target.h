@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include "engine/rulesets.h"
+#include "engine/gamedefs.h"
 #include "utils/types.h"
 
 class Card;
@@ -13,8 +13,8 @@ class Card;
 class Target {
   public:
    explicit Target(const sptr< Card >& card);
-   explicit Target(Player player)
-      : player(player), card()
+   explicit Target(Team team)
+      : team(team), card()
    {
    }
 
@@ -22,7 +22,7 @@ class Target {
    [[nodiscard]] auto get_card() const {return card;}
 
   private:
-   Player player;
+   Team team;
    std::optional< sptr< Card > > card;
 };
 

@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "cards/card_defs.h"
-#include "engine/rulesets.h"
+#include "engine/gamedefs.h"
 #include "target.h"
 #include "utils/types.h"
 

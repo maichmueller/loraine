@@ -2,11 +2,11 @@
 
 #include "cards/gallery/specific_effects.h"
 
-#include "game.h"
+#include "gamemode.h"
 #include "target.h"
 
 void effects::fading_memories_cast(
-   Game& game, const events::CastEvent& /*events*/, Effect& source_container)
+   GameMode& game, const events::CastEvent& /*events*/, Effect& source_container)
 {
    auto targets = source_container.targets();
    if(targets.empty()) {

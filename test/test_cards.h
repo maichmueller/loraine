@@ -9,7 +9,7 @@
 
 class TestUnit1: public Unit {
   public:
-   TestUnit1(Player owner)
+   TestUnit1(Team owner)
        : Unit(
           Unit::ConstUnitData{5, 4},
           Unit::MutableUnitData{5, 4},
@@ -32,7 +32,7 @@ class TestUnit1: public Unit {
 
 class TestUnit2: public Unit {
   public:
-   TestUnit2(Player owner)
+   TestUnit2(Team owner)
        : Unit(
           Unit::ConstUnitData{4, 5},
           Unit::MutableUnitData{4, 5},
@@ -54,7 +54,7 @@ class TestUnit2: public Unit {
 };
 class TestUnit3: public Unit {
   public:
-   TestUnit3(Player owner)
+   TestUnit3(Team owner)
        : Unit(
           Unit::ConstUnitData{3, 4},
           Unit::MutableUnitData{3, 4},
@@ -76,7 +76,7 @@ class TestUnit3: public Unit {
 };
 class TestUnit4: public Unit {
   public:
-   TestUnit4(Player owner)
+   TestUnit4(Team owner)
        : Unit(
           Unit::ConstUnitData{5, 4},
           Unit::MutableUnitData{5, 4},
@@ -98,7 +98,7 @@ class TestUnit4: public Unit {
 };
 class TestUnit5: public Unit {
   public:
-   TestUnit5(Player owner)
+   TestUnit5(Team owner)
        : Unit(
           Unit::ConstUnitData{5, 4},
           Unit::MutableUnitData{5, 4},
@@ -120,7 +120,7 @@ class TestUnit5: public Unit {
 };
 class TestUnit6: public Unit {
   public:
-   TestUnit6(Player owner)
+   TestUnit6(Team owner)
        : Unit(
           Unit::ConstUnitData{5, 4},
           Unit::MutableUnitData{5, 4},
@@ -143,7 +143,7 @@ class TestUnit6: public Unit {
 
 class TestSpell: public Spell {
   public:
-   TestSpell(Player owner)
+   TestSpell(Team owner)
        : Spell(
           Card::ConstData{
              "CODE6",

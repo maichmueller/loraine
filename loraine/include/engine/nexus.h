@@ -3,16 +3,16 @@
 #define LORAINE_NEXUS_H
 
 
-#include "rulesets.h"
+#include "gamedefs.h"
 
 class Nexus {
-   Nexus(Player player, long health) : m_player(player), m_health(health) {}
+   Nexus(Team team, long health) : m_team(team), m_health(health) {}
 
-   [[nodiscard]] inline auto player() const {return m_player;}
+   [[nodiscard]] inline auto team() const {return m_team;}
    inline void change_health(long health) { m_health += health;}
 
   private:
-   Player m_player;
+   Team m_team;
    long m_health;
 };
 

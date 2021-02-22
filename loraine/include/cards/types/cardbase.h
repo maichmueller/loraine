@@ -44,7 +44,7 @@ class Card : public EventListener<Card> {
       const CardSuperType super_type;
       // the rarity of the cards
       const Rarity rarity;
-      // whether the cards is a spell or a unit
+      // whether the cards is a floating or a common
       const CardType card_type;
       // the mana it costs to play the cards (as default)
       const size_t mana_cost_ref;
@@ -57,8 +57,8 @@ class Card : public EventListener<Card> {
    };
 
    struct MutableState {
-      // the player whose card this is
-      Player owner;
+      // the team whose card this is
+      Team owner;
       // the current location of the card in the game
       Location location;
       // the index in the current location

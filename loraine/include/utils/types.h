@@ -11,7 +11,7 @@ using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
-// short ID for things such as player ID
+// short ID for things such as team ID
 //using SID = size_t;
 //
 using CardID = size_t;
@@ -24,7 +24,7 @@ template < typename T >
 using sptr = std::shared_ptr< T >;
 template < typename T >
 using wptr = std::weak_ptr< T >;
-// a symmetric array to be used to store player symmetric concepts
+// a symmetric array to be used to store team symmetric concepts
 template <typename T>
 using SymArr = std::array<T, 2>;
 

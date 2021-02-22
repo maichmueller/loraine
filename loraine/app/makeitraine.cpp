@@ -1,4 +1,4 @@
-#include <engine/rulesets.h>
+#include <engine/gamedefs.h>
 
 #include "engine/state.h"
 

@@ -1,21 +1,23 @@
 
-#ifndef LORAINE_AGENT_H
-#define LORAINE_AGENT_H
+#ifndef LORAINE_CONTROLLER_H
+#define LORAINE_CONTROLLER_H
 
 #include "engine/action.h"
-#include "engine/rulesets.h"
-#include "engine/state.h"
+#include "engine/gamedefs.h"
 #include "utils/types.h"
 
 class Target;
 class Card;
+class State;
 
-class Agent {
-   UUID m_uuid;
+class Controller {
+   const UUID m_uuid = new_uuid();
 
   public:
-   virtual ~Agent() = default;
-   [[nodiscard]] auto get_uuid() const { return m_uuid; }
+   Controller() = default;
+   virtual ~Controller() = default;
+   [[nodiscard]] auto uuid() const { return m_uuid; }
+
    virtual sptr< Action > decide_action(const State& state) = 0;
    virtual sptr< MulliganAction > decide_mulligan(
       State& state, std::vector< sptr< Card > > hand) = 0;
@@ -23,4 +25,4 @@ class Agent {
       std::vector< Target > targets, long n = -1) = 0;
 };
 
-#endif  // LORAINE_AGENT_H
+#endif  // LORAINE_CONTROLLER_H
