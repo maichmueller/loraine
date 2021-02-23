@@ -53,8 +53,8 @@ auto find_index(const Container& container, const T& elem) -> long
    return index;
 }
 
-//template < typename Container, typename T, typename FilterFunc >
-//auto pop_index_r(const Container& container, std::vector<size_t> indices) -> std::vector< T >
+//template < typename Container, typename Derived, typename FilterFunc >
+//auto pop_index_r(const Container& container, std::vector<size_t> indices) -> std::vector< Derived >
 //{
 //   auto begin = container.begin();
 //   // with every pop we need to calculate the new filtered indices as per
@@ -66,7 +66,7 @@ auto find_index(const Container& container, const T& elem) -> long
 //      popped_elems.emplace_back(pop_by_index(container, shifted_idx));
 //      ++idx_shift;
 //   }
-//   T popped_elem = container.at(std::distance(pos, begin) - 1);
+//   Derived popped_elem = container.at(std::distance(pos, begin) - 1);
 //   container.erase(pos);
 //   return {popped_elem};
 //}

@@ -29,12 +29,14 @@ class Logic {
    auto state() { return m_state; }
 
    // methods to handle in the specific logic mode on the state.
-
    virtual void handle(const sptr< Action >& action) = 0;
+
    virtual bool is_valid(const sptr< Action >& action) = 0;
 
-   // Beginning of LoR logic implementations
+   virtual void start_round(State& state);
+   virtual void end_round(State& state);
 
+   // Beginning of LoR logic implementations
    /**
     * Play a fieldcard onto the board
     * @param card: shared_ptr<Card>,
@@ -103,6 +105,7 @@ class Logic {
     *   the struck common.
     */
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
+
    /**
     * Let a common strike another.
     * @param unit_att: shared_ptr<Unit>,
@@ -111,22 +114,22 @@ class Logic {
     *   the struck common.
     */
    void nexus_strike(const sptr< Unit >& striking_unit);
-
    void heal(Team team, const sptr< Unit >& unit, long amount);
    void damage_unit(
       const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
-   void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
 
+   void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
    void damage_nexus(size_t amount, Team team);
+
    void heal_nexus(size_t amount, Team team);
 
    template < bool floating_mana = false >
    void clamp_mana();
 
    [[nodiscard]] auto is_enlightened(Team team) const;
-
    [[nodiscard]] bool round_ended() const;
    bool pass();
+
    void reset_pass(Team team);
 
    template < GrantType grant_type, typename... Params >
@@ -175,47 +178,38 @@ class Logic {
    std::vector< Target > filter_targets(const Filter& filter, std::optional< Team > opt_team);
 
    void retreat_to_camp(Team team);
-
    void process_camp_queue(Team team);
-   void draw_card(Team team);
 
+   void draw_card(Team team);
    void spend_mana(Team team, size_t cost, bool floating_mana);
+
    // inline methods
 
    void shuffle_card_into_deck(const sptr< Card >& card, Team team);
-
    inline void obliterate(const sptr< Card >& card)
    {
       uncover_card(card);
       _remove(card);
    }
+
    static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
-
    [[nodiscard]] bool check_daybreak(Team team) const;
+
    [[nodiscard]] bool check_nightfall(Team team) const;
-
   private:
-   State* m_state;
 
+   State* m_state;
    void _move_units(const std::vector< size_t >& positions, Team team, bool to_bf);
    void _move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf);
    bool _move_spell(const sptr< Spell >& spell, bool to_stack);
+
    void _mulligan(
       State& state,
       const std::vector< sptr< Card > >& hand_blue,
       const std::vector< sptr< Card > >& hand_red);
 
-   std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
-   /*
-    * Start the next round.
-    * Does the following actions in order:
-    * - Set flag plunder to false and attack token to the attacker.
-    * - Increase managems
-    * - Refill mana
-    */
-   void _start_round(State& state);
-   void _end_round(State& state);
+   std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
    void _cast_spellstack(State& state);
 

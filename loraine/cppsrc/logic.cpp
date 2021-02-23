@@ -174,8 +174,8 @@ bool Logic::_do_action(const sptr< Action >& action)
       // reset for all other cases
       bool round_ends = m_state->pass();
       if(round_ends) {
-         _end_round();
-         _start_round();
+         end_round();
+         start_round();
       }
 
    } else {

@@ -15,8 +15,8 @@ class EventListener {
    std::vector< EventBase* > events{};
 
   public:
-   template < events::EventType e_type, class Context, class... Args >
-   void connect(Event< Context, e_type, Args... >& event)
+   template < class EventDerived, events::EventType e_type, class Context, class... Args >
+   void connect(Event< EventDerived, Context, e_type, Args... >& event)
    {
       event.subscribe(static_cast< Derived* >(this));
       events.push_back(&event);

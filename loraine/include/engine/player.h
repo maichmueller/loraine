@@ -8,15 +8,15 @@
 class Player {
   public:
    struct Flags {
-      bool attack_token{false};
-      bool scout_token{false};
-      bool plunder_token{false};
-      bool pass{false};
+      bool attack_token = false;
+      bool scout_token = false;
+      bool plunder_token = false;
+      bool pass = false;
    };
    struct Mana {
-      size_t gems{0};
-      size_t common{0};  // common mana to play fieldcards with
-      size_t floating{0};  // mana exclusively for spells
+      size_t gems = 0;
+      size_t common = 0;  // common mana to play fieldcards with
+      size_t floating = 0;  // mana exclusively for spells
    };
    using HandType = std::vector< sptr< Card > >;
    using DeckType = std::vector< sptr< Card > >;
@@ -25,7 +25,7 @@ class Player {
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
    [[nodiscard]] inline auto team() const { return m_team; }
 
-   [[nodiscard]] inline auto* controller()  { return &m_controller; }
+   [[nodiscard]] inline auto* controller() { return &m_controller; }
    [[nodiscard]] inline auto* controller() const { return &m_controller; }
 
    inline auto* flags() { return &m_flags; }
@@ -47,7 +47,7 @@ class Player {
    [[nodiscard]] inline auto* history() const { return &m_history; }
    [[nodiscard]] inline auto* graveyard() { return &m_graveyard; }
    [[nodiscard]] inline auto* graveyard() const { return &m_graveyard; }
-   [[nodiscard]] inline auto* tossed_cards()  { return &m_tossed_cards; }
+   [[nodiscard]] inline auto* tossed_cards() { return &m_tossed_cards; }
    [[nodiscard]] inline auto* tossed_cards() const { return &m_tossed_cards; }
 
   private:
@@ -58,9 +58,9 @@ class Player {
    Team m_team;
    Mana m_mana;
    Flags m_flags;
-   std::map< size_t, std::vector< sptr< Card > > > m_graveyard{};
-   std::vector< sptr< Card > > m_tossed_cards{};
-   std::map< size_t, std::vector< sptr< Action > > > m_history{};
+   std::map< size_t, std::vector< sptr< Card > > > m_graveyard = {};
+   std::vector< sptr< Card > > m_tossed_cards = {};
+   std::map< size_t, std::vector< sptr< Action > > > m_history = {};
 };
 
 #endif  // LORAINE_PLAYER_H

@@ -81,10 +81,6 @@ class State {
    [[nodiscard]] inline auto spell_stack() const { return m_spell_stack; }
    [[nodiscard]] inline auto& spell_prestack() { return m_spell_prestack; }
    [[nodiscard]] inline auto spell_prestack() const { return m_spell_prestack; }
-   inline void incr_managems(Team team, size_t amount = 1)
-   {
-      managems(std::min(m_managems[team] + amount, m_config.MAX_MANA), team);
-   }
 
 
    /*

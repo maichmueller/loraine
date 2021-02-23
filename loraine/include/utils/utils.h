@@ -25,6 +25,18 @@ struct pass_args< OutClass, std::tuple< T... > > {
    using type = OutClass< T... >;
 };
 
+template < template < typename... > class CRTPType, typename Derived, typename... CRTPTypeArgs >
+struct CRTP {
+   Derived& self() { return static_cast< Derived& >(*this); }
+   Derived const& self() const { return static_cast< Derived const& >(*this); }
+
+  private:
+   constexpr CRTP() = default;
+   friend CRTPType< Derived, CRTPTypeArgs... >;
+};
+template<typename T, typename D>
+struct C {};
+
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)
 {
