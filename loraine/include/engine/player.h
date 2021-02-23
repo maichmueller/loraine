@@ -4,6 +4,7 @@
 
 #include "controller.h"
 #include "deck.h"
+#include "nexus.h"
 
 class Player {
   public:

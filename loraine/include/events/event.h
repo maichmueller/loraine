@@ -15,6 +15,7 @@
 
 template < typename... Args >
 class Effect;
+class State;
 
 // an event holds a vector of subs
 // when it fires, each is called
@@ -29,7 +30,7 @@ class EventBase {
 };
 
 
-template < class Derived, class Context, events::EventType e_type, class... Args >
+template < class Derived, events::EventType e_type, class... Args >
 class Event: public EventBase, public CRTP< Event, Derived > {
   public:
    using SignatureTuple = std::tuple< Args... >;
@@ -39,20 +40,19 @@ class Event: public EventBase, public CRTP< Event, Derived > {
    std::vector< Subscriber* > subs;
 
   protected:
-   void _notify(Subscriber* subscriber, Context& context, Args... args)
+   void _notify(Subscriber* subscriber, State& state, Args... args)
    {
-      std::get< 0 >(std::make_tuple(3, 4.5));
-      subscriber->event_call(context, args...);
+      subscriber->event_call(state, args...);
    }
 
   public:
    constexpr static events::EventType event_type() { return e_type; };
    const auto& subscribers() const { return subs; }
 
-   virtual void trigger(Context& context, Args... args)
+   virtual void trigger(State& state, Args... args)
    {
       for(auto& sub : order(subs)) {
-         _notify(sub, context, args...);
+         _notify(sub, state, args...);
       }
    }
    void subscribe(Subscriber* t) { subs.push_back(t); }
@@ -64,7 +64,7 @@ class Event: public EventBase, public CRTP< Event, Derived > {
    }
    std::vector< Subscriber* > order(const std::vector< Subscriber* >& subs)
    {
-      return static_cast< Derived* >(this)->order_impl(subs);
+      return this->derived()->order_impl(subs);
    }
 };
 

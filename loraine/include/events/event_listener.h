@@ -10,15 +10,15 @@
 // derive the listener classes:
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
 template < class Derived >
-class EventListener {
+class EventListener : public CRTP<EventListener, Derived>{
   private:
    std::vector< EventBase* > events{};
 
   public:
-   template < class EventDerived, events::EventType e_type, class Context, class... Args >
-   void connect(Event< EventDerived, Context, e_type, Args... >& event)
+   template < class EventDerived, events::EventType e_type, class... Args >
+   void connect(Event< EventDerived, e_type, Args... >& event)
    {
-      event.subscribe(static_cast< Derived* >(this));
+      event.subscribe(this->derived());
       events.push_back(&event);
    }
 

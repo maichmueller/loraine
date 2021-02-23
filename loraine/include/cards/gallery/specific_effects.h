@@ -9,9 +9,9 @@
 
 namespace effects {
 
-void fading_memories_cast(GameMode& game,
-   const events::CastEvent& event, Effect& source_container);
-
+//void fading_memories_cast(GameMode& game,
+//   const events::CastEvent& event, Effect& source_container);
+//
 
 }
 #endif  // LORAINE_SPECIFIC_EFFECTS_H

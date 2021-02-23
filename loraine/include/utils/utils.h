@@ -25,17 +25,27 @@ struct pass_args< OutClass, std::tuple< T... > > {
    using type = OutClass< T... >;
 };
 
-template < template < typename... > class CRTPType, typename Derived, typename... CRTPTypeArgs >
-struct CRTP {
-   Derived& self() { return static_cast< Derived& >(*this); }
-   Derived const& self() const { return static_cast< Derived const& >(*this); }
+template < template < typename... > class Base, typename Derived, typename... Args >
+struct CRTP: public CRTP<Base, Args...>{
+
+   Derived* derived() { return static_cast< Derived* >(*this); }
+   Derived const* derived() const { return static_cast< Derived const* >(*this); }
 
   private:
    constexpr CRTP() = default;
-   friend CRTPType< Derived, CRTPTypeArgs... >;
+   friend Base< Derived >;
 };
-template<typename T, typename D>
-struct C {};
+
+template < template < typename... > class Base, typename Derived >
+struct CRTP< Base, Derived> {
+
+   Derived* derived() { return static_cast< Derived* >(*this); }
+   Derived const* derived() const { return static_cast< Derived const* >(*this); }
+
+  private:
+   constexpr CRTP() = default;
+   friend Base< Derived >;
+};
 
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)

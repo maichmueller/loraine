@@ -8,6 +8,7 @@
 
 class Target;
 class Card;
+
 class State;
 
 class Controller {

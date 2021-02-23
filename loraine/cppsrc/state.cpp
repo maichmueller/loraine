@@ -5,6 +5,7 @@
 #include <algorithms.h>
 
 #include "engine/action.h"
+#include "engine/logic.h"
 
 void State::_check_terminal()
 {
@@ -107,13 +108,13 @@ std::tuple< Location, long > State::find(const sptr< Card >& card) const
 std::array< uptr< EventBase >, events::n_events > State::_init_events()
 {
    std::array< uptr< EventBase >, events::n_events > arr;
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
-   arr[0] = std::make_unique<events::AttackEvent>();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
+   arr[0] = std::make_unique< events::AttackEvent >();
 }
 Status State::status()
 {
@@ -121,4 +122,15 @@ Status State::status()
       _check_terminal();
    }
    return m_terminal;
+}
+State::State(Config cfg, Team starting_team, SymArr< Player > players)
+    : m_config(cfg),
+      m_players(std::move(players)),
+      m_starting_team(starting_team),
+      m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
+      m_logic(std::make_unique< Logic >()),
+      m_attacker(starting_team),
+      m_turn(starting_team),
+      m_spell_stack()
+{
 }
