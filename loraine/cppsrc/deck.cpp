@@ -1,6 +1,3 @@
-//
-// Created by michael on 30.05.20.
-//
 
 #include "engine/deck.h"
 
@@ -8,6 +5,7 @@
 #include <sstream>
 
 #include "rng_machine.h"
+#include "cards/card.h"
 
 std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) const
 {
@@ -33,12 +31,12 @@ std::vector< sptr< Card > > CardContainer::find_units(const FilterFunc& filter)
       return card->immutables().card_type == CardType::UNIT && filter(card);
    });
 }
-sptr< Card > CardContainer::draw_specific_card(const char* card_sid)
+sptr< Card > CardContainer::draw_by_code(const char* card_code)
 {
    auto indices = _find_indices(
-      [&card_sid](const sptr< Card >& card) { return card->immutables().code == card_sid; });
+      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
    std::shuffle(indices.begin(), indices.end(), rng::engine());
-   return draw_card_by_index(indices[0]);
+   return draw_by_index(indices[0]);
 }
 
 auto CardContainer::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
@@ -52,7 +50,7 @@ auto CardContainer::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< C
 
    for(const auto& idx : indices) {
       size_t shifted_idx = idx - idx_shift;
-      popped_cards.emplace_back(draw_card_by_index(shifted_idx));
+      popped_cards.emplace_back(draw_by_index(shifted_idx));
       ++idx_shift;
    }
    return popped_cards;
@@ -68,13 +66,12 @@ auto CardContainer::_find_cards(const FilterFunc& filter) const -> std::vector< 
    return cards;
 }
 
-auto CardContainer::find_cards(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card > >
+auto CardContainer::find(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card > >
 {
    if(pop) {
       return _pop_cards(filter);
-   } else {
-      return _find_cards(filter);
    }
+   return _find_cards(filter);
 }
 
 void CardContainer::shuffle_into(const sptr< Card >& card, size_t top_n)
@@ -95,7 +92,7 @@ sptr< Card > CardContainer::draw_card()
    m_cards.pop_back();
    return card;
 }
-sptr< Card > CardContainer::draw_card_by_index(size_t index)
+sptr< Card > CardContainer::draw_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
       std::stringstream msg;
@@ -108,4 +105,16 @@ sptr< Card > CardContainer::draw_card_by_index(size_t index)
    sptr< Card > popped_card = m_cards.at(std::distance(pos, begin) - 1);
    m_cards.erase(pos);
    return popped_card;
+}
+std::set< Region > CardContainer::identify_regions(const CardContainer::ContainerType& container)
+{
+   std::set< Region > rs;
+   for(const auto& cptr : container) {
+      rs.emplace(cptr->immutables().region);
+   }
+   return rs;
+}
+std::set< Region > CardContainer::identify_regions(std::initializer_list< value_type > cards)
+{
+   return identify_regions(ContainerType(cards));
 }

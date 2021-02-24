@@ -23,7 +23,7 @@ auto find_indices(const Container& container, const FilterFunc& filter) -> std::
    return indices;
 }
 template < typename Container, typename T >
-auto find_indices(const Container& container, const std::vector<T>& elems) -> std::vector< long >
+auto find_indices(const Container& container, const std::vector< T >& elems) -> std::vector< long >
 {
    auto nr_elems = elems.size();
    std::vector< long > indices(nr_elems, -1);
@@ -53,23 +53,20 @@ auto find_index(const Container& container, const T& elem) -> long
    return index;
 }
 
-//template < typename Container, typename Derived, typename FilterFunc >
-//auto pop_index_r(const Container& container, std::vector<size_t> indices) -> std::vector< Derived >
-//{
-//   auto begin = container.begin();
-//   // with every pop we need to calculate the new filtered indices as per
-//   // shift by 1
-//   size_t idx_shift = 0;
-//
-//   for(const auto& idx : indices) {
-//      size_t shifted_idx = idx - idx_shift;
-//      popped_elems.emplace_back(pop_by_index(container, shifted_idx));
-//      ++idx_shift;
-//   }
-//   Derived popped_elem = container.at(std::distance(pos, begin) - 1);
-//   container.erase(pos);
-//   return {popped_elem};
-//}
+template < template <typename, typename> class Container, typename T1, typename T2 >
+void permute(Container< T1, T2 >& vec_like, std::vector< int >& perm_order)
+{
+   for (size_t i = 0; i < perm_order.size(); i++) {
+      auto current = i;
+      while (i != perm_order[current]) {
+         auto next = perm_order[current];
+         std::swap(vec_like[current], vec_like[next]);
+         perm_order[current] = current;
+         current = next;
+      }
+      perm_order[current] = current;
+   }
+}
 
 template < typename Container, typename T, typename FilterFunc >
 auto pop_if(Container& container, const FilterFunc& filter) -> std::vector< T >
@@ -91,12 +88,12 @@ auto copy_if(const Container& container, const FilterFunc& filter) -> std::vecto
    return elements;
 }
 
-template <typename Container, typename T>
+template < typename Container, typename T >
 void remove_element(Container& container, const T& elem)
 {
    auto index = algo::find_index(container, elem);
    if(index == -1) {
-      throw std::logic_error("Element to remove was not found in container.");
+      throw std::logic_error("Element to remove was not found in ContainerType.");
    }
    container.erase(container.begin() + index);
 }

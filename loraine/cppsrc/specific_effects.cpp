@@ -5,7 +5,7 @@
 #include "gamemode.h"
 #include "target.h"
 
-//void effects::fading_memories_cast(
+//void m_effects::fading_memories_cast(
 //   GameMode& game, const events::CastEvent& /*events*/, Effect& source_container)
 //{
 //   auto targets = source_container.targets();

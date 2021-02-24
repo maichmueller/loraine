@@ -22,6 +22,8 @@ class Player {
    using HandType = std::vector< sptr< Card > >;
    using DeckType = std::vector< sptr< Card > >;
 
+   Player(sptr<Controller> controller, Team team, Nexus nexus, DeckType deck)
+
    inline auto* nexus() { return &m_nexus; }
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
    [[nodiscard]] inline auto team() const { return m_team; }
@@ -61,7 +63,6 @@ class Player {
    Flags m_flags;
    std::map< size_t, std::vector< sptr< Card > > > m_graveyard = {};
    std::vector< sptr< Card > > m_tossed_cards = {};
-   std::map< size_t, std::vector< sptr< Action > > > m_history = {};
 };
 
 #endif  // LORAINE_PLAYER_H

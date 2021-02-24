@@ -96,7 +96,7 @@ enum class Keyword {
 
 constexpr const size_t n_keywords = static_cast< size_t >(Keyword::WEAKEST);
 
-// This is intended to be used as lookup table for keywords:
+// This is intended to be used as lookup table for m_keywords:
 // Does the card have the keyword 'lifesteal'?
 // -> m_keywords[LIFESTEAL] will return the boolean answer
 using KeywordMap = std::array< bool, n_keywords >;

@@ -33,8 +33,8 @@ void Card::remove_effect(events::EventType e_type, const EffectBase& effect)
 }
 void Card::add_effect(events::EventType e_type, sptr< EffectBase > effect)
 {
-   // if the key is already found in the effects map, delete the previous
-   // effect. This essentially implies we overwrite preexisting effects
+   // if the key is already found in the m_effects map, delete the previous
+   // effect. This essentially implies we overwrite preexisting m_effects
    if(m_mutables.effects.find(e_type) != m_mutables.effects.end()) {
       m_mutables.effects.erase(e_type);
    }

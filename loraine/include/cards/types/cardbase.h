@@ -27,6 +27,7 @@ class Grant;
  */
 class Card : public EventListener<Card> {
   public:
+   using EffectMap =std::map< events::EventType, std::vector< sptr<EffectBase> > >;
 
    struct ConstState {
       // the card code
@@ -66,14 +67,14 @@ class Card : public EventListener<Card> {
       size_t position;
       // whether the card is observable by all or only by the owner
       bool hidden;
-      // when effects move the base cost to a new permanent value
+      // when m_effects move the base cost to a new permanent value
       long int mana_cost_base = 0;
       // the current change to the mana cost of the card
       long int mana_cost_delta = 0;
-      // all the keywords pertaining to the cards
+      // all the m_keywords pertaining to the cards
       KeywordMap keywords = {};
-      // all effects
-      std::map< events::EventType, std::vector< sptr<EffectBase> > > effects = {};
+      // all m_effects
+      EffectMap effects = {};
       // condition
       uptr< PlayCondition > play_condition = {};
       // all permanent grants

@@ -87,7 +87,7 @@ class MoveUnitAction: public Action {
    // the positions on the battlefield the units from the camp take.
    // One has a vector naming the position the common from the camp
    // (where it holds the position of its current index in the source
-   // container) onto the next position in the target container.
+   // ContainerType) onto the next position in the target ContainerType.
    bool m_to_bf;
    std::vector< size_t > m_indices_vec;
    std::map< size_t, size_t > m_opp_indices_map;

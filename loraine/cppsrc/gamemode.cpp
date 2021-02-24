@@ -453,7 +453,7 @@ void GameMode::_mulligan(
 }
 void GameMode::_end_round()
 {
-   // first let all effects trigger that state an effect with the "Round End" keyword
+   // first let all m_effects trigger that state an effect with the "Round End" keyword
    auto active_team = m_state->active_team();
    auto passive_team = Team(1 - active_team);
    _trigger_event(events::RoundEndEvent(active_team, std::make_shared< long >(m_state->round())));

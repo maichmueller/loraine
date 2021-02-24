@@ -123,12 +123,12 @@ Status State::status()
    }
    return m_terminal;
 }
-State::State(Config cfg, Team starting_team, SymArr< Player > players)
+State::State(Config cfg, Team starting_team, SymArr< Controller > controllers)
     : m_config(cfg),
       m_players(std::move(players)),
       m_starting_team(starting_team),
       m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
-      m_logic(std::make_unique< Logic >()),
+      m_logic(std::make_unique< MulliganModeLogic >()),
       m_attacker(starting_team),
       m_turn(starting_team),
       m_spell_stack()

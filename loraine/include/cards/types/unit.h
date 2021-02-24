@@ -17,9 +17,9 @@ class Unit: public FieldCard {
    };
 
    struct MutableUnitState {
-      // the permanent base power of the common (can be moved by e.g. effects)
+      // the permanent base power of the common (can be moved by e.g. m_effects)
       size_t power_base;
-      // the permanent base health of the common (can be moved by e.g. effects)
+      // the permanent base health of the common (can be moved by e.g. m_effects)
       size_t health_base;
       // the current change to the common power (temporary buffs/nerfs).
       long int power_delta = 0;

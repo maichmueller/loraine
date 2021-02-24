@@ -74,9 +74,9 @@ class Board {
   private:
    size_t m_camp_size;
    size_t m_battlefield_size;
-   // the container holding battling units
+   // the ContainerType holding battling units
    SymArr< BfType > m_battlefield;
-   // the container holding summoned/played, alive units
+   // the ContainerType holding summoned/played, alive units
    SymArr< CampType > m_camp;
    // the queue for newly summoned units
    SymArr< CampQueueType > m_camp_queue;

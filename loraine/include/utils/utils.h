@@ -159,7 +159,7 @@ size_t get_address(std::function< ReturnType(Params...) > f)
  *
  * The range-erase member functions have a pair of const_iterator parameters, but they return an
  * iterator. Because an empty range is provided, the call to erase does not change the contents of
- * the container.
+ * the ContainerType.
  */
 template < typename Container, typename ConstIterator >
 typename Container::iterator remove_constness(Container& c, ConstIterator it)

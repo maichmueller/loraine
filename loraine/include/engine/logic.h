@@ -248,19 +248,7 @@ std::vector< Target > Logic::filter_targets(
    }
 }
 
-class ActiveModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class PassiveModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class AttackModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class BlockModeLogic: public Logic {
+class DefaultModeLogic: public Logic {
    void handle(const sptr< Action >& action) override;
    bool is_valid(const sptr< Action >& action) override;
 };

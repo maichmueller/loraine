@@ -23,18 +23,13 @@ class Card;
 class Action;
 class Logic;
 
-
 class State {
   public:
-
    using SpellStackType = std::vector< sptr< Spell > >;
 
    bool handle(const sptr< Action >& action);
 
-   State(
-      Config cfg,
-      Team starting_team,
-      SymArr<Player> players);
+   State(Config cfg, SymArr<Player::DeckType > decks, SymArr< Controller > players, Team starting_team,);
 
    State(
       Team starting_team,
@@ -74,7 +69,6 @@ class State {
    [[nodiscard]] inline auto& spell_prestack() { return m_spell_prestack; }
    [[nodiscard]] inline auto spell_prestack() const { return m_spell_prestack; }
 
-
    /*
     * Return the status of the current game state
     */
@@ -87,11 +81,9 @@ class State {
    [[nodiscard]] std::tuple< Location, long > find(const sptr< Card >& card) const;
 
   private:
-
    Config m_config;
-   SymArr<Player> m_players;
+   SymArr< Player > m_players;
    Team m_starting_team;
-   SymArr< GrantFactory > m_grant_factory;
    sptr< Board > m_board;
    uptr< Logic > m_logic;
    std::array< uptr< EventBase >, events::n_events > m_events;
@@ -100,6 +92,8 @@ class State {
    size_t m_round = 0;
    Status m_terminal = Status::ONGOING;
    bool m_terminal_checked = false;
+   SymArr< GrantFactory > m_grant_factory = {};
+   SymArr< std::map< size_t, std::vector< sptr< Action > > > > m_history = {};
    SpellStackType m_spell_stack{};
    SpellStackType m_spell_prestack{};
 
