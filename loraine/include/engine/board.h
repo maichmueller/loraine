@@ -78,7 +78,7 @@ class Board {
    SymArr< BfType > m_battlefield;
    // the ContainerType holding summoned/played, alive units
    SymArr< CampType > m_camp;
-   // the queue for newly summoned units
+   // the m_queue for newly summoned units
    SymArr< CampQueueType > m_camp_queue;
 
    inline bool _check_boundaries(Team team, bool in_camp)

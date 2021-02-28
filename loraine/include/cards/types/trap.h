@@ -9,8 +9,6 @@ class TrapCard: public Card {
       std::vector< sptr< Card > > trapped_cards;
    };
 
-   [[nodiscard]] bool is_trap() const override { return true; }
-
    TrapCard(ConstState const_state, MutableState mut_state, MutableTrapState mut_trap_state)
        : Card(std::move(const_state), std::move(mut_state)),
          m_trap_mutables(std::move(mut_trap_state))

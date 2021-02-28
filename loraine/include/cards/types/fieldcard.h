@@ -13,8 +13,6 @@
 class FieldCard: public Card {
   public:
    using Card::Card;  // use base class constructors
-
-   [[nodiscard]] bool is_fieldcard() const override { return true;}
 };
 
 inline sptr< FieldCard > to_fieldcard(const sptr< Card >& card)

@@ -7,9 +7,10 @@
 #include <optional>
 #include <tuple>
 
-#include "rng_machine.h"
+#include "rng.h"
 #include "types.h"
 
+namespace utils {
 inline UUID new_uuid()
 {
    // safer to wrap static variable in function call, in case of exception throw.
@@ -25,27 +26,31 @@ struct pass_args< OutClass, std::tuple< T... > > {
    using type = OutClass< T... >;
 };
 
+template < typename... Args >
+struct deduction_help {
+  private:
+   std::tuple< Args... > t;
+};
+// template < typename... Args >
+// struct deduction_help ;
+
 template < template < typename... > class Base, typename Derived, typename... Args >
-struct CRTP: public CRTP<Base, Args...>{
-
+struct CRTP {
    Derived* derived() { return static_cast< Derived* >(*this); }
    Derived const* derived() const { return static_cast< Derived const* >(*this); }
 
   private:
    constexpr CRTP() = default;
-   friend Base< Derived >;
+   friend Base< Derived, Args... >;
 };
 
-template < template < typename... > class Base, typename Derived >
-struct CRTP< Base, Derived> {
-
-   Derived* derived() { return static_cast< Derived* >(*this); }
-   Derived const* derived() const { return static_cast< Derived const* >(*this); }
-
-  private:
-   constexpr CRTP() = default;
-   friend Base< Derived >;
+template < size_t N, typename T >
+struct getter {
+   auto operator()(const T& t) { return std::get< N >(t); }
+   using type = std::result_of_t< getter(const T&) >;
 };
+template < size_t N, typename T >
+using getter_t = getter< N, T >;
 
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)
@@ -132,10 +137,10 @@ std::vector< T, Allocator >& operator+(
    return vec1;
 }
 
-template < typename Container >
-void shuffle_inplace(Container& container)
+template < typename Container, class RNG >
+void shuffle_inplace(Container& container, RNG&& rng)
 {
-   std::shuffle(container.begin(), container.end(), rng::engine());
+   std::shuffle(container.begin(), container.end(), std::forward< RNG >(rng));
 }
 
 /*
@@ -166,22 +171,29 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
-
-inline bool bernoulli_sample(double p)
+template < class RNG >
+inline bool bernoulli_sample(double p, RNG&& rng)
 {
    std::bernoulli_distribution ber(p);
-   return ber(rng::engine());
+   return ber(std::forward< RNG >(rng));
 }
 
-template < class BiIter, typename Distribution = std::uniform_int_distribution< uint64_t > >
+template <
+   class BiIter,
+   class RNG,
+   typename Distribution = std::uniform_int_distribution< uint64_t > >
 void shuffle_inplace_limited(
-   BiIter begin, BiIter end, size_t num_random, Distribution weight_dist = Distribution(0))
+   BiIter begin,
+   BiIter end,
+   size_t num_random,
+   RNG&& rng,
+   Distribution weight_dist = Distribution(0))
 {
    // Fisher-Yates-shuffle
    size_t N = std::distance(begin, end);
    while(num_random--) {
       BiIter r = begin;
-      std::advance(r, weight_dist(rng::engine()) % N);
+      std::advance(r, weight_dist(std::forward< RNG >(rng)) % N);
       std::swap(*begin, *r);
       ++begin;
       --N;
@@ -202,12 +214,12 @@ void choose_inplace(std::vector< T, Allocator >& vec, std::vector< double > weig
       n,
       std::discrete_distribution< uint64_t >{weights.begin(), weights.end()});
 }
-template < typename T, typename Allocator >
-T choose(const std::vector< T, Allocator >& vec, int n = 1)
+template < typename T, typename Allocator, class RNG >
+T choose(const std::vector< T, Allocator >& vec, RNG&& rng, int n = 1)
 {
    std::vector< size_t > indices(vec.size());
    std::iota(indices.begin(), indices.end(), 0);
-   shuffle_inplace_limited(indices.begin(), indices.end(), n);
+   shuffle_inplace_limited(indices.begin(), indices.end(), n, std::forward< RNG >(rng));
    std::vector< T, Allocator > out;
    out.reserve(n);
    for(auto idx : indices) {
@@ -215,5 +227,7 @@ T choose(const std::vector< T, Allocator >& vec, int n = 1)
    }
    return out;
 }
+
+}  // namespace utils
 
 #endif  // LORAINE_UTILS_H

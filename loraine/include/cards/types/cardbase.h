@@ -22,12 +22,12 @@
 class State;
 class Grant;
 
-/*
+/**
  * Abstract base class (abc) for LOR cards.
  */
-class Card : public EventListener<Card> {
+class Card: public EventListener< Card > {
   public:
-   using EffectMap =std::map< events::EventType, std::vector< sptr<EffectBase> > >;
+   using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 
    struct ConstState {
       // the card code
@@ -53,9 +53,9 @@ class Card : public EventListener<Card> {
       // whether a card is collectible (i.e. can be added to a deck)
       const bool is_collectible = true;
       // was the card created by another
-      const std::optional< const char* const> creator = {};
+      const std::optional< const char* const > creator = {};
       // the unique id used to identify this specific instance of a card
-      const UUID uuid = new_uuid();
+      const UUID uuid = utils::new_uuid();
    };
 
    struct MutableState {
@@ -91,12 +91,12 @@ class Card : public EventListener<Card> {
    {
       return std::max(0L, m_mutables.mana_cost_base + m_mutables.mana_cost_delta);
    }
-   void effects(events::EventType e_type, std::vector< sptr< EffectBase > > effects);
-   [[nodiscard]] inline auto& effects(events::EventType etype)
+   void effects(events::EventLabel e_type, std::vector< sptr< EffectBase > > effects);
+   [[nodiscard]] inline auto& effects(events::EventLabel etype)
    {
       return m_mutables.effects.at(etype);
    }
-   [[nodiscard]] inline auto& effects(events::EventType etype) const
+   [[nodiscard]] inline auto& effects(events::EventLabel etype) const
    {
       return m_mutables.effects.at(etype);
    }
@@ -106,26 +106,35 @@ class Card : public EventListener<Card> {
    [[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
 
    // status requests
-   [[nodiscard]] virtual bool is_unit() const { return false; }
-   [[nodiscard]] virtual bool is_spell() const { return false; }
-   [[nodiscard]] virtual bool is_fieldcard() const { return false; }
-   [[nodiscard]] virtual bool is_trap() const { return false; }
-   [[nodiscard]] virtual bool is_skill() const { return false; }
-   [[nodiscard]] virtual bool is_champion() const { return false; }
-   [[nodiscard]] virtual bool is_follower() const { return false; }
-   [[nodiscard]] virtual bool is_landmark() const { return false; }
-   [[nodiscard]] bool is_created() const { return has_value(m_immutables.creator); }
+   [[nodiscard]] inline bool is_spell() const { return m_immutables.card_type == CardType::SPELL; }
+   [[nodiscard]] inline bool is_unit() const { return m_immutables.card_type == CardType::UNIT; }
+   [[nodiscard]] inline bool is_landmark() const
+   {
+      return m_immutables.card_type == CardType::LANDMARK;
+   }
+   [[nodiscard]] inline bool is_fieldcard() const { return is_unit() || is_landmark(); }
+   [[nodiscard]] inline bool is_trap() const { return m_immutables.card_type == CardType::TRAP; }
+   [[nodiscard]] inline bool is_skill() const
+   {
+      return m_immutables.super_type == CardSuperType::SKILL;
+   }
+   [[nodiscard]] inline bool is_champion() const { return is_unit() && not is_champion(); }
+   [[nodiscard]] inline bool is_follower() const
+   {
+      return m_immutables.super_type == CardSuperType::SKILL;
+   }
+   [[nodiscard]] bool is_created() const { return utils::has_value(m_immutables.creator); }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
       return m_mutables.keywords.at(static_cast< unsigned long >(kword));
    }
-   [[nodiscard]] inline bool has_effect(events::EventType e_type) const
+   [[nodiscard]] inline bool has_effect(events::EventLabel e_type) const
    {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
    }
 
-   [[nodiscard]] bool has_effect(events::EventType e_type, const EffectBase& effect) const;
+   [[nodiscard]] bool has_effect(events::EventLabel e_type, const EffectBase& effect) const;
    inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
 
    inline void move(Location loc, size_t index)
@@ -136,8 +145,8 @@ class Card : public EventListener<Card> {
 
    // manipulations
 
-   void add_effect(events::EventType e_type, sptr< EffectBase > effect);
-   void remove_effect(events::EventType e_type, const EffectBase& effect);
+   void add_effect(events::EventLabel e_type, sptr< EffectBase > effect);
+   void remove_effect(events::EventLabel e_type, const EffectBase& effect);
 
    void store_grant(const sptr< Grant >& grant);
    inline void store_grant(const std::vector< sptr< Grant > >& grants)

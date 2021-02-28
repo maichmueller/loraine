@@ -12,13 +12,24 @@ class Spell: public Card {
    // use base class constructors
    using Card::Card;
 
-   [[nodiscard]] bool is_spell() const override { return true; }
    [[nodiscard]] virtual bool check_cast_condition(const GameMode& game) const;
+};
+
+class Skill : public Spell {
+  public:
+   // use base class constructors
+   using Spell::Spell;
+
 };
 
 inline sptr< Spell > to_spell(const sptr< Card >& card)
 {
    return std::dynamic_pointer_cast< Spell >(card);
+}
+
+inline sptr< Skill > to_skill(const sptr< Card >& card)
+{
+   return std::dynamic_pointer_cast< Skill >(card);
 }
 
 #endif  // LORAINE_SPELL_H

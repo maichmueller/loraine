@@ -12,7 +12,7 @@
 #include "engine/state.h"
 #include "gamemode.h"
 #include "grants/grant.h"
-#include "rng_machine.h"
+#include "rng.h"
 #include "targeter.h"
 #include "utils/types.h"
 #include "utils/utils.h"

@@ -80,7 +80,7 @@ bool GameMode::_move_spell(const sptr< Spell >& spell, bool to_stack)
 {
    Team team = spell->mutables().owner;
    auto hand = m_state->hand(team);
-   auto& cast_effects = spell->effects(events::EventType::CAST);
+   auto& cast_effects = spell->effects(events::EventLabel::CAST);
    if(to_stack) {
       hand.erase(std::find(hand.begin(), hand.end(), spell));
       auto& spell_pre_stack = m_state->spell_prestack();
@@ -218,7 +218,7 @@ bool GameMode::_do_action(const sptr< Action >& action)
          default: break;
       }
    }
-   m_state->commit_to_history(action);
+   m_state->commit_to_history(action, BLUE);
    return flip_initiative;
 }
 void GameMode::_activate_battlemode(Team attack_team)
@@ -602,10 +602,10 @@ void GameMode::play(const sptr< Card >& card, std::optional< size_t > replaces)
 }
 void GameMode::_play_event_triggers(const sptr< Card >& card, const Team& team)
 {
-   if(card->has_effect(events::EventType::DAYBREAK) && check_daybreak(team)) {
+   if(card->has_effect(events::EventLabel::DAYBREAK) && check_daybreak(team)) {
       _trigger_event(events::DaybreakEvent(team, card));
    }
-   if(card->has_effect(events::EventType::NIGHTFALL) && check_nightfall(team)) {
+   if(card->has_effect(events::EventLabel::NIGHTFALL) && check_nightfall(team)) {
       _trigger_event(events::NightfallEvent(team, card));
    }
    _trigger_event(events::PlayEvent(team, card));
@@ -616,13 +616,13 @@ void GameMode::cast(const sptr< Spell >& spell)
 }
 void GameMode::process_camp_queue(Team team)
 {
-   // the logic of LOR for deciding how many units in the queue fit into the
+   // the logic of LOR for deciding how many units in the m_queue fit into the
    // camp goes by 2 different modes:
    // 1) default play mode, and
    // 2) battle resolution mode
 
    // In 1) the card will be obliterated, if there is no space currently on the board left,
-   // after having considered all previous units in the queue. Otherwise, it is placed
+   // after having considered all previous units in the m_queue. Otherwise, it is placed
    // in the camp. When a unit is summoned when attack is declared (e.g. Kalista summoning
    // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
    // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking

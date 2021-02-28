@@ -1,5 +1,5 @@
 //
-#include "engine/action_mode.h"
+#include "engine/action_handler.h"
 //
 //bool Game::_do_action(const sptr< Action >& action)
 //{
@@ -8,14 +8,14 @@
 //   if(action_type == ActionType::PASS) {
 //      // this case has to be handled separately to combine the pass counter
 //      // reset for all other cases
-//      bool round_ends = m_state->pass();
+//      bool round_ends = m_logic->pass();
 //      if(round_ends) {
 //         end_round();
 //         start_round();
 //      }
 //
 //   } else {
-//      m_state->reset_pass();
+//      m_logic->reset_pass();
 //
 //      switch(action_type) {
 //         case PLAY: {
@@ -54,7 +54,7 @@
 //               flip_initiative = false;
 //            } else {
 //               flip_initiative = _do_action(std::make_shared< PlayAction >(
-//                  m_state->round(), floating->mutables().owner, floating));
+//                  m_logic->round(), floating->mutables().owner, floating));
 //            }
 //         }
 //
@@ -70,11 +70,11 @@
 //         }
 //
 //         case ACCEPT: {
-//            if(auto& spell_prestack = m_state->spell_prestack(); spell_prestack.empty()) {
+//            if(auto& spell_prestack = m_logic->spell_prestack(); spell_prestack.empty()) {
 //               _resolve_spell_stack(false);
 //            } else {
 //            }
-//            if(m_state->in_battle_mode()) {
+//            if(m_logic->in_battle_mode()) {
 //               _resolve_battle();
 //               _deactivate_battlemode();
 //            }
@@ -83,6 +83,6 @@
 //         default: break;
 //      }
 //   }
-//   m_state->commit_to_history(action);
+//   m_logic->commit_to_history(action);
 //   return flip_initiative;
 //}

@@ -5,7 +5,7 @@
 #ifndef LORAINE_DECK_H
 #define LORAINE_DECK_H
 
-#include <rng_machine.h>
+#include <rng.h>
 
 #include <functional>
 #include <map>
@@ -18,7 +18,7 @@
 
 class Card;
 
-class CardContainer {
+class Deck {
   public:
    // vectors of sptrs should be fastest when cache locality is considered
    // (also for insertion operations)
@@ -36,10 +36,10 @@ class CardContainer {
    using size_type = typename ContainerType::size_type;
    using difference_type = typename ContainerType::difference_type;
 
-   CardContainer() : m_cards(), m_regions() {}
-   CardContainer(std::initializer_list< value_type > cards) : m_cards(cards) {}
-   explicit CardContainer(ContainerType cards) : m_cards(std::move(cards)) {}
-   explicit CardContainer(ContainerType&& cards) : m_cards(std::move(cards)) {}
+   Deck() : m_cards(), m_regions() {}
+   Deck(std::initializer_list< value_type > cards) : m_cards(cards) {}
+   explicit Deck(ContainerType cards) : m_cards(std::move(cards)) {}
+   explicit Deck(ContainerType&& cards) : m_cards(std::move(cards)) {}
 
    /// forwarded functions from container
 
@@ -72,7 +72,8 @@ class CardContainer {
     * @param top_n size_t,
     *   the range from the top to shuffle the card into
     */
-   void shuffle_into(const sptr< Card >& card, size_t top_n = 0);
+    template <typename RNG>
+   void shuffle_into(const sptr< Card >& card, size_t top_n, RNG&& rng);
 
    /**
     * Draw the top card
@@ -89,12 +90,13 @@ class CardContainer {
     * @param card_code const char*,
     *   the card code that needs to be matched
     */
-   sptr< Card > draw_by_code(const char* card_code);
+    template <class RNG>
+   sptr< Card > draw_by_code(const char* card_code, RNG&& rng);
 
-   template < class URBG >
-   inline void shuffle(URBG&& g = rng::engine())
+   template < class RNG >
+   inline void shuffle(RNG&& g)
    {
-      std::shuffle(begin(), end(), g);
+      std::shuffle(begin(), end(), std::forward<RNG>(g));
    }
 
    static std::set< Region > identify_regions(const ContainerType& container);

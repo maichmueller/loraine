@@ -14,15 +14,8 @@ class EffectBase;
 // derive the listener classes:
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
 template < class Derived >
-class EventListener: public CRTP< EventListener, Derived > {
+class EventListener: public utils::CRTP< EventListener, Derived > {
   public:
-   // map vs array: EventType is implicitly int and thus usable as index for array.
-   // Yet map, unlike array, can be empty and doesn't need to allocate empty vectors
-   // for every event_type, when the listener does not hold such effects.
-   // The cost is the map having to allocate effects on the heap, yet effect allocation
-   // should be a comparably rare event overall, after the listener initialization.
-   using EffectMap = std::map< events::EventType, std::vector< sptr< EffectBase > > >;
-
    template < typename SpecificEventType >
    void connect(SpecificEventType& event)
    {

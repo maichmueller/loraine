@@ -10,7 +10,8 @@ class Player {
   public:
    struct Flags {
       bool attack_token = false;
-      bool scout_token = false;
+      bool is_daybreak = false;
+      bool is_nightfall = false;
       bool plunder_token = false;
       bool pass = false;
    };
@@ -20,9 +21,14 @@ class Player {
       size_t floating = 0;  // mana exclusively for spells
    };
    using HandType = std::vector< sptr< Card > >;
-   using DeckType = std::vector< sptr< Card > >;
 
-   Player(sptr<Controller> controller, Team team, Nexus nexus, DeckType deck)
+   Player(
+      Team team,
+      Nexus nexus,
+      Deck deck,
+      sptr< Controller > controller,
+      Mana mana = {0, 0, 0},
+      Flags flags = {false, false, false, false, false});
 
    inline auto* nexus() { return &m_nexus; }
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
@@ -38,16 +44,14 @@ class Player {
    [[nodiscard]] inline auto* hand() const { return &m_hand; }
    [[nodiscard]] inline auto* hand() { return &m_hand; }
 
-   inline void deck(DeckType deck) { m_deck_cont = std::move(deck); }
-   [[nodiscard]] inline auto* deck() const { return &m_deck_cont; }
-   [[nodiscard]] inline auto* deck() { return &m_deck_cont; }
+   inline void deck(Deck deck) { m_deck = std::move(deck); }
+   [[nodiscard]] inline auto* deck() const { return &m_deck; }
+   [[nodiscard]] inline auto* deck() { return &m_deck; }
 
    inline void mana(Mana mana) { m_mana = mana; }
    [[nodiscard]] inline auto* mana() { return &m_mana; }
    [[nodiscard]] inline auto* mana() const { return &m_mana; }
 
-   [[nodiscard]] inline auto* history() { return &m_history; }
-   [[nodiscard]] inline auto* history() const { return &m_history; }
    [[nodiscard]] inline auto* graveyard() { return &m_graveyard; }
    [[nodiscard]] inline auto* graveyard() const { return &m_graveyard; }
    [[nodiscard]] inline auto* tossed_cards() { return &m_tossed_cards; }
@@ -57,7 +61,7 @@ class Player {
    Nexus m_nexus;
    sptr< Controller > m_controller;
    HandType m_hand;
-   DeckType m_deck_cont;
+   Deck m_deck;
    Team m_team;
    Mana m_mana;
    Flags m_flags;

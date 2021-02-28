@@ -11,6 +11,9 @@
 #include "gamedefs.h"
 
 class Nexus: public EventListener< Nexus > {
+  public:
+   using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
+
    Nexus(Team team, long health, EffectMap emap = {}, KeywordMap kwordmap = {})
        : m_team(team), m_health(health), m_keywords(kwordmap), m_effects(std::move(emap))
    {
@@ -20,13 +23,13 @@ class Nexus: public EventListener< Nexus > {
    [[nodiscard]] inline auto health() const { return m_health; }
    [[nodiscard]] inline auto name() const { return m_name; }
    [[nodiscard]] inline auto effects() const { return m_effects; }
-   [[nodiscard]] auto& effects(events::EventType etype) { return m_effects.at(etype); }
-   [[nodiscard]] auto& effects(events::EventType etype) const { return m_effects.at(etype); }
-   [[nodiscard]] inline bool has_effect(events::EventType e_type) const
+   [[nodiscard]] auto& effects(events::EventLabel etype) { return m_effects.at(etype); }
+   [[nodiscard]] auto& effects(events::EventLabel etype) const { return m_effects.at(etype); }
+   [[nodiscard]] inline bool has_effect(events::EventLabel e_type) const
    {
       return m_effects.find(e_type) != m_effects.end();
    }
-   [[nodiscard]] bool has_effect(events::EventType e_type, const EffectBase& effect) const;
+   [[nodiscard]] bool has_effect(events::EventLabel e_type, const EffectBase& effect) const;
 
    inline void change_health(long health) { m_health += health; }
 

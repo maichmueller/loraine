@@ -21,6 +21,7 @@ class Controller;
 class EffectBase {
   public:
    virtual ~EffectBase() = default;
+   virtual bool operator==(const EffectBase& other) = 0;
 };
 
 template < typename... Args >
@@ -39,7 +40,7 @@ class Effect : public EffectBase {
     */
    void event_call(State& state, Args... args);
    [[nodiscard]] inline bool check_condition(const State& state) const { return _condition(state); }
-   [[nodiscard]] virtual bool target(const State& state, Controller& agent, Team team);
+   [[nodiscard]] virtual bool target(const State& state, Controller& controller, Team team);
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
 
@@ -67,7 +68,7 @@ class Effect : public EffectBase {
        : m_effect_type(effect_type),
          m_assoc_card(std::move(card_ptr)),
          m_targeter(std::move(targeter)),
-         m_uuid(new_uuid())
+         m_uuid(utils::new_uuid())
    {
    }
    Effect(const Effect& effect) = default;

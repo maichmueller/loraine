@@ -24,7 +24,7 @@ enum struct Group {
 
 constexpr const size_t n_groups = static_cast< size_t >(Group::YETI) + 1;
 
-enum struct CardType { SPELL, UNIT, LANDMARK };
+enum struct CardType { SPELL, UNIT, LANDMARK, TRAP };
 
 constexpr const size_t n_cardtypes = static_cast< size_t >(CardType::LANDMARK) + 1;
 

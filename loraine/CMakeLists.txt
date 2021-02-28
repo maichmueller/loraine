@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
-        ${LORAINE_SRC_DIR}/action_mode.cpp
+        ${LORAINE_SRC_DIR}/action_handler.cpp
         ${LORAINE_SRC_DIR}/all_events.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
         ${LORAINE_SRC_DIR}/state.cpp
@@ -10,6 +10,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/nexus.cpp
         ${LORAINE_SRC_DIR}/tribute.cpp
         ${LORAINE_SRC_DIR}/player.cpp
+        ${LORAINE_SRC_DIR}/record.cpp
 
         ${LORAINE_SRC_DIR}/gamemode.cpp
         ${LORAINE_SRC_DIR}/logic.cpp

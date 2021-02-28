@@ -8,7 +8,7 @@ Grant::Grant(
       m_bestowing_card(std::move(bestowing_card)),
       m_bestowed_card(std::move(bestowed_card)),
       m_permanent(permanent),
-      m_uuid(new_uuid())
+      m_uuid(utils::new_uuid())
 {
 }
 std::string Grant::explain() const
@@ -74,7 +74,7 @@ EffectGrant::EffectGrant(
    const sptr< Card >& bestowed_card,
    bool permanent,
    sptr<EffectBase> effect,
-   events::EventType event_type)
+   events::EventLabel event_type)
     : Grant(GrantType::EFFECT, bestowing_card, bestowed_card, permanent),
       m_effect(std::move(effect)),
       m_event_type(event_type)

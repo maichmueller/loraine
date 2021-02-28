@@ -1,11 +1,11 @@
 
-#ifndef LORAINE_ACTION_MODE_H
-#define LORAINE_ACTION_MODE_H
+#ifndef LORAINE_ACTION_HANDLER_H
+#define LORAINE_ACTION_HANDLER_H
 
 #include "utils/types.h"
 
 class Action;
-class State;
+class Logic;
 
 
 /*
@@ -51,17 +51,34 @@ class ActionHandler {
    virtual void handle(const sptr< Action >& action) = 0;
    virtual bool is_valid(const sptr< Action >& action) = 0;
 
-   explicit ActionHandler(State* state = nullptr): m_state(state) {}
+   explicit ActionHandler(Logic* logic = nullptr): m_logic(logic) {}
 
-   void state(State* state) {m_state = state;}
-   auto state() {return m_state;}
-   [[nodiscard]] auto state() const {return m_state;}
+   void logic(Logic* state) { m_logic = state;}
+   auto logic() {return m_logic;}
+   [[nodiscard]] auto state() const {return m_logic;}
 
   private:
-   State* m_state;
+   Logic* m_logic;
+};
+
+class DefaultModeHandler: public ActionHandler {
+   void handle(const sptr< Action >& action) override;
+   bool is_valid(const sptr< Action >& action) override;
+};
+class CombatModeHandler: public ActionHandler {
+   void handle(const sptr< Action >& action) override;
+   bool is_valid(const sptr< Action >& action) override;
+};
+class TargetModeHandler: public ActionHandler {
+   void handle(const sptr< Action >& action) override;
+   bool is_valid(const sptr< Action >& action) override;
+};
+class MulliganModeHandler: public ActionHandler {
+   void handle(const sptr< Action >& action) override;
+   bool is_valid(const sptr< Action >& action) override;
 };
 
 
 
 
-#endif  // LORAINE_ACTION_MODE_H
+#endif  // LORAINE_ACTION_HANDLER_H

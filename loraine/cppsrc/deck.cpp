@@ -4,10 +4,10 @@
 #include <algorithm>
 #include <sstream>
 
-#include "rng_machine.h"
 #include "cards/card.h"
+#include "rng.h"
 
-std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) const
+std::vector< size_t > Deck::_find_indices(const FilterFunc& filter) const
 {
    std::vector< size_t > indices;
    for(auto i = 0ul; i < m_cards.size(); ++i) {
@@ -18,28 +18,7 @@ std::vector< size_t > CardContainer::_find_indices(const FilterFunc& filter) con
    return indices;
 }
 
-std::vector< sptr< Card > > CardContainer::find_spells(const FilterFunc& filter)
-{
-   return _pop_cards([&](const sptr< Card >& card) {
-      return card->immutables().card_type == CardType::SPELL && filter(card);
-   });
-}
-
-std::vector< sptr< Card > > CardContainer::find_units(const FilterFunc& filter)
-{
-   return _pop_cards([&](const sptr< Card >& card) {
-      return card->immutables().card_type == CardType::UNIT && filter(card);
-   });
-}
-sptr< Card > CardContainer::draw_by_code(const char* card_code)
-{
-   auto indices = _find_indices(
-      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
-   std::shuffle(indices.begin(), indices.end(), rng::engine());
-   return draw_by_index(indices[0]);
-}
-
-auto CardContainer::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
+auto Deck::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > popped_cards;
    auto indices = _find_indices(filter);
@@ -55,7 +34,7 @@ auto CardContainer::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< C
    }
    return popped_cards;
 }
-auto CardContainer::_find_cards(const FilterFunc& filter) const -> std::vector< sptr< Card > >
+auto Deck::_find_cards(const FilterFunc& filter) const -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > cards;
    auto indices = _find_indices(filter);
@@ -66,7 +45,7 @@ auto CardContainer::_find_cards(const FilterFunc& filter) const -> std::vector< 
    return cards;
 }
 
-auto CardContainer::find(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card > >
+auto Deck::find(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card > >
 {
    if(pop) {
       return _pop_cards(filter);
@@ -74,25 +53,13 @@ auto CardContainer::find(const FilterFunc& filter, bool pop) -> std::vector< spt
    return _find_cards(filter);
 }
 
-void CardContainer::shuffle_into(const sptr< Card >& card, size_t top_n)
-{
-   auto deck_size = m_cards.size();
-   if(top_n > deck_size) {
-      top_n = deck_size;
-   }
-   auto max = std::min(top_n, deck_size);
-   std::uniform_int_distribution< size_t > dist(0, max);
-   auto pos = m_cards.begin() + (deck_size - dist(rng::engine()));
-   m_cards.insert(pos, card);
-}
-
-sptr< Card > CardContainer::draw_card()
+sptr< Card > Deck::draw_card()
 {
    sptr< Card > card = m_cards.back();
    m_cards.pop_back();
    return card;
 }
-sptr< Card > CardContainer::draw_by_index(size_t index)
+sptr< Card > Deck::draw_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
       std::stringstream msg;
@@ -106,7 +73,7 @@ sptr< Card > CardContainer::draw_by_index(size_t index)
    m_cards.erase(pos);
    return popped_card;
 }
-std::set< Region > CardContainer::identify_regions(const CardContainer::ContainerType& container)
+std::set< Region > Deck::identify_regions(const Deck::ContainerType& container)
 {
    std::set< Region > rs;
    for(const auto& cptr : container) {
@@ -114,7 +81,29 @@ std::set< Region > CardContainer::identify_regions(const CardContainer::Containe
    }
    return rs;
 }
-std::set< Region > CardContainer::identify_regions(std::initializer_list< value_type > cards)
+std::set< Region > Deck::identify_regions(std::initializer_list< value_type > cards)
 {
    return identify_regions(ContainerType(cards));
+}
+
+template < class RNG >
+sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
+{
+   auto indices = _find_indices(
+      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
+   shuffle(rng);
+   return draw_by_index(indices[0]);
+}
+
+template < typename RNG >
+void Deck::shuffle_into(const sptr< Card >& card, size_t top_n, RNG&& rng)
+{
+   auto deck_size = m_cards.size();
+   if(top_n > deck_size) {
+      top_n = deck_size;
+   }
+   auto max = std::min(top_n, deck_size);
+   std::uniform_int_distribution< size_t > dist(0, max);
+   auto pos = m_cards.begin() + (deck_size - dist(std::forward<RNG>(rng)));
+   m_cards.insert(pos, card);
 }

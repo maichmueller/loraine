@@ -14,7 +14,7 @@ bool Spell::check_cast_condition(const State& state) const
 }
 bool Spell::_check_cast_condition(const State& state) const
 {
-   const auto& effects = effects(events::EventType::CAST);
+   const auto& effects = effects(events::EventLabel::CAST);
    // if any effect of the floating is castable, then the card can be casted.
    return std::any_of(effects.begin(), effects.end(), [&](const auto& effect) {
      return effect.check_condition(state);

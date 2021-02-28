@@ -68,8 +68,6 @@ class Unit: public FieldCard {
       m_unit_mutables.damage -= std::min(m_unit_mutables.damage, amount);
    }
 
-   [[nodiscard]] bool is_unit() const override { return true; }
-
    Unit(
       ConstState const_state,
       MutableState mutable_state,

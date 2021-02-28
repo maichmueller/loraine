@@ -7,6 +7,7 @@
 
 #include <array>
 
+#include "action_handler.h"
 #include "events/event.h"
 #include "events/event_types.h"
 
@@ -16,27 +17,28 @@ class Action;
 
 class Logic {
   public:
-   Logic() : m_state(nullptr) {}
-   explicit Logic(State& state) : m_state(&state) {}
+   explicit Logic(uptr< ActionHandler > act_handler = std::make_unique< MulliganModeHandler >())
+       : m_action_handler(std::move(act_handler)){};
 
-   Logic(const Logic& l) = default;
+   Logic(const Logic& l) = delete;
    Logic(Logic&& l) noexcept = default;
    Logic& operator=(Logic&& rhs) = default;
-   Logic& operator=(const Logic& rhs) = default;
+   Logic& operator=(const Logic& rhs) = delete;
    virtual ~Logic() = default;
 
    void state(State& state) { m_state = &state; }
    auto state() { return m_state; }
 
-   // methods to handle in the specific logic mode on the state.
-   virtual void handle(const sptr< Action >& action) = 0;
-
-   virtual bool is_valid(const sptr< Action >& action) = 0;
-
+   virtual void start_game(State& state);
    virtual void start_round(State& state);
    virtual void end_round(State& state);
 
    // Beginning of LoR logic implementations
+
+   // methods to handle in the specific action handler mode of the state.
+   void handle(const sptr< Action >& action) { m_action_handler->handle(action); }
+   bool is_valid(const sptr< Action >& action) { return m_action_handler->is_valid(action); }
+
    /**
     * Play a fieldcard onto the board
     * @param card: shared_ptr<Card>,
@@ -149,29 +151,24 @@ class Logic {
     * The optional team parameter decides whose cards are to be filtered. If
     * left as empty, then both teams' cards are filtered
     */
-   std::vector< Target > filter_targets_bf(
-      const Filter& filter, std::optional< Team > opt_team);
+   std::vector< Target > filter_targets_bf(const Filter& filter, std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_camp(
-      const Filter& filter, std::optional< Team > opt_team);
+   std::vector< Target > filter_targets_camp(const Filter& filter, std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_board(
-      const Filter& filter, std::optional< Team > opt_team);
+   std::vector< Target > filter_targets_board(const Filter& filter, std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_hand(
-      const Filter& filter, std::optional< Team > opt_team);
+   std::vector< Target > filter_targets_hand(const Filter& filter, std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_deck(
-      const Filter& filter, std::optional< Team > opt_team);
+   std::vector< Target > filter_targets_deck(const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_everywhere(
       const Filter& filter, std::optional< Team > opt_team);
 
    /*
-    * An api for triggering an events mainly externally. Which events is supposed to be triggered
+    * An api for triggering an event externally. Which events is supposed to be triggered
     * needs to be known at compile time.
     */
-   template < events::EventType event_type, typename... Params >
+   template < events::EventLabel event_type, typename... Params >
    constexpr inline void trigger_event(Params... params);
 
    template < Location range >
@@ -185,7 +182,7 @@ class Logic {
 
    // inline methods
 
-   void shuffle_card_into_deck(const sptr< Card >& card, Team team);
+   void shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n);
    inline void obliterate(const sptr< Card >& card)
    {
       uncover_card(card);
@@ -194,44 +191,45 @@ class Logic {
 
    static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
    [[nodiscard]] bool check_daybreak(Team team) const;
-
    [[nodiscard]] bool check_nightfall(Team team) const;
-  private:
+   [[nodiscard]] bool check_status();
 
-   State* m_state;
+   /// The member declarations
+  private:
+   /// the associated state ptr, to be set in a delayed manner after state construction
+   State* m_state = nullptr;
+   /// the current action handler for incoming actions
+   std::unique_ptr< ActionHandler > m_action_handler;
+
+   /// private logic helpers
+  private:
    void _move_units(const std::vector< size_t >& positions, Team team, bool to_bf);
    void _move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf);
+
    bool _move_spell(const sptr< Spell >& spell, bool to_stack);
 
    void _mulligan(
-      State& state,
-      const std::vector< sptr< Card > >& hand_blue,
-      const std::vector< sptr< Card > >& hand_red);
-
+      const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);
 
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
-   void _cast_spellstack(State& state);
-
+   void _cast_spellstack();
    void _activate_battlemode(Team attack_team);
-   void _deactivate_battlemode(State& state);
+
+   void _deactivate_battlemode();
 
    void _remove(const sptr< Card >& card);
+   void _resolve_battle();
 
-   void _resolve_battle(State& state);
    void _resolve_spell_stack(bool burst);
-
    void _check_enlightenment(Team team);
    void _play_event_triggers(const sptr< Card >& card, const Team& team);
    void _copy_grants(
-      State& state,
-      const std::vector< sptr< Grant > >& grants,
-      const std::shared_ptr< Unit >& unit);
+      const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit);
 };
 
 template < Location range >
-std::vector< Target > Logic::filter_targets(
-   const Filter& filter, std::optional< Team > opt_team)
+std::vector< Target > Logic::filter_targets(const Filter& filter, std::optional< Team > opt_team)
 {
    if constexpr(range == Location::BATTLEFIELD) {
       return filter_targets_bf(filter, opt_team);
@@ -247,23 +245,6 @@ std::vector< Target > Logic::filter_targets(
       return filter_targets_everywhere(filter, opt_team);
    }
 }
-
-class DefaultModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class CombatModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class TargetModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
-class MulliganModeLogic: public Logic {
-   void handle(const sptr< Action >& action) override;
-   bool is_valid(const sptr< Action >& action) override;
-};
 
 #include "state.h"
 
@@ -293,10 +274,10 @@ void Logic::clamp_mana()
       }
    }
 }
-template < events::EventType event_type, typename... Params >
+template < events::EventLabel event_type, typename... Params >
 constexpr void Logic::trigger_event(Params... params)
 {
-   m_state->events()[static_cast<size_t>(event_type)]->trigger
+   m_state->events()[static_cast< size_t >(event_type)]->trigger
 }
 
 #endif  // LORAINE_LOGIC_H

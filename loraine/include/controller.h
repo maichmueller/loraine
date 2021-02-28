@@ -12,7 +12,7 @@ class Card;
 class State;
 
 class Controller {
-   const UUID m_uuid = new_uuid();
+   const UUID m_uuid = utils::new_uuid();
 
   public:
    Controller() = default;

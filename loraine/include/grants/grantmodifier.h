@@ -14,7 +14,7 @@
 class GrantModifier {
   public:
    explicit GrantModifier(std::function< bool(Grant&) > filter = [](Grant& /*g*/) { return true; })
-       : m_filter(std::move(filter)), m_uuid(new_uuid()){};
+       : m_filter(std::move(filter)), m_uuid(utils::new_uuid()){};
 
    void operator()(Grant& g)
    {

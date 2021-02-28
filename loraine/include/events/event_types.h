@@ -5,7 +5,7 @@
 
 namespace events {
 
-enum class EventType {
+enum class EventLabel {
    ATTACK = 0,  // declaring attacker
    BEHOLD,  // the team has an 8+ mana common in hand or in play
    CAPTURE,  // A common has captured another common
@@ -35,7 +35,12 @@ enum class EventType {
    COUNTER
 };
 
-constexpr const size_t n_events = static_cast< size_t >(EventType::COUNTER) + 1;
+template <events::EventLabel event_type>
+struct EventLabelType {
+   events::EventLabel value = event_type;
+};
+
+constexpr const size_t n_events = static_cast< size_t >(EventLabel::COUNTER) + 1;
 
 }  // namespace lor_events
 

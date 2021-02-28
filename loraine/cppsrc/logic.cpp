@@ -2,6 +2,29 @@
 
 #include "engine/state.h"
 
+void Logic::check_status()
+{
+   auto& cfg = m_state->config();
+   auto nexus_health = {m_state->player(Team::BLUE), m_state->player(Team::RED)};
+   if(m_state->round() > cfg.MAX_ROUNDS) {
+      m_state->m_status = Status::TIE;
+   }
+   if(m_nexus_health[BLUE] < 1) {
+      if(m_nexus_health[RED] < 1) {
+         m_terminal = Status::TIE;
+      }
+      m_terminal = Status::RED_WINS_NEXUS;
+   }
+   if(m_nexus_health[RED] < 1) {
+      if(m_nexus_health[BLUE] < 1) {
+         m_terminal = Status::TIE;
+      }
+      m_terminal = BLUE_WINS_NEXUS;
+   }
+   m_terminal = Status::ONGOING;
+   m_terminal_checked = true;
+}
+
 void Logic::damage_nexus(size_t amount, Team team)
 {
    m_state->nexus_health(team) -= amount;
@@ -31,12 +54,9 @@ auto Logic::is_enlightened(Team team) const
    return m_state->managems(team) == m_state->config().MAX_MANA;
 }
 
-void Logic::shuffle_card_into_deck(const sptr< Card >& card, Team team)
+void Logic::shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n)
 {
-   auto& deck = m_state->deck(team);
-   std::uniform_int_distribution< size_t > dist(0, deck.size());
-   auto pos = deck.begin() + static_cast< long >(dist(rng::engine()));
-   deck.insert(pos, card);
+   m_state->player(team).deck()->shuffle_into(card, top_n, m_state->rng());
 }
 
 void Logic::_move_units(const std::vector< size_t >& positions, Team team, bool to_bf)
@@ -110,7 +130,7 @@ bool Logic::_move_spell(const sptr< Spell >& spell, bool to_stack)
 {
    Team team = spell->mutables().owner;
    auto hand = m_state->hand(team);
-   auto& cast_effects = spell->effects(events::EventType::CAST);
+   auto& cast_effects = spell->effects(events::EventLabel::CAST);
    if(to_stack) {
       hand.erase(std::find(hand.begin(), hand.end(), spell));
       auto& spell_pre_stack = m_state->spell_prestack();
@@ -247,7 +267,7 @@ bool Logic::_do_action(const sptr< Action >& action)
          default: break;
       }
    }
-   m_state->commit_to_history(action);
+   m_state->commit_to_history(action, BLUE);
    return flip_initiative;
 }
 void Logic::_activate_battlemode(Team attack_team)
@@ -462,7 +482,7 @@ void Logic::_mulligan(
       auto hand_size = curr_hand.size();
       for(auto i = 0U; i < hand_size; ++i) {
          if(replace_for_p.at(i)) {
-            shuffle_card_into_deck(curr_hand.at(i), Team(p));
+            shuffle_card_into_deck(curr_hand.at(i), Team(p), 0);
             nr_cards_to_replace += 1;
          }
       }
@@ -630,10 +650,10 @@ void Logic::play(const sptr< Card >& card, std::optional< size_t > replaces)
 }
 void Logic::_play_event_triggers(const sptr< Card >& card, const Team& team)
 {
-   if(card->has_effect(events::EventType::DAYBREAK) && check_daybreak(team)) {
+   if(card->has_effect(events::EventLabel::DAYBREAK) && check_daybreak(team)) {
       _trigger_event(events::DaybreakEvent(team, card));
    }
-   if(card->has_effect(events::EventType::NIGHTFALL) && check_nightfall(team)) {
+   if(card->has_effect(events::EventLabel::NIGHTFALL) && check_nightfall(team)) {
       _trigger_event(events::NightfallEvent(team, card));
    }
    _trigger_event(events::PlayEvent(team, card));
@@ -644,13 +664,13 @@ void Logic::cast(const sptr< Spell >& spell)
 }
 void Logic::process_camp_queue(Team team)
 {
-   // the logic of LOR for deciding how many units in the queue fit into the
+   // the logic of LOR for deciding how many units in the m_queue fit into the
    // camp goes by 2 different modes:
    // 1) default play mode, and
    // 2) battle resolution mode
 
    // In 1) the card will be obliterated, if there is no space currently on the board left,
-   // after having considered all previous units in the queue. Otherwise, it is placed
+   // after having considered all previous units in the m_queue. Otherwise, it is placed
    // in the camp. When a common is summoned when attack is declared (e.g. Kalista summoning
    // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
    // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
@@ -875,7 +895,7 @@ bool Logic::check_daybreak(Team team) const
 }
 bool Logic::check_nightfall(Team team) const
 {
-   const auto& history = m_state->history()->at(team).at(m_state->round());
+   const auto& history = m_state->history(team)->at(m_state->round());
    // if any play action is found in the current history (actions are committed to history only
    // after having been processed), then nightfall is happening.
    return std::find_if(

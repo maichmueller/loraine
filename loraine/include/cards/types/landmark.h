@@ -9,8 +9,6 @@ class Landmark: public FieldCard {
    // use base class constructors
    using FieldCard::FieldCard;
 
-   [[nodiscard]] bool is_landmark() const override { return true; }
-   [[nodiscard]] bool is_unit() const override { return false; }
 };
 
 inline sptr< Landmark > to_landmark(const sptr< Card >& card)

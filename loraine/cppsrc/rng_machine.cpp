@@ -1,3 +1,3 @@
-#include "rng_machine.h"
+#include "rng.h"
 
-std::mt19937_64 rng::rng_default_engine{std::random_device()()};
+std::mt19937_64

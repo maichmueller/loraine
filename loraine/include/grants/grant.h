@@ -36,7 +36,7 @@ class Grant {
       bool permanent);
 
    Grant(const Grant& grant)
-       : m_grant_type(grant.get_grant_type()), m_permanent(grant.is_permanent()), m_uuid(new_uuid())
+       : m_grant_type(grant.get_grant_type()), m_permanent(grant.is_permanent()), m_uuid(utils::new_uuid())
    {
    }
    Grant(Grant&& grant) = default;
@@ -133,7 +133,7 @@ class EffectGrant: public Grant {
       const sptr< Card >& bestowed_card,
       bool permanent,
       sptr<EffectBase> effect,
-      events::EventType event_type);
+      events::EventLabel event_type);
 
    void _undo() override
    {
@@ -146,7 +146,7 @@ class EffectGrant: public Grant {
       get_bestowed_card()->add_effect(m_event_type, m_effect);
    }
 
-   void set_event_type(events::EventType e_type) { m_event_type = e_type; }
+   void set_event_type(events::EventLabel e_type) { m_event_type = e_type; }
    void set_effect(sptr<EffectBase> effect) { m_effect = std::move(effect); }
 
    [[nodiscard]] inline auto get_effect() const { return m_effect; }
@@ -154,7 +154,7 @@ class EffectGrant: public Grant {
 
   private:
    sptr<EffectBase> m_effect;
-   events::EventType m_event_type;
+   events::EventLabel m_event_type;
 };
 
 #endif  // LORAINE_GRANT_H
