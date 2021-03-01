@@ -36,7 +36,7 @@ class EventBase {
 template < typename Subscriber >
 using sub_pair = std::pair< Subscriber*, size_t >;
 template < typename Subscriber >
-using container_type = std::vector< Subscriber >;
+using container_type = std::vector< sub_pair<Subscriber> >;
 
 // 'greater' lets the prio queue choose the 'smallest' next element
 template < typename Subscriber >
@@ -48,7 +48,6 @@ class SubscriberQueue:
        sub_pair< Subscriber >,
        container_type< Subscriber >,
        comparator< Subscriber > > {
-   static_assert(Subscriber::uuid);
 
   public:
    using base = std::priority_queue<
