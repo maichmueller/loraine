@@ -16,11 +16,39 @@
 #include "utils/types.h"
 #include "utils/utils.h"
 
-template < typename... Args >
-class Effect;
 class State;
 
-// an event holds a vector of sub_queue
+/**
+ * The EventCallInterface is a helper struct designed to bring the specific event_call overload
+ * to any inheriting class that listens to the specific events. This allows to export a
+ * minimal interface.
+ * @tparam FirstEvent
+ * @tparam RestEvents
+ */
+template < typename FirstEvent, typename... RestEvents >
+struct EventCallInterface: public EventCallInterface< RestEvents... > {
+   /**
+    * The call to trigger the effect's changes on the status. Calls internally the private function
+    * `_event_call`.
+    * @param state State,
+    *   the state of the associated game
+    * @param args Parameter-Pack,
+    *   the specific arguments of the subscribed to event
+    */
+   virtual void event_call(State& state, typename FirstEvent::SignatureTuple&& arg_tuple) = 0;
+};
+/**
+ * Single Event deduction end. Any combination of ListenerTypes, such as Listener<AttackEvent,
+ * DamageEvent>, will inherit from each individual call pattern and thus be eligible as subscriber
+ * of the individual events.
+ * @tparam Event
+ */
+template < typename Event >
+struct EventCallInterface< Event > {
+   virtual void event_call(State& state, typename Event::SignatureTuple&& arg_tuple) = 0;
+};
+
+// an event holds a vector of subs
 // when it fires, each is called
 
 // our Listener will derive from EventListener<Listener>
@@ -33,145 +61,38 @@ class EventBase {
 };
 
 
-template < typename Subscriber >
-using sub_pair = std::pair< Subscriber*, size_t >;
-template < typename Subscriber >
-using container_type = std::vector< sub_pair<Subscriber> >;
-
-// 'greater' lets the prio queue choose the 'smallest' next element
-template < typename Subscriber >
-using comparator = std::greater< utils::getter_t< 1, sub_pair< Subscriber > > >;
-
-template < typename Subscriber >
-class SubscriberQueue:
-    public std::priority_queue<
-       sub_pair< Subscriber >,
-       container_type< Subscriber >,
-       comparator< Subscriber > > {
-
+template < class EventT, class... Args >
+class Event: public EventBase {
   public:
-   using base = std::priority_queue<
-      sub_pair< Subscriber >,
-      std::vector< sub_pair< Subscriber > >,
-      comparator< Subscriber > >;
-   using value_type = typename base::value_type;
-   using container_type = typename base::container_type;
-   /**
-    * Find the subscriber in the underlying container and return an iterator to it.
-    * @param sub Subscriber*,
-    *    the subscriber to search
-    * @return container_type::iterator,
-    *    the iterator pointing to the found element or the container's end position if not.
-    */
-   typename container_type::iterator find(Subscriber* sub)
-   {
-      return std::find_if(base::c.begin(), base::c.end(), [&](const value_type& entry) {
-         return _extract_sub(entry) == sub;
-      });
-   }
-   /**
-    * Find the uuid of the subscriber and return an iterator to it.
-    * @param sub Subscriber*,
-    *    the subscriber to search
-    * @return std::unordered_set<UUID>::iterator,
-    *    the iterator pointing to the UUID of the found element or the container's end position if
-    *    not.
-    */
-   typename std::unordered_set< UUID >::iterator find_id(Subscriber* sub)
-   {
-      return std::find(m_seen.begin(), m_seen.end(), sub->uuid());
-   }
-   inline void erase(typename container_type::iterator pos) { base::c.erase(pos); }
-   inline void erase(Subscriber* sub)
-   {
-      erase(find(sub));
-      m_seen.erase(sub->uuid());
-   }
-   /**
-    * @brief Updates a subscriber's priority
-    *
-    * if the subscriber is currently subscribed, then its priority is reset to the given value.
-    * Otherwise, nothing is done.
-    */
-   inline void update(Subscriber* sub, size_t priority)
-   {
-      if(find_id(sub) == m_seen.end()) {
-         // the sub is NOT subscribed
-         return;
-      }
-      // erase the old priority entry
-      base::c.erase(find(sub));
-      // emplace the sub anew with the new priority
-      emplace(sub, priority);
-   }
-
-   void push(const value_type& value)
-   {
-      base::push_back(value);
-      _emplace_id(value);
-   }
-
-   void push(value_type&& value)
-   {
-      _emplace_id(value);
-      base::push_back(std::move(value));
-   }
-
-   auto emplace(value_type&& val)
-   {
-      _emplace_id(val);
-      base::emplace(std::move(val));
-   }
-   void pop()
-   {
-      auto to_pop_elem = base::top();
-      _erase_id(to_pop_elem);
-      base::pop();
-   }
+   using SignatureTuple = std::tuple< EventT&, Args... >;
+   // classes inheriting from effectcallhelper are the actual listeners,
+   // but we only need the crude interface
+   using Subscriber = EventCallInterface< Event< EventT, Args... > >;
 
   private:
-   std::unordered_set< UUID > m_seen;
-
-   auto _extract_sub(const value_type& value) { return std::get< 0 >(value); }
-   void _emplace_id(const Subscriber* sub) { m_seen.emplace(sub->uuid()); }
-   void _erase_id(const Subscriber& sub) { m_seen.erase(sub->uuid()); }
-   void _emplace_id(const value_type& value) { _emplace_id(_extract_sub(value)); }
-   void _erase_id(const value_type& value) { _erase_id(_extract_sub(value)); }
-};
-
-
-template < class Derived, class EventT, class... Args >
-class Event: public EventBase, public utils::CRTP< Event, Derived, Args... > {
-  public:
-   using SignatureTuple = std::tuple< Args... >;
-   using Subscriber = Effect< Args... >;
-
-  private:
-   SubscriberQueue<Subscriber> sub_queue;
+   std::vector< Subscriber* > subs;
+   EventT event_ref;
 
   protected:
    void _notify(Subscriber* subscriber, State& state, Args... args)
    {
-      subscriber->event_call(state, args...);
+      // passing in the event_ref is needed to distinguish among the event_call overloads
+      subscriber->event_call(state, SignatureTuple(event_ref, args...));
    }
 
   public:
-   constexpr static EventT event_type() { return EventT::value; };
-   const auto& subscribers() const { return sub_queue; }
+   constexpr static auto event_type() {return EventT::value;}
+   const auto& subscribers() const { return subs; }
 
    virtual void trigger(State& state, Args... args)
    {
-      for(auto& sub : sub_queue) {
+      for(auto& sub : subs) {
          _notify(sub, state, args...);
       }
    }
-   void subscribe(Subscriber* t) { sub_queue.push_back(t); }
+   void subscribe(Subscriber* t) { subs.push({t, 1}); }
 
-   void unsubscribe(void* t) final
-   {
-      sub_queue.erase(static_cast< Subscriber* >(t));
-   }
-
+   void unsubscribe(void* t) final { subs.erase(static_cast< Subscriber* >(t)); }
 };
 
 #endif  // LORAINE_EVENT_H

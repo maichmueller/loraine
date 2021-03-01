@@ -12,14 +12,14 @@ class State;
 
 namespace events {
 
-class AttackEvent: public Event< AttackEvent, EventLabelType< EventLabel::ATTACK >, Team > {
+class AttackEvent: public Event< EventLabelType< EventLabel::ATTACK >, Team > {
 };
 /*
  * 1st Arg: Card& = Card which triggers the behold effect.
  */
-class BeholdEvent: public Event< BeholdEvent, EventLabelType< EventLabel::BEHOLD >, Team, Card& > {
+class BeholdEvent: public Event< EventLabelType< EventLabel::BEHOLD >, Team, Card& > {
 };
-class BlockEvent: public Event< BlockEvent, EventLabelType< EventLabel::BLOCK >, Team > {
+class BlockEvent: public Event< EventLabelType< EventLabel::BLOCK >, Team > {
 };
 /*
  * 1st Arg: Card& = Card which triggered the capture
@@ -27,53 +27,42 @@ class BlockEvent: public Event< BlockEvent, EventLabelType< EventLabel::BLOCK >,
  * 3rd Arg: Target = Captee
  */
 class CaptureEvent:
-    public Event<
-       CaptureEvent,
-       EventLabelType< EventLabel::CAPTURE >,
-       Team,
-       Card&,
-       Target,
-       Target > {
+    public Event< EventLabelType< EventLabel::CAPTURE >, Team, Card&, Target, Target > {
 };
 /*
  * 1st Arg: Card& = The casted floating
  */
-class CastEvent: public Event< CastEvent, EventLabelType< EventLabel::CAST >, Team, Card& > {
+class CastEvent: public Event< EventLabelType< EventLabel::CAST >, Team, Card& > {
 };
 /*
  * 1st ARg: Card&: The daybreak causing card
  */
-class DaybreakEvent:
-    public Event< DaybreakEvent, EventLabelType< EventLabel::DAYBREAK >, Team, Card& > {
+class DaybreakEvent: public Event< EventLabelType< EventLabel::DAYBREAK >, Team, Card& > {
 };
 /*
  * 1st Arg: Card& = The killing card
  * 2nd Arg: Target = The killed card
  */
-class DieEvent: public Event< DieEvent, EventLabelType< EventLabel::DIE >, Team, Card&, Target > {
+class DieEvent: public Event< EventLabelType< EventLabel::DIE >, Team, Card&, Target > {
 };
 /*
  * 1st Arg: Card& = The discard reason
  * 2nd Arg: Card& = The discarded card
  */
-class DiscardEvent:
-    public Event< DiscardEvent, EventLabelType< EventLabel::DISCARD >, Team, Card&, Card& > {
+class DiscardEvent: public Event< EventLabelType< EventLabel::DISCARD >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: Card& = The drawn card
  */
-class DrawCardEvent:
-    public Event< DrawCardEvent, EventLabelType< EventLabel::DRAW_CARD >, Team, Card& > {
+class DrawCardEvent: public Event< EventLabelType< EventLabel::DRAW_CARD >, Team, Card& > {
 };
 
-class EnlightenmentEvent:
-    public Event< EnlightenmentEvent, EventLabelType< EventLabel::ENLIGHTENMENT >, Team > {
+class EnlightenmentEvent: public Event< EventLabelType< EventLabel::ENLIGHTENMENT >, Team > {
 };
 /*
  * 1st Arg: long = The amount of gems gained
  */
-class GainManagemEvent:
-    public Event< GainManagemEvent, EventLabelType< EventLabel::GAIN_MANAGEM >, Team, long > {
+class GainManagemEvent: public Event< EventLabelType< EventLabel::GAIN_MANAGEM >, Team, long > {
 };
 /*
  * 1st Arg: Card& = The healing card
@@ -81,97 +70,77 @@ class GainManagemEvent:
  * 3rd Arg: long = The amount healed
  */
 class HealUnitEvent:
-    public Event<
-       HealUnitEvent,
-       EventLabelType< EventLabel::HEAL_UNIT >,
-       Team,
-       Card&,
-       Card&,
-       long > {
+    public Event< EventLabelType< EventLabel::HEAL_UNIT >, Team, Card&, Card&, long > {
 };
 /*
  * 1st Arg: Card& = The leveling champion card
  */
-class LevelUpEvent:
-    public Event< LevelUpEvent, EventLabelType< EventLabel::LEVEL_UP >, Team, Card& > {
+class LevelUpEvent: public Event< EventLabelType< EventLabel::LEVEL_UP >, Team, Card& > {
 };
 /*
  * 1st Arg: Card& = Nexus striking common
  * 2nd Arg: long = The damage
  */
 class NexusStrikeEvent:
-    public Event<
-       NexusStrikeEvent,
-       EventLabelType< EventLabel::NEXUS_STRIKE >,
-       Team,
-       Card&,
-       long > {
+    public Event< EventLabelType< EventLabel::NEXUS_STRIKE >, Team, Card&, long > {
 };
 /*
  * 1st Arg: Card& = The nightfall causing card
  */
-class NightfallEvent:
-    public Event< NightfallEvent, EventLabelType< EventLabel::NIGHTFALL >, Team, Card& > {
+class NightfallEvent: public Event< EventLabelType< EventLabel::NIGHTFALL >, Team, Card& > {
 };
 /*
  * 1st Arg: Card& = The played card
  */
-class PlayEvent: public Event< PlayEvent, EventLabelType< EventLabel::ATTACK >, Team, Card* > {
-   void trigger(State& state, Team team, Card* played_card) override;
+class PlayEvent: public Event< EventLabelType< EventLabel::ATTACK >, Team, Card* > {
 };
 /*
  * 1st Arg: Card& = The recalling card
  * 2nd Arg: Card& = The recalled card
  */
-class RecallEvent:
-    public Event< RecallEvent, EventLabelType< EventLabel::RECALL >, Team, Card&, Card& > {
+class RecallEvent: public Event< EventLabelType< EventLabel::RECALL >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: long = The round number
  */
-class RoundEndEvent:
-    public Event< RoundEndEvent, EventLabelType< EventLabel::ROUND_END >, Team, long > {
+class RoundEndEvent: public Event< EventLabelType< EventLabel::ROUND_END >, Team, long > {
 };
 /*
  * 1st Arg: long = The round number
  */
-class RoundStartEvent:
-    public Event< RoundStartEvent, EventLabelType< EventLabel::ROUND_START >, Team, long > {
+class RoundStartEvent: public Event< EventLabelType< EventLabel::ROUND_START >, Team, long > {
 };
 
-class ScoutEvent: public Event< ScoutEvent, EventLabelType< EventLabel::SCOUT >, Team > {
+class ScoutEvent: public Event< EventLabelType< EventLabel::SCOUT >, Team > {
 };
 /*
  * 1st ARg: Card& = The striking common
  * 2nd Arg: Card& = The struck common
  */
-class StrikeEvent:
-    public Event< StrikeEvent, EventLabelType< EventLabel::STRIKE >, Team, Card&, Card& > {
+class StrikeEvent: public Event< EventLabelType< EventLabel::STRIKE >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: Card = The summoned card
  */
-class SummonEvent: public Event< SummonEvent, EventLabelType< EventLabel::SUMMON >, Team, Card& > {
+class SummonEvent: public Event< EventLabelType< EventLabel::SUMMON >, Team, Card& > {
 };
 /*
  * 1st Arg&: Card& = The stunning card
  * 2nd Arg: Card& = The stunned card
  */
-class StunEvent: public Event< StunEvent, EventLabelType< EventLabel::STUN >, Team, Card&, Card& > {
+class StunEvent: public Event< EventLabelType< EventLabel::STUN >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: Card& = The supporting card
  * 2nd Arg: Card& = The supported common
  */
-class SupportEvent:
-    public Event< SupportEvent, EventLabelType< EventLabel::SUPPORT >, Team, Card&, Card& > {
+class SupportEvent: public Event< EventLabelType< EventLabel::SUPPORT >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: Card& = The targeting card
  * 2nd Arg: Card& = The targeted card
  */
-class TargetEvent:
-    public Event< TargetEvent, EventLabelType< EventLabel::TARGET >, Team, Card&, Card& > {
+class TargetEvent: public Event< EventLabelType< EventLabel::TARGET >, Team, Card&, Card& > {
 };
 /*
  * 1st Arg: Card& = The damage causing card
@@ -179,13 +148,7 @@ class TargetEvent:
  * 3rd Arg: long = The damage amount
  */
 class UnitDamageEvent:
-    public Event<
-       UnitDamageEvent,
-       EventLabelType< EventLabel::UNIT_DAMAGE >,
-       Team,
-       Card&,
-       Card&,
-       long > {
+    public Event< EventLabelType< EventLabel::UNIT_DAMAGE >, Team, Card&, Card&, long > {
 };
 
 using LOREvent = std::variant<
