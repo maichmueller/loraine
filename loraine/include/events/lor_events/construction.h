@@ -2,8 +2,8 @@
 #ifndef LORAINE_CONSTRUCTION_H
 #define LORAINE_CONSTRUCTION_H
 
-#include "all_events.h"
 #include "cards/effect.h"
+#include "event_types.h"
 
 namespace events {
 template < EventLabel event_type >

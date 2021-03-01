@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_ALL_EVENTS_H
-#define LORAINE_ALL_EVENTS_H
+#ifndef LORAINE_EVENT_TYPES_H
+#define LORAINE_EVENT_TYPES_H
 
 #include <variant>
 
@@ -181,4 +181,4 @@ using LOREvent = std::variant<
 
 }  // namespace events
 
-#endif  // LORAINE_ALL_EVENTS_H
+#endif  // LORAINE_EVENT_TYPES_H

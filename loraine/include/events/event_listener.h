@@ -5,10 +5,9 @@
 #include <map>
 #include <vector>
 
-#include "events/event.h"
-#include "events/lor_events/all_events.h"
+#include "events/eventbase.h"
 #include "utils/types.h"
-
+#include "utils/utils.h"
 
 // derive the listener classes:
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
@@ -33,6 +32,5 @@ class EventListener: public utils::CRTP< EventListener, Derived > {
   private:
    std::vector< EventBase* > events{};
 };
-
 
 #endif  // LORAINE_EVENT_LISTENER_H

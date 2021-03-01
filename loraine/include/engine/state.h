@@ -12,7 +12,8 @@
 #include "action_handler.h"
 #include "board.h"
 #include "config.h"
-#include "events/event_listener.h"
+#include "events/eventbase.h"
+#include "events/event_labels.h"
 #include "gamedefs.h"
 #include "nexus.h"
 #include "player.h"
@@ -54,6 +55,7 @@ class State {
    inline void reset_attacker() { m_attacker.reset(); }
 
    [[nodiscard]] auto& config() const { return m_config; }
+   [[nodiscard]] auto& logic() const { return m_logic; }
    [[nodiscard]] inline auto starting_team() const { return m_starting_team; }
    [[nodiscard]] inline auto& player(Team team) { return m_players[team]; }
    [[nodiscard]] inline auto& player(Team team) const { return m_players[team]; }

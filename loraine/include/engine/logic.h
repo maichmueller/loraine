@@ -9,7 +9,7 @@
 
 #include "action_handler.h"
 #include "events/event.h"
-#include "events/event_types.h"
+#include "events/event_labels.h"
 
 // forward declare
 class State;
@@ -190,9 +190,9 @@ class Logic {
    }
 
    static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
+   bool check_status();
    [[nodiscard]] bool check_daybreak(Team team) const;
    [[nodiscard]] bool check_nightfall(Team team) const;
-   [[nodiscard]] bool check_status();
 
    /// The member declarations
   private:

@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "events/event.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 

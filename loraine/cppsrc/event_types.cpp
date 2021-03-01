@@ -1,5 +1,5 @@
 
-#include "events/lor_events/all_events.h"
+#include "events/lor_events/event_types.h"
+
 #include "cards/card.h"
 #include "cards/effect.h"
-

@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_EVENT_TYPES_H
-#define LORAINE_EVENT_TYPES_H
+#ifndef LORAINE_EVENT_LABELS_H
+#define LORAINE_EVENT_LABELS_H
 
 namespace events {
 
@@ -44,4 +44,4 @@ constexpr const size_t n_events = static_cast< size_t >(EventLabel::COUNTER) + 1
 
 }  // namespace lor_events
 
-#endif  // LORAINE_EVENT_TYPES_H
+#endif  // LORAINE_EVENT_LABELS_H

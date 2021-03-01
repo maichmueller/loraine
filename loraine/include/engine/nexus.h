@@ -7,7 +7,9 @@
 
 #include "cards/card_defs.h"
 #include "cards/effect.h"
+#include "events/eventbase.h"
 #include "events/event_listener.h"
+#include "events/event_labels.h"
 #include "gamedefs.h"
 
 class Nexus: public EventListener< Nexus > {

@@ -11,9 +11,9 @@
 
 #include "cards/card_defs.h"
 #include "cards/effect.h"
-#include "events/event.h"
+#include "events/eventbase.h"
 #include "events/event_listener.h"
-#include "events/event_types.h"
+#include "events/event_labels.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 

@@ -2,12 +2,9 @@
 #ifndef LORAINE_EFFECT_H
 #define LORAINE_EFFECT_H
 
-#include <any>
-#include <functional>
-#include <utility>
 
 #include "engine/gamedefs.h"
-#include "events/lor_events/all_events.h"
+#include "events/eventbase.h"
 #include "targeter.h"
 #include "utils/types.h"
 #include "utils/utils.h"
@@ -23,6 +20,12 @@ class EffectBase {
    virtual ~EffectBase() = default;
    virtual bool operator==(const EffectBase& other) = 0;
 };
+
+/**
+ * The Abstract base class for effects in the game. Any concrete effect implementation has to
+ * inherit from this base to be eligible as subscriber to the events in the game.
+ * @tparam Events
+ */
 
 template < typename... Events >
 class Effect:
@@ -87,6 +90,7 @@ bool Effect< Events... >::operator!=(const Effect& effect) const
 {
    return not (*this == effect);
 }
+
 
 
 #endif  // LORAINE_EFFECT_H
