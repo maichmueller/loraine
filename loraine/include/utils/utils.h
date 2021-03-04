@@ -52,6 +52,15 @@ struct getter {
 template < size_t N, typename T >
 using getter_t = getter< N, T >;
 
+//template < typename, typename = void >
+//struct has_sort_method: std::false_type {
+//};
+//
+//template < typename T >
+//struct has_sort_method< T, std::void_t< decltype(&T::sort_subscribers) > >:
+//   std::is_same< _sort_func_return_type, decltype(std::declval< T >().sort_subscribers()) > {
+//};
+
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)
 {

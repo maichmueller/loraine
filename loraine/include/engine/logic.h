@@ -8,11 +8,12 @@
 #include <array>
 
 #include "action_handler.h"
-#include "events/event.h"
+#include "cards/card.h"
+#include "engine/state.h"
+#include "events/eventbase.h"
 #include "events/event_labels.h"
 
 // forward declare
-class State;
 class Action;
 
 class Logic {
@@ -133,6 +134,14 @@ class Logic {
    bool pass();
 
    void reset_pass(Team team);
+
+   template < typename EventType, typename... Args >
+   auto sort_event_subscribers(
+      const std::vector< typename EventType::Subscribers* >& subs, Args... args)
+      -> std::vector< typename EventType::Subscriber* >
+   {
+      return subs;
+   }
 
    template < GrantType grant_type, typename... Params >
    inline void grant(
