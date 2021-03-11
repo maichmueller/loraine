@@ -1,3 +1,3 @@
-#include "rng.h"
+#include "random.h"
 
 std::mt19937_64

@@ -1,6 +1,6 @@
-#include "engine/logic.h"
+#include "core/logic.h"
 
-#include "engine/state.h"
+#include "core/state.h"
 
 void Logic::check_status()
 {
@@ -159,7 +159,7 @@ bool Logic::_move_spell(const sptr< Spell >& spell, bool to_stack)
 bool Logic::run_game()
 {
    // decide the team who starts attacking
-   Team starting_team = Team(std::uniform_int_distribution< size_t >(0, 1)(rng::engine()));
+   Team starting_team = Team(std::uniform_int_distribution< size_t >(0, 1)(random::engine()));
    m_state->starting_team(starting_team);
 
    // draw the starting cards for each team and let them _mulligan

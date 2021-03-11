@@ -5,7 +5,7 @@
 
 #include <utility>
 
-#include "engine/gamedefs.h"
+#include "core/gamedefs.h"
 #include "grants/grant.h"
 #include "utils/utils.h"
 

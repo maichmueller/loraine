@@ -1,11 +1,8 @@
-//
-// Created by michael on 30.05.20.
-//
 
 #ifndef LORAINE_DECK_H
 #define LORAINE_DECK_H
 
-#include <rng.h>
+#include <random.h>
 
 #include <functional>
 #include <map>

@@ -7,7 +7,7 @@
 #include <optional>
 #include <tuple>
 
-#include "rng.h"
+#include "random.h"
 #include "types.h"
 
 namespace utils {
@@ -52,12 +52,12 @@ struct getter {
 template < size_t N, typename T >
 using getter_t = getter< N, T >;
 
-//template < typename, typename = void >
-//struct has_sort_method: std::false_type {
+// template < typename, typename = void >
+// struct has_sort_method: std::false_type {
 //};
 //
-//template < typename T >
-//struct has_sort_method< T, std::void_t< decltype(&T::sort_subscribers) > >:
+// template < typename T >
+// struct has_sort_method< T, std::void_t< decltype(&T::sort_subscribers) > >:
 //   std::is_same< _sort_func_return_type, decltype(std::declval< T >().sort_subscribers()) > {
 //};
 
@@ -146,12 +146,6 @@ std::vector< T, Allocator >& operator+(
    return vec1;
 }
 
-template < typename Container, class RNG >
-void shuffle_inplace(Container& container, RNG&& rng)
-{
-   std::shuffle(container.begin(), container.end(), std::forward< RNG >(rng));
-}
-
 /*
  * Get the address of the function pointer.
  *
@@ -172,70 +166,15 @@ size_t get_address(std::function< ReturnType(Params...) > f)
  * Function to remove the const qualifier of a provided iterator
  *
  * The range-erase member functions have a pair of const_iterator parameters, but they return an
- * iterator. Because an empty range is provided, the call to erase does not change the contents of
- * the ContainerType.
+ * iterator. Because an empty range is provided, the call to erase does not change the contents
+ * of the ContainerType.
  */
 template < typename Container, typename ConstIterator >
 typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
-template < class RNG >
-inline bool bernoulli_sample(double p, RNG&& rng)
-{
-   std::bernoulli_distribution ber(p);
-   return ber(std::forward< RNG >(rng));
-}
 
-template <
-   class BiIter,
-   class RNG,
-   typename Distribution = std::uniform_int_distribution< uint64_t > >
-void shuffle_inplace_limited(
-   BiIter begin,
-   BiIter end,
-   size_t num_random,
-   RNG&& rng,
-   Distribution weight_dist = Distribution(0))
-{
-   // Fisher-Yates-shuffle
-   size_t N = std::distance(begin, end);
-   while(num_random--) {
-      BiIter r = begin;
-      std::advance(r, weight_dist(std::forward< RNG >(rng)) % N);
-      std::swap(*begin, *r);
-      ++begin;
-      --N;
-   }
-}
-
-template < typename T, typename Allocator >
-void choose_inplace(std::vector< T, Allocator >& vec, int n = 1)
-{
-   shuffle_inplace_limited(vec.begin(), vec.end(), n);
-}
-template < typename T, typename Allocator >
-void choose_inplace(std::vector< T, Allocator >& vec, std::vector< double > weights, int n = 1)
-{
-   shuffle_inplace_limited(
-      vec.begin(),
-      vec.end(),
-      n,
-      std::discrete_distribution< uint64_t >{weights.begin(), weights.end()});
-}
-template < typename T, typename Allocator, class RNG >
-T choose(const std::vector< T, Allocator >& vec, RNG&& rng, int n = 1)
-{
-   std::vector< size_t > indices(vec.size());
-   std::iota(indices.begin(), indices.end(), 0);
-   shuffle_inplace_limited(indices.begin(), indices.end(), n, std::forward< RNG >(rng));
-   std::vector< T, Allocator > out;
-   out.reserve(n);
-   for(auto idx : indices) {
-      out.emplace_back(vec[idx]);
-   }
-   return out;
-}
 
 }  // namespace utils
 

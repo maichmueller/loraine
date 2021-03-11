@@ -2,8 +2,8 @@
 #ifndef LORAINE_CONTROLLER_H
 #define LORAINE_CONTROLLER_H
 
-#include "engine/action.h"
-#include "engine/gamedefs.h"
+#include "core/action.h"
+#include "core/gamedefs.h"
 #include "utils/types.h"
 
 class Target;

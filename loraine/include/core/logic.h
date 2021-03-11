@@ -9,7 +9,7 @@
 
 #include "action_handler.h"
 #include "cards/card.h"
-#include "engine/state.h"
+#include "core/state.h"
 #include "events/eventbase.h"
 #include "events/event_labels.h"
 

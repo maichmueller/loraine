@@ -1,5 +1,5 @@
 
-#include "engine/nexus.h"
+#include "core/nexus.h"
 
 bool Nexus::has_effect(events::EventLabel e_type, const EffectBase& effect) const
 {

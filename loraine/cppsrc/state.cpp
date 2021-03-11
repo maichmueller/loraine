@@ -1,11 +1,11 @@
 
 
-#include "engine/state.h"
+#include "core/state.h"
 
 #include <algorithms.h>
 
-#include "engine/action.h"
-#include "engine/logic.h"
+#include "core/action.h"
+#include "core/logic.h"
 #include "events/lor_events/construction.h"
 
 void State::commit_to_history(sptr< Action > action, Team team)
@@ -42,28 +42,41 @@ State::State(
    SymArr< Deck > decks,
    SymArr< sptr< Controller > > players,
    Team starting_team,
-   rng::rng_type rng)
-    : m_config(cfg),
-      m_players(
-         {Player(
-             Team(0),
-             Nexus(
-                Team(0), cfg.START_NEXUS_HEALTH, cfg.PASSIVE_POWERS_BLUE, cfg.NEXUS_KEYWORDS_BLUE),
-             decks[0],
-             std::move(players[0])),
-          Player(
-             Team(1),
-             Nexus(Team(1), cfg.START_NEXUS_HEALTH, cfg.PASSIVE_POWERS_RED, cfg.NEXUS_KEYWORDS_RED),
-             decks[1],
-             std::move(players[1]))}),
-      m_starting_team(starting_team),
-      m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
-      m_logic(std::make_shared< Logic>()),
-      m_attacker(starting_team),
-      m_events(_init_events()),
-      m_turn(starting_team),
-      m_spell_stack(),
-      m_spell_prestack(),
-      m_rng(rng)
+   random::rng_type rng)
+   : m_config(cfg),
+     m_players(
+        {Player(
+           Team(0),
+           Nexus(
+              Team(0), cfg.START_NEXUS_HEALTH, cfg.PASSIVE_POWERS_BLUE, cfg.NEXUS_KEYWORDS_BLUE),
+           decks[0],
+           std::move(players[0])),
+         Player(
+            Team(1),
+            Nexus(Team(1), cfg.START_NEXUS_HEALTH, cfg.PASSIVE_POWERS_RED, cfg.NEXUS_KEYWORDS_RED),
+            decks[1],
+            std::move(players[1]))}),
+     m_starting_team(starting_team),
+     m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
+     m_logic(std::make_shared< Logic>()),
+     m_attacker(starting_team),
+     m_events(_init_events()),
+     m_turn(starting_team),
+     m_spell_stack(),
+     m_spell_prestack(),
+     m_rng(rng)
+{
+}
+Team State::_random_team(random::rng_type& rng)
+{
+   return Team(std::uniform_int_distribution(0, 1)(rng));
+}
+
+State::State(
+   const Config& cfg,
+   SymArr< Deck > decks,
+   SymArr< sptr< Controller > > players,
+   random::rng_type rng)
+   : State(cfg, std::move(decks), std::move(players), _random_team(rng), rng)
 {
 }

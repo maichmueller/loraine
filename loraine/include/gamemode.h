@@ -9,9 +9,9 @@
 
 #include "cards/card.h"
 #include "controller.h"
-#include "engine/config.h"
-#include "engine/gamedefs.h"
-#include "engine/state.h"
+#include "core/config.h"
+#include "core/gamedefs.h"
+#include "core/state.h"
 #include "filters/filter.h"
 #include "grants/grant.h"
 #include "grants/grantfactory.h"
@@ -22,8 +22,8 @@ class GameMode {
 
    bool run_game();
 
-   GameMode(sptr< State > state)
-       : m_state(std::move(state))
+   GameMode(Config cfg, SymArr<const char*> decks)
+       : m_state(std::move(std::make_shared<State>()))
    {
    }
 

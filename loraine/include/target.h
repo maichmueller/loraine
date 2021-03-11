@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include "engine/gamedefs.h"
+#include "core/gamedefs.h"
 #include "utils/types.h"
 
 class Card;

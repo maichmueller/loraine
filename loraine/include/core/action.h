@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "engine/gamedefs.h"
+#include "core/gamedefs.h"
 #include "utils/types.h"
 
 enum class ActionType {

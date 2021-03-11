@@ -10,7 +10,7 @@
 #include <variant>
 #include <vector>
 
-#include "engine/gamedefs.h"
+#include "core/gamedefs.h"
 #include "event_labels.h"
 #include "eventbase.h"
 #include "target.h"
@@ -32,6 +32,9 @@ class Event: public EventBase {
   private:
    SubVector subs;
    EventT event_ref;
+
+
+   /// SFINAE to check whether the Derived Event has an 'order' method of correct signature.
 
    template < class, class = void >
    struct has_order_method: std::false_type {
@@ -71,7 +74,7 @@ class Event: public EventBase {
       }
    }
 
-   void subscribe(Subscriber* t) { subs.push({t, 1}); }
+   void subscribe(Subscriber* t) { subs.emplace_back(t); }
 
    void unsubscribe(void* t) final { subs.erase(static_cast< Subscriber* >(t)); }
 };

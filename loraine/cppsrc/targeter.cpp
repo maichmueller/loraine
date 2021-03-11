@@ -2,7 +2,7 @@
 #include "targeter.h"
 
 #include "controller.h"
-#include "engine/state.h"
+#include "core/state.h"
 
 std::vector< Target > EnemyCampManTargeter::_target(
    const State& state, Team acting_team)

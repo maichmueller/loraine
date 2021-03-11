@@ -12,13 +12,13 @@
 #include "action_handler.h"
 #include "board.h"
 #include "config.h"
-#include "events/eventbase.h"
 #include "events/event_labels.h"
+#include "events/eventbase.h"
 #include "gamedefs.h"
 #include "nexus.h"
 #include "player.h"
+#include "random.h"
 #include "record.h"
-#include "rng.h"
 #include "utils/types.h"
 
 class Card;
@@ -37,7 +37,13 @@ class State {
       SymArr< Deck > decks,
       SymArr< sptr< Controller > > players,
       Team starting_team,
-      rng::rng_type rng = rng::create());
+      random::rng_type rng = random::create());
+
+   State(
+      const Config& cfg,
+      SymArr< Deck > decks,
+      SymArr< sptr< Controller > > players,
+      random::rng_type rng = random::create());
 
    auto& events() { return m_events; }
    [[nodiscard]] auto& events() const { return m_events; }
@@ -92,9 +98,10 @@ class State {
    SymArr< HistoryType > m_history = {};
    SpellStackType m_spell_stack{};
    SpellStackType m_spell_prestack{};
-   rng::rng_type m_rng;
+   random::rng_type m_rng;
 
    static std::array< uptr< EventBase >, events::n_events > _init_events();
+   Team _random_team(random::rng_type& rng);
 };
 
 #endif  // LORAINE_STATE_H

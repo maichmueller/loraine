@@ -3,7 +3,7 @@
 #define LORAINE_EFFECT_H
 
 
-#include "engine/gamedefs.h"
+#include "core/gamedefs.h"
 #include "events/eventbase.h"
 #include "targeter.h"
 #include "utils/types.h"

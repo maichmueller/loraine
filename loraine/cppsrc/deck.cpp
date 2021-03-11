@@ -1,11 +1,11 @@
 
-#include "engine/deck.h"
+#include "core/deck.h"
 
 #include <algorithm>
 #include <sstream>
 
 #include "cards/card.h"
-#include "rng.h"
+#include "random.h"
 
 std::vector< size_t > Deck::_find_indices(const FilterFunc& filter) const
 {
