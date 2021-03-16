@@ -2,8 +2,8 @@
 
 #include "cards/gallery/specific_effects.h"
 
-#include "gamemode.h"
-#include "target.h"
+#include "core/gamemode.h"
+#include "core/targetable.h"
 
 //void m_effects::fading_memories_cast(
 //   GameMode& game, const events::CastEvent& /*events*/, Effect& source_container)

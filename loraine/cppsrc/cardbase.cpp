@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "cards/card.h"
-#include "gamemode.h"
+#include "core/gamemode.h"
 #include "grants/grant.h"
 #include "utils/utils.h"
 

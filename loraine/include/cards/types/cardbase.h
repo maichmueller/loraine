@@ -11,9 +11,10 @@
 
 #include "cards/card_defs.h"
 #include "cards/effect.h"
-#include "events/eventbase.h"
-#include "events/event_listener.h"
+#include "core/targetable.h"
 #include "events/event_labels.h"
+#include "events/event_listener.h"
+#include "events/eventbase.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
@@ -25,7 +26,7 @@ class Grant;
 /**
  * Abstract base class (abc) for LOR cards.
  */
-class Card: public EventListener< Card > {
+class Card: public EventListener< Card >, public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 

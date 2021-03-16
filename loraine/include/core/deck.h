@@ -83,18 +83,12 @@ class Deck {
    sptr< Card > draw_by_index(size_t index);
 
    /**
-    * Drawing randomly one of the cards that matches the given ID.
+    * Drawing randomly one of the cards that matches the given code.
     * @param card_code const char*,
     *   the card code that needs to be matched
     */
     template <class RNG>
    sptr< Card > draw_by_code(const char* card_code, RNG&& rng);
-
-   template < class RNG >
-   inline void shuffle(RNG&& g)
-   {
-      std::shuffle(begin(), end(), std::forward<RNG>(g));
-   }
 
    static std::set< Region > identify_regions(const ContainerType& container);
    static std::set< Region > identify_regions(std::initializer_list< value_type > cards);

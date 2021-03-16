@@ -6,6 +6,7 @@
 
 #include <optional>
 #include <tuple>
+#include <variant>
 
 #include "random.h"
 #include "types.h"
@@ -31,8 +32,6 @@ struct deduction_help {
   private:
    std::tuple< Args... > t;
 };
-// template < typename... Args >
-// struct deduction_help ;
 
 template < template < typename... > class Base, typename Derived, typename... Args >
 struct CRTP {
@@ -67,9 +66,9 @@ inline bool has_value(const sptr< T >& ptr)
    return ptr != nullptr;
 }
 template < typename T >
-inline bool has_value(const std::optional< T >& ptr)
+inline bool has_value(const std::optional< T >& t)
 {
-   return ptr.has_value();
+   return t.has_value();
 }
 template < typename T >
 inline void throw_if_no_value(const sptr< T >& ptr)
@@ -174,6 +173,24 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
+
+
+template< std::size_t I, class T >
+struct variant_element;
+
+// recursive case
+template< std::size_t I, class Head, class... Tail >
+struct variant_element<I, std::variant<Head, Tail...>>
+   : variant_element<I-1, std::variant<Tail...>> { };
+
+// base case
+template< class Head, class... Tail >
+struct variant_element<0, std::variant<Head, Tail...>> {
+   using type = Head;
+};
+
+template< std::size_t I, class T >
+using variant_element_t = typename variant_element<I, T>::type;
 
 
 }  // namespace utils

@@ -34,8 +34,8 @@ class Player {
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
    [[nodiscard]] inline auto team() const { return m_team; }
 
-   [[nodiscard]] inline auto* controller() { return &m_controller; }
-   [[nodiscard]] inline auto* controller() const { return &m_controller; }
+   [[nodiscard]] inline auto controller() { return m_controller; }
+   [[nodiscard]] inline auto controller() const { return m_controller; }
 
    inline auto* flags() { return &m_flags; }
    [[nodiscard]] inline auto* flags() const { return &m_flags; }

@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "core/gamedefs.h"
+#include "core/targetable.h"
 #include "event_labels.h"
 #include "eventbase.h"
-#include "target.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
@@ -76,7 +76,7 @@ class Event: public EventBase {
 
    void subscribe(Subscriber* t) { subs.emplace_back(t); }
 
-   void unsubscribe(void* t) final { subs.erase(static_cast< Subscriber* >(t)); }
+   void unsubscribe(void* t) final { subs.erase(std::find(subs.begin(), subs.end(), static_cast< Subscriber* >(t))); }
 };
 
 #endif  // LORAINE_EVENT_H

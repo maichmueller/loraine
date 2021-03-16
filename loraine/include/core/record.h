@@ -18,6 +18,7 @@ struct ActionRecord: public Record {
    Team team;
    sptr< Action > action;
 };
+
 template < typename EventClass >
 struct EventRecord: public Record {
    using args_tuple = typename EventClass::SignatureTuple;

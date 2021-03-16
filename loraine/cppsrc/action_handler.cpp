@@ -1,88 +1,138 @@
-//
+
 #include "core/action_handler.h"
-//
-//bool Game::_do_action(const sptr< Action >& action)
-//{
-//   auto action_type = action->action_type();
-//   bool flip_initiative = true;  // whether the other team gets to act next.
-//   if(action_type == ActionType::PASS) {
-//      // this case has to be handled separately to combine the pass counter
-//      // reset for all other cases
-//      bool round_ends = m_logic->pass();
-//      if(round_ends) {
-//         end_round();
-//         start_round();
-//      }
-//
-//   } else {
-//      m_logic->reset_pass();
-//
-//      switch(action_type) {
-//         case PLAY: {
-//            auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
-//            auto card = cast_action->card_played();
-//            if(card->immutables().card_type == CardType::SPELL) {
-//               auto floating = to_spell(card);
-//               play_spells();
-//               if(floating->has_keyword(Keyword::BURST)) {
-//                  _resolve_spell_stack(true);
-//                  flip_initiative = false;
-//               }
-//            } else {
-//               play(card, cast_action->replacements());
-//            }
-//         }
-//
-//         case MOVE_UNIT: {
-//            auto cast_action = std::dynamic_pointer_cast< MoveUnitAction >(action);
-//            auto team = cast_action->team();
-//            auto to_bf = cast_action->to_bf();
-//
-//            auto positions_own = cast_action->get_indices_vec();
-//            auto positions_opp = cast_action->get_opp_indices_map();
-//            _move_units(positions_own, team, false);
-//            _move_units_opp(positions_opp, Team(1 - team), to_bf);
-//            flip_initiative = false;
-//         }
-//
-//         case MOVE_SPELL: {
-//            auto cast_action = std::dynamic_pointer_cast< MoveSpellAction >(action);
-//            auto floating = cast_action->spell();
-//            if(not _move_spell(floating, cast_action->to_stack())) {
-//               // the floating was supposed to be moved to the stack, but the team cancelled
-//               _move_spell(floating, false);
-//               flip_initiative = false;
-//            } else {
-//               flip_initiative = _do_action(std::make_shared< PlayAction >(
-//                  m_logic->round(), floating->mutables().owner, floating));
-//            }
-//         }
-//
-//         case ATTACK: {
-//            auto team = action->team();
-//            _activate_battlemode(team);
-//            process_camp_queue(team);
-//         }
-//
-//         case BLOCK: {
-//            auto team = action->team();
-//            _trigger_event(events::BlockEvent(team));
-//         }
-//
-//         case ACCEPT: {
-//            if(auto& spell_prestack = m_logic->spell_prestack(); spell_prestack.empty()) {
-//               _resolve_spell_stack(false);
-//            } else {
-//            }
-//            if(m_logic->in_battle_mode()) {
-//               _resolve_battle();
-//               _deactivate_battlemode();
-//            }
-//         }
-//
-//         default: break;
-//      }
-//   }
-//   m_logic->commit_to_history(action);
-//   return flip_initiative;
-//}
+
+#include "cards/effect.h"
+#include "core/logic.h"
+
+bool ActionHandlerBase::_handle(const sptr< PlaceSpellAction >& action)
+{
+   auto spell = action->spell();
+   bool to_stack = action->to_stack();
+
+   auto* state = m_logic->state();
+   auto* hand = state->player(spell->mutables().owner).hand();
+   auto& effects_to_cast = spell->effects(events::EventLabel::CAST);
+   auto* spell_stack = state->spell_stack();
+   auto* spell_buffer = state->spell_buffer();
+   if(to_stack) {
+      hand->erase(std::find(hand->begin(), hand->end(), spell));
+      // add the spell to the stack and the buffer (this would theoretically allow the
+      // opponent to also see that a spell might be played if the active player follows
+      // through)
+      spell_buffer->emplace_back(spell);
+      spell_stack->emplace_back(spell);
+      spell->move(Location::SPELLSTACK, spell_stack->size() - 1);
+
+      for(auto& effect : effects_to_cast) {
+         if(auto& targeter = *effect->targeter(); bool(targeter)) {
+            if(targeter.is_automatic()) {
+               // an automatic targeter does targeting via filtering out the cards that do not
+               // meet the criteria
+               targeter(*state, action->team());
+            } else {
+               state->targeting_buffer()->emplace_back(effect);
+            }
+         }
+      }
+      if(not state->targeting_buffer()->empty()) {
+         // for a manual targeter we need to ask the controller to make the decision
+         m_logic->transition_action_handler(
+            std::make_unique< TargetModeHandler >(m_logic, this->clone()));
+         auto targeting_action = m_logic->request_action();
+      }
+   } else {
+      for(auto& effect : effects_to_cast) {
+         effect->reset_targets();
+      }
+      spell_buffer->erase(
+         std::remove(spell_buffer->begin(), spell_buffer->end(), spell), spell_buffer->end());
+      spell_stack->erase(
+         std::remove(spell_stack->begin(), spell_stack->end(), spell), spell_stack->end());
+      hand->emplace_back(spell);
+      spell->move(Location::HAND, hand->size() - 1);
+   }
+   return false;
+}
+bool ActionHandlerBase::_handle(const sptr< PassAction >& action)
+{
+   logic()->reset_pass(action->team());
+   return true;
+}
+
+bool DefaultModeHandler::handle(const sptr< Action >& action)
+{
+   auto action_label = action->action_label();
+   if(action_label == ActionLabel::PASS) {
+      return ActionHandlerBase::_handle(std::dynamic_pointer_cast< PassAction >(action));
+   }
+
+   switch(action_label) {
+      case ActionLabel::PLAY: {
+         return _handle(std::dynamic_pointer_cast< PlayAction >(action));
+      }
+      case ActionLabel::PLACE_UNIT: {
+         return _handle(std::dynamic_pointer_cast< PlaceUnitAction >(action));
+      }
+      case ActionLabel::PLACE_SPELL: {
+         return ActionHandlerBase::_handle(std::dynamic_pointer_cast< PlaceSpellAction >(action));
+      }
+      case ActionLabel::ACCEPT: {
+         return _handle(std::dynamic_pointer_cast< AcceptAction >(action));
+      }
+      default: {
+         throw std::logic_error(
+            std::string("DefaultModeHandler was given an action of label number ")
+            + std::to_string(int(action_label)));
+      }
+   }
+}
+
+bool DefaultModeHandler::_handle(const sptr< PlayAction >& action)
+{
+   auto card = action->card_played();
+   auto* state = logic()->state();
+
+   *(state->play_buffer()) = card;
+   if(state->board()->camp(action->team()).size() == state->config().CAMP_SIZE) {
+      // the camp is actually full, ask for the card that should be removed for this fieldcard
+      logic()->transition_action_handler(
+         std::make_unique< TargetModeHandler >(logic(), this->clone()));
+   }
+   for(auto& effect : card->effects(events::EventLabel::PLAY)) {
+      if(auto targeter = effect->targeter(); bool(targeter) && (not targeter->is_automatic())) {
+         state->targeting_buffer()->emplace_back(effect);
+      }
+   }
+   if(not state->targeting_buffer()->empty()) {
+      // for a manual targeter we need to ask the controller to make the decision
+
+   }
+}
+bool DefaultModeHandler::_handle(const sptr< AcceptAction >& action)
+{
+   auto* state = logic()->state();
+   auto team = action->team();
+   if(not utils::has_value(*state->play_buffer())) {
+      if(state->spell_buffer()->empty()) {
+         logic()->reset_pass(action->team());
+      } else {
+         for(const auto& spell : *state->spell_buffer()) {
+            logic()->trigger_event< events::EventLabel::PLAY >(team, spell);
+         }
+      }
+   } else {
+      auto [fieldcard, rplc_idx] = state->play_buffer()->value();
+
+      state->board()->camp(team)->
+   }
+   if(state->player(team).flags()->attack_token && not utils::has_value(state->attacker())
+      && not state->board()->battlefield(team).empty()) {
+      // set the acting team as an attacker
+      state->attacker(team);
+      state->player(team).flags()->attack_token = false;
+
+      // change the handler as we are now in combat mode
+      logic()->transition_action_handler(std::make_unique< CombatModeHandler >(logic()));
+   }
+   return true;
+}

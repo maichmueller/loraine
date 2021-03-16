@@ -3,6 +3,7 @@
 #ifndef LORAINE_LOGIC_H
 #define LORAINE_LOGIC_H
 
+#include <events/lor_events/construction.h>
 #include <grants/grant.h>
 
 #include <array>
@@ -10,35 +11,38 @@
 #include "action_handler.h"
 #include "cards/card.h"
 #include "core/state.h"
-#include "events/eventbase.h"
 #include "events/event_labels.h"
+#include "events/eventbase.h"
 
 // forward declare
 class Action;
 
 class Logic {
   public:
-   explicit Logic(uptr< ActionHandler > act_handler = std::make_unique< MulliganModeHandler >())
+   explicit Logic(uptr< ActionHandlerBase > act_handler = std::make_unique< MulliganModeHandler >())
        : m_action_handler(std::move(act_handler)){};
 
    Logic(const Logic& l) = delete;
    Logic(Logic&& l) noexcept = default;
    Logic& operator=(Logic&& rhs) = default;
    Logic& operator=(const Logic& rhs) = delete;
-   virtual ~Logic() = default;
+   ~Logic() = default;
 
    void state(State& state) { m_state = &state; }
    auto state() { return m_state; }
-
-   virtual void start_game(State& state);
-   virtual void start_round(State& state);
-   virtual void end_round(State& state);
+   [[nodiscard]] auto state() const { return m_state; }
 
    // Beginning of LoR logic implementations
 
    // methods to handle in the specific action handler mode of the state.
-   void handle(const sptr< Action >& action) { m_action_handler->handle(action); }
-   bool is_valid(const sptr< Action >& action) { return m_action_handler->is_valid(action); }
+   inline bool is_valid(const sptr< Action >& action) { return m_action_handler->is_valid(action); }
+   inline void handle(const sptr< Action >& action)
+   {
+      if(is_valid(action)) {
+         m_action_handler->handle(action);
+      }
+   }
+   std::vector< sptr<Targetable> > request_action();
 
    /**
     * Play a fieldcard onto the board
@@ -110,16 +114,25 @@ class Logic {
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
 
    /**
-    * Let a common strike another.
+    * Let a unit strike another.
     * @param unit_att: shared_ptr<Unit>,
-    *   the striking common.
+    *   the striking unit.
     * @param unit_def: shared_ptr<Unit>,
-    *   the struck common.
+    *   the struck unit.
     */
    void nexus_strike(const sptr< Unit >& striking_unit);
    void heal(Team team, const sptr< Unit >& unit, long amount);
-   void damage_unit(
-      const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
+   void
+   damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
+
+   void start_game();
+   void start_round();
+   void end_round();
+
+   void transition_action_handler(std::unique_ptr< ActionHandlerBase >&& new_handler)
+   {
+      m_action_handler = std::move(new_handler);
+   }
 
    void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
    void damage_nexus(size_t amount, Team team);
@@ -134,14 +147,7 @@ class Logic {
    bool pass();
 
    void reset_pass(Team team);
-
-   template < typename EventType, typename... Args >
-   auto sort_event_subscribers(
-      const std::vector< typename EventType::Subscribers* >& subs, Args... args)
-      -> std::vector< typename EventType::Subscriber* >
-   {
-      return subs;
-   }
+   void reset_pass();
 
    template < GrantType grant_type, typename... Params >
    inline void grant(
@@ -171,7 +177,8 @@ class Logic {
    std::vector< Target > filter_targets_deck(const Filter& filter, std::optional< Team > opt_team);
 
    std::vector< Target > filter_targets_everywhere(
-      const Filter& filter, std::optional< Team > opt_team);
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
    /*
     * An api for triggering an event externally. Which events is supposed to be triggered
@@ -205,10 +212,12 @@ class Logic {
 
    /// The member declarations
   private:
-   /// the associated state ptr, to be set in a delayed manner after state construction
+   /// The associated state ptr, to be set in a delayed manner after state construction
+   /// The logic object's lifetime is bound to the State object, so there should be no
+   /// SegFault problems.
    State* m_state = nullptr;
    /// the current action handler for incoming actions
-   std::unique_ptr< ActionHandler > m_action_handler;
+   std::unique_ptr< ActionHandlerBase > m_action_handler;
 
    /// private logic helpers
   private:
@@ -218,23 +227,25 @@ class Logic {
    bool _move_spell(const sptr< Spell >& spell, bool to_stack);
 
    void _mulligan(
-      const std::vector< sptr< Card > >& hand_blue, const std::vector< sptr< Card > >& hand_red);
+      const std::vector< sptr< Card > >& hand_blue,
+      const std::vector< sptr< Card > >& hand_red);
 
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
-
    void _cast_spellstack();
+
    void _activate_battlemode(Team attack_team);
 
    void _deactivate_battlemode();
-
    void _remove(const sptr< Card >& card);
-   void _resolve_battle();
 
+   void _resolve_battle();
    void _resolve_spell_stack(bool burst);
    void _check_enlightenment(Team team);
    void _play_event_triggers(const sptr< Card >& card, const Team& team);
    void _copy_grants(
-      const std::vector< sptr< Grant > >& grants, const std::shared_ptr< Unit >& unit);
+      const std::vector< sptr< Grant > >& grants,
+      const std::shared_ptr< Unit >& unit);
+
 };
 
 template < Location range >
@@ -283,10 +294,14 @@ void Logic::clamp_mana()
       }
    }
 }
-template < events::EventLabel event_type, typename... Params >
+template < events::EventLabel event_label, typename... Params >
 constexpr void Logic::trigger_event(Params... params)
 {
-   m_state->events()[static_cast< size_t >(event_type)]->trigger
+   auto& event = m_state->events()[static_cast< size_t >(event_label)];
+   // the event_label is used as index pointer to the actual type inside the LOREvent variant.
+   // we need to infer this event_type and then call its trigger method.
+   using targeted_event_t = std::invoke_result_t< decltype(&events::create_event< event_label >) >;
+   std::get< targeted_event_t >(event).trigger(*state(), std::forward< Params >(params)...);
 }
 
 #endif  // LORAINE_LOGIC_H

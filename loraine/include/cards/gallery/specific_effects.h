@@ -4,8 +4,8 @@
 #include "cards/card.h"
 #include "cards/effect.h"
 #include "core/gamedefs.h"
+#include "core/gamemode.h"
 #include "events/event.h"
-#include "gamemode.h"
 
 namespace effects {
 

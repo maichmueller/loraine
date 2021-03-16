@@ -10,11 +10,13 @@
 std::vector< size_t > Deck::_find_indices(const FilterFunc& filter) const
 {
    std::vector< size_t > indices;
-   for(auto i = 0ul; i < m_cards.size(); ++i) {
+   indices.reserve(m_cards.size());
+   for(size_t i = 0; i < m_cards.size(); ++i) {
       if(filter(m_cards[i])) {
-         indices.push_back(i);
+         indices.emplace_back(i);
       }
    }
+   indices.shrink_to_fit();
    return indices;
 }
 
@@ -22,7 +24,8 @@ auto Deck::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > popped_cards;
    auto indices = _find_indices(filter);
-
+   // reserve the memory so that emplace_back doesn't trigger repeated memory relocation
+   popped_cards.reserve(indices.size());
    // with every pop we need to calculate the new filtered indices as per
    // shift by 1
    size_t idx_shift = 0;
@@ -38,6 +41,8 @@ auto Deck::_find_cards(const FilterFunc& filter) const -> std::vector< sptr< Car
 {
    std::vector< sptr< Card > > cards;
    auto indices = _find_indices(filter);
+   // reserve the memory so that emplace_back doesn't trigger repeated memory relocation
+   cards.reserve(indices.size());
 
    for(const auto& idx : indices) {
       cards.emplace_back(m_cards[idx]);
@@ -91,7 +96,7 @@ sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
 {
    auto indices = _find_indices(
       [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
-   shuffle(rng);
+   random::shuffle_inplace(m_cards, rng);
    return draw_by_index(indices[0]);
 }
 

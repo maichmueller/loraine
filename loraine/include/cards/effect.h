@@ -2,23 +2,36 @@
 #ifndef LORAINE_EFFECT_H
 #define LORAINE_EFFECT_H
 
-
 #include "core/gamedefs.h"
 #include "events/eventbase.h"
 #include "targeter.h"
 #include "utils/types.h"
 #include "utils/utils.h"
+#include "core/targetable.h"
 
 // forward-declarations
 class GameMode;
 class Card;
-class Target;
 class Controller;
 
 class EffectBase {
   public:
+   explicit EffectBase(sptr< TargeterBase > targeter) : m_targeter(std::move(targeter)), m_targets() {}
    virtual ~EffectBase() = default;
    virtual bool operator==(const EffectBase& other) = 0;
+
+   inline void targets(std::vector< sptr<Targetable> > targets) { m_targets = std::move(targets); }
+   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
+   [[nodiscard]] auto& targets() { return m_targets; }
+   [[nodiscard]] auto targets() const { return m_targets; }
+
+   inline void reset_targets() { m_targets.clear(); }
+   [[nodiscard]] auto targeter() const { return m_targeter; }
+   [[nodiscard]] auto& targeter() { return m_targeter; }
+
+  private:
+   sptr< TargeterBase > m_targeter;
+   std::vector< sptr<Targetable> > m_targets;
 };
 
 /**
@@ -28,9 +41,7 @@ class EffectBase {
  */
 
 template < typename... Events >
-class Effect:
-    public EffectBase,
-    public EventCallInterface< Events... > {
+class Effect: public EffectBase, public EventCallInterface< Events... > {
   public:
    enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
@@ -41,14 +52,6 @@ class Effect:
    [[nodiscard]] auto associated_card() const { return m_assoc_card; }
    [[nodiscard]] auto effect_type() const { return m_effect_type; }
 
-   inline void targets(std::vector< Target > targets) { m_targets = std::move(targets); }
-   [[nodiscard]] bool has_targets() const { return not m_targets.empty(); }
-   [[nodiscard]] auto& targets() { return m_targets; }
-   [[nodiscard]] auto targets() const { return m_targets; }
-
-   inline void reset_targets() { m_targets.clear(); }
-   [[nodiscard]] auto targeter() const { return m_targeter; }
-   [[nodiscard]] auto& targeter() { return m_targeter; }
 
    [[nodiscard]] auto& uuid() { return m_uuid; }
 
@@ -57,11 +60,9 @@ class Effect:
 
    Effect(
       sptr< Card > card_ptr,
-      sptr< TargeterBase > targeter = std::make_shared< NoneTargeter >(),
-      Type effect_type = Type::SIMPLE)
-       : m_effect_type(effect_type),
+      const sptr< TargeterBase >& targeter = std::make_shared< NoneTargeter >())
+       : EffectBase(targeter),
          m_assoc_card(std::move(card_ptr)),
-         m_targeter(std::move(targeter)),
          m_uuid(utils::new_uuid())
    {
    }
@@ -74,10 +75,7 @@ class Effect:
    Type m_effect_type;
    bool m_consumed = false;
    sptr< Card > m_assoc_card;
-   sptr< TargeterBase > m_targeter;
-   std::vector< Target > m_targets;
    UUID m_uuid;
-
 };
 
 template < typename... Events >
@@ -90,7 +88,5 @@ bool Effect< Events... >::operator!=(const Effect& effect) const
 {
    return not (*this == effect);
 }
-
-
 
 #endif  // LORAINE_EFFECT_H

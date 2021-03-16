@@ -2,14 +2,16 @@
 #ifndef LORAINE_RANDOM_H
 #define LORAINE_RANDOM_H
 
-#include <random>
 #include <algorithm>
+#include <random>
+
+
 
 struct random {
    using rng_type = std::mt19937_64;
    using seed_type = rng_type::result_type;
 
-   static std::mt19937_64 create(seed_type seed = std::random_device()())
+   static std::mt19937_64 create_rng(seed_type seed = std::random_device()())
    {
       return std::mt19937_64{seed};
    }
@@ -20,7 +22,7 @@ struct random {
       std::shuffle(container.begin(), container.end(), std::forward< RNG >(rng));
    }
    template < class RNG >
-   inline bool bernoulli_sample(double p, RNG&& rng)
+   static inline bool bernoulli_sample(double p, RNG&& rng)
    {
       std::bernoulli_distribution ber(p);
       return ber(std::forward< RNG >(rng));
@@ -63,8 +65,8 @@ struct random {
          std::discrete_distribution< uint64_t >{weights.begin(), weights.end()});
    }
    template < typename T, typename Allocator, class RNG >
-   static std::vector< T, Allocator > choose(
-      const std::vector< T, Allocator >& vec, RNG&& rng, int n = 1)
+   static std::vector< T, Allocator >
+   choose(const std::vector< T, Allocator >& vec, RNG&& rng, int n = 1)
    {
       std::vector< size_t > indices(vec.size());
       std::iota(indices.begin(), indices.end(), 0);
@@ -76,6 +78,7 @@ struct random {
       }
       return out;
    }
+
 };
 
 #endif  // LORAINE_RANDOM_H

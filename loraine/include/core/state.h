@@ -2,6 +2,7 @@
 #ifndef LORAINE_STATE_H
 #define LORAINE_STATE_H
 
+#include <events/lor_events/event_types.h>
 #include <grants/grantfactory.h>
 
 #include <array>
@@ -31,19 +32,22 @@ class State {
   public:
    using SpellStackType = std::vector< sptr< Spell > >;
    using HistoryType = std::map< size_t, std::vector< uptr< Record > > >;
+   template < typename T >
+   using BufferType = std::vector< T >;
+   using PlayBufferType = std::optional< sptr< FieldCard > >;
 
    State(
       const Config& cfg,
       SymArr< Deck > decks,
       SymArr< sptr< Controller > > players,
       Team starting_team,
-      random::rng_type rng = random::create());
+      random::rng_type rng = random::create_rng());
 
    State(
       const Config& cfg,
       SymArr< Deck > decks,
       SymArr< sptr< Controller > > players,
-      random::rng_type rng = random::create());
+      random::rng_type rng = random::create_rng());
 
    auto& events() { return m_events; }
    [[nodiscard]] auto& events() const { return m_events; }
@@ -68,12 +72,16 @@ class State {
    [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
    [[nodiscard]] inline auto* spell_stack() { return &m_spell_stack; }
    [[nodiscard]] inline auto* spell_stack() const { return &m_spell_stack; }
-   [[nodiscard]] inline auto* spell_prestack() { return &m_spell_prestack; }
-   [[nodiscard]] inline auto* spell_prestack() const { return &m_spell_prestack; }
-   [[nodiscard]] inline auto* grantfactory(Team team) { return &m_spell_prestack[team]; }
-   [[nodiscard]] inline auto* grantfactory(Team team) const { return &m_spell_prestack[team]; }
-   [[nodiscard]] inline auto* history(Team team) { return &m_history[team]; }
-   [[nodiscard]] inline auto* history(Team team) const { return &m_history[team]; }
+   [[nodiscard]] inline auto* play_buffer() { return &m_play_buffer; }
+   [[nodiscard]] inline auto* play_buffer() const { return &m_play_buffer; }
+   [[nodiscard]] inline auto* spell_buffer() { return &m_spell_buffer; }
+   [[nodiscard]] inline auto* spell_buffer() const { return &m_spell_buffer; }
+   [[nodiscard]] inline auto* targeting_buffer() { return &m_targeting_buffer; }
+   [[nodiscard]] inline auto* targeting_buffer() const { return &m_targeting_buffer; }
+   [[nodiscard]] inline auto* grantfactory(Team team) { return &m_grant_factory[team]; }
+   [[nodiscard]] inline auto* grantfactory(Team team) const { return &m_grant_factory[team]; }
+   [[nodiscard]] inline auto* history() { return &m_history; }
+   [[nodiscard]] inline auto* history() const { return &m_history; }
    [[nodiscard]] inline auto& rng() { return m_rng; }
    [[nodiscard]] inline auto& rng() const { return m_rng; }
 
@@ -88,20 +96,21 @@ class State {
    Team m_starting_team;
    sptr< Board > m_board;
    sptr< Logic > m_logic;
-   std::array< uptr< EventBase >, events::n_events > m_events;
+   PlayBufferType m_play_buffer;
+   BufferType< sptr< Spell > > m_spell_buffer;
+   BufferType< sptr< EffectBase > > m_targeting_buffer;
+   std::array< events::LOREvent, events::n_events > m_events;
    std::optional< Team > m_attacker;
    size_t m_turn;
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
    bool m_status_checked = false;
    SymArr< GrantFactory > m_grant_factory = {};
-   SymArr< HistoryType > m_history = {};
+   sptr< HistoryType > m_history = {};
    SpellStackType m_spell_stack{};
-   SpellStackType m_spell_prestack{};
    random::rng_type m_rng;
 
-   static std::array< uptr< EventBase >, events::n_events > _init_events();
-   Team _random_team(random::rng_type& rng);
+   static std::array< events::LOREvent, events::n_events > _init_events();
 };
 
 #endif  // LORAINE_STATE_H

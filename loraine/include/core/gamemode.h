@@ -17,12 +17,15 @@
 #include "grants/grantfactory.h"
 #include "utils/types.h"
 
+class CardToken;
+
+
 class GameMode {
   public:
 
    bool run_game();
 
-   GameMode(Config cfg, SymArr<const char*> decks)
+   GameMode(Config cfg, SymArr<std::vector<CardToken> > decks)
        : m_state(std::move(std::make_shared<State>()))
    {
    }

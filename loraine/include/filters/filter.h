@@ -2,26 +2,10 @@
 #ifndef LORAINE_FILTER_H
 #define LORAINE_FILTER_H
 
-#include <utility>
+#include <functional>
 
-#include "cards/card_defs.h"
-#include "core/gamedefs.h"
-#include "target.h"
-#include "utils/types.h"
+#include "core/targetable.h"
 
-class Card;
-
-class Filter {
-  public:
-   bool operator()(const Target& target) const { return m_filter(target); }
-   Filter() : m_filter([](const Target& /*unused*/) { return true; }) {}
-   explicit Filter(std::function< bool(const Target& /*target*/) > filter)
-       : m_filter(std::move(filter))
-   {
-   }
-
-  private:
-   std::function< bool(const Target& /*target*/) > m_filter;
-};
+using Filter = std::function< bool(const Targetable& /*target*/) >;
 
 #endif  // LORAINE_FILTER_H

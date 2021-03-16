@@ -6,32 +6,44 @@
 #include <map>
 #include <utility>
 
-#include "cards/card.h"
+//#include "cards/card.h"
 #include "core/gamedefs.h"
+#include "core/targetable.h"
 #include "utils/types.h"
 
-enum class ActionType {
+class Card;
+class FieldCard;
+class Spell;
+
+enum class ActionLabel {
    ACCEPT,
-   ATTACK,
-   BLOCK,
    CANCEL,
-   MOVE_UNIT,
-   MOVE_SPELL,
+   CHOICE,
+   DRAG_ENEMY,
+   PLACE_UNIT,
+   PLACE_SPELL,
    MULLIGAN,
    PASS,
-   PLAY
+   PLAY,
+   TARGETING
 };
 
 class Action {
   public:
-   Action(ActionType act_type) : m_action_type(act_type) {}
+   Action(ActionLabel act_type, Team team) noexcept : m_action_type(act_type), m_team(team) {}
+   Action(const Action& action) noexcept = default;
+   Action(Action&& action) noexcept = default;
    virtual ~Action() = default;
+   Action& operator=(const Action& action) noexcept = delete;
+   Action& operator=(Action&& action) noexcept = delete;
 
-   [[nodiscard]] inline auto action_type() const { return m_action_type; }
+   [[nodiscard]] inline auto action_label() const { return m_action_type; }
+   [[nodiscard]] inline auto team() const { return m_team; }
 
   private:
    // the type of action performed
-   const ActionType m_action_type;
+   const ActionLabel m_action_type;
+   const Team m_team;
 };
 
 /**
@@ -39,7 +51,7 @@ class Action {
  */
 class PassAction: public Action {
   public:
-   PassAction() : Action(ActionType::PASS) {}
+   explicit PassAction(Team team) noexcept : Action(ActionLabel::PASS, team) {}
 };
 /**
  * This is the action for accepting the outcome of whatever
@@ -47,32 +59,50 @@ class PassAction: public Action {
  */
 class AcceptAction: public Action {
   public:
-   AcceptAction() : Action(ActionType::ACCEPT) {}
+   explicit AcceptAction(Team team) noexcept : Action(ActionLabel::ACCEPT, team) {}
 };
 /**
- * Action for playing a fieldcard/spell
+ * Action for playing a fieldcard
  */
 class PlayAction: public Action {
   public:
-   explicit PlayAction(sptr< Card > card_played, std::optional< size_t > replace_idx = {})
-       : Action(ActionType::PLAY),
-         m_card_played(std::move(card_played)),
-         m_replacements(replace_idx)
+   explicit PlayAction(Team team, sptr< FieldCard > card_played) noexcept
+       : Action(ActionLabel::PLAY, team), m_card_played(std::move(card_played))
    {
    }
    [[nodiscard]] inline auto card_played() const { return m_card_played; }
-   [[nodiscard]] inline auto replacements() const { return m_replacements; }
 
   private:
    // the actual card that was played
-   sptr< Card > m_card_played;
-   std::optional< size_t > m_replacements;
+   sptr< FieldCard > m_card_played;
 };
 
-class MoveSpellAction: public Action {
+/**
+ * Action for playing a fieldcard
+ */
+class ChoiceAction: public Action {
   public:
-   MoveSpellAction(sptr< Spell > spell, bool to_stack)
-       : Action(ActionType::MOVE_SPELL), m_spell(std::move(spell)), m_to_stack(to_stack)
+   explicit ChoiceAction(Team team, size_t n_choices, size_t choice) noexcept
+       : Action(ActionLabel::CHOICE, team), m_nr_choices(n_choices), m_choice(choice)
+   {
+   }
+   [[nodiscard]] inline auto n_choices() const { return m_nr_choices; }
+   [[nodiscard]] inline auto choice() const { return m_choice; }
+
+  private:
+   size_t m_nr_choices;
+   size_t m_choice;
+};
+
+class CancelAction: public Action {
+  public:
+   explicit CancelAction(Team team) noexcept : Action(ActionLabel::CANCEL, team) {}
+};
+
+class PlaceSpellAction: public Action {
+  public:
+   PlaceSpellAction(Team team, sptr< Spell > spell, bool to_stack) noexcept
+       : Action(ActionLabel::PLACE_SPELL, team), m_spell(std::move(spell)), m_to_stack(to_stack)
    {
    }
    [[nodiscard]] inline auto spell() const { return m_spell; }
@@ -83,42 +113,36 @@ class MoveSpellAction: public Action {
    bool m_to_stack;
 };
 
-class MoveUnitAction: public Action {
-   // the positions on the battlefield the units from the camp take.
-   // One has a vector naming the position the common from the camp
-   // (where it holds the position of its current index in the source
-   // ContainerType) onto the next position in the target ContainerType.
+class PlaceUnitAction: public Action {
+   // Action for moving units either from the camp (index-based) onto the battlefield or from the
+   // battlefield onto the camp
    bool m_to_bf;
    std::vector< size_t > m_indices_vec;
-   std::map< size_t, size_t > m_opp_indices_map;
 
   public:
-   MoveUnitAction(
-      bool to_bf, std::vector< size_t > indices_vec, std::map< size_t, size_t > opp_indices_map)
-       : Action(ActionType::MOVE_UNIT),
-         m_to_bf(to_bf),
-         m_indices_vec(std::move(indices_vec)),
-         m_opp_indices_map(std::move(opp_indices_map))
+   PlaceUnitAction(Team team, bool to_bf, std::vector< size_t > indices_vec)
+       : Action(ActionLabel::PLACE_UNIT, team), m_to_bf(to_bf), m_indices_vec(std::move(indices_vec))
    {
    }
    [[nodiscard]] inline auto to_bf() const { return m_to_bf; }
    [[nodiscard]] inline auto get_indices_vec() const { return m_indices_vec; }
-   [[nodiscard]] inline auto get_opp_indices_map() const { return m_opp_indices_map; }
-};
-/**
- * Action for declaring an attack
- */
-class AttackAction: public Action {
-  public:
-   AttackAction() : Action(ActionType::ATTACK) {}
 };
 
-/**
- * Action for declaring block
- */
-class BlockAction: public Action {
+class DragEnemyAction: public Action {
+   // Drags an opponent unit either from the camp onto the battlefield (e.g. via challenger or
+   // vulnerable keyword) or vice versa.
+   bool m_to_bf;
+   size_t m_from;
+   size_t m_to;
+
   public:
-   BlockAction() : Action(ActionType::BLOCK) {}
+   DragEnemyAction(Team team, bool to_bf, size_t from, size_t to) noexcept
+       : Action(ActionLabel::DRAG_ENEMY, team), m_to_bf(to_bf), m_from(from), m_to(to)
+   {
+   }
+   [[nodiscard]] inline auto to_bf() const { return m_to_bf; }
+   [[nodiscard]] inline auto from() const { return m_from; }
+   [[nodiscard]] inline auto to() const { return m_to; }
 };
 
 /**
@@ -126,8 +150,8 @@ class BlockAction: public Action {
  */
 class MulliganAction: public Action {
   public:
-   explicit MulliganAction(std::vector< bool > replace)
-       : Action(ActionType::MULLIGAN), replace(std::move(replace))
+   explicit MulliganAction(Team team, std::vector< bool > replace)
+       : Action(ActionLabel::MULLIGAN, team), replace(std::move(replace))
    {
    }
    [[nodiscard]] inline auto replace_decisions() const { return replace; }
@@ -135,6 +159,19 @@ class MulliganAction: public Action {
   private:
    // the positions on the battlefield the units take
    std::vector< bool > replace;
+};
+
+class TargetingAction: public Action {
+  public:
+   explicit TargetingAction(Team team, std::vector< sptr< Targetable > > targets)
+       : Action(ActionLabel::TARGETING, team), m_targets(std::move(targets))
+   {
+   }
+   [[nodiscard]] inline auto targets() const { return m_targets; }
+
+  private:
+   // the selected targets
+   std::vector< sptr< Targetable > > m_targets;
 };
 
 #endif  // LORAINE_ACTION_H

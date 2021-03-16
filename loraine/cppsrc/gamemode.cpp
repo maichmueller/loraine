@@ -1,5 +1,5 @@
 
-#include "gamemode.h"
+#include "core/gamemode.h"
 
 #include <algorithms.h>
 
@@ -13,7 +13,7 @@ bool GameMode::run_game()
 {
    while(true) {
       // ask current player for action
-      auto action = m_state->player(m_state->active_team()).controller()->decide_action(*m_state);
+      auto action = m_state->player(m_state->active_team()).controller()->choose_action(*m_state);
 
       if(_do_action(action)) {
          m_state->incr_turn();

@@ -7,12 +7,13 @@
 
 #include "cards/card_defs.h"
 #include "cards/effect.h"
-#include "events/eventbase.h"
-#include "events/event_listener.h"
+#include "core/targetable.h"
 #include "events/event_labels.h"
+#include "events/event_listener.h"
+#include "events/eventbase.h"
 #include "gamedefs.h"
 
-class Nexus: public EventListener< Nexus > {
+class Nexus: public EventListener< Nexus >, public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 
