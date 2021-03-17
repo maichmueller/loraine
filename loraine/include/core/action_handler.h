@@ -71,7 +71,7 @@ class ActionHandlerBase {
 
   private:
    Logic* m_logic;
-   std::vector< ActionLabel > m_accepted_actions;
+   const std::vector< ActionLabel > m_accepted_actions;
 };
 
 template < ActionLabel... AcceptedActions >

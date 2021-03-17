@@ -42,7 +42,12 @@ class Logic {
          m_action_handler->handle(action);
       }
    }
-   std::vector< sptr<Targetable> > request_action();
+   inline std::vector< ActionLabel > currently_accepted_actions()
+   {
+      return *(m_action_handler->accepted_actions());
+   }
+   std::vector< sptr< Targetable > > request_action();
+   std::vector< sptr< Action > > available_actions();
 
    /**
     * Play a fieldcard onto the board
@@ -245,7 +250,6 @@ class Logic {
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants,
       const std::shared_ptr< Unit >& unit);
-
 };
 
 template < Location range >

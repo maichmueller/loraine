@@ -6,7 +6,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
    sptr<Action> action = nullptr;
    while(action == nullptr) {
       compute_legal_actions(*m_state);
-      action = m_state->player(m_state->active_team()).controller()->choose_action(*m_state, *(m_action_handler->accepted_actions()));
+      action = m_state->player(m_state->active_team()).controller()->choose_action(*m_state);
       if(not is_valid(action)) {
          action = nullptr;
       }
