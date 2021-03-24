@@ -10,9 +10,9 @@
  * the board and remain there to occupy space in the camp, until removed.
  * This class is mostly used to distinguish parameters for specific functions.
  */
-class FieldCard: public Card {
+class FieldCard: public Cloneable<abstract_method<FieldCard>, inherit_constructors<Card>> {
   public:
-   using Card::Card;  // use base class constructors
+   using Cloneable::Cloneable;  // use base class Card constructors
 };
 
 inline sptr< FieldCard > to_fieldcard(const sptr< Card >& card)

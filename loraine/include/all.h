@@ -12,8 +12,8 @@
 #include "core/gamemode.h"
 #include "core/state.h"
 #include "grants/grant.h"
-#include "random.h"
 #include "targeter.h"
+#include "utils/random.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 

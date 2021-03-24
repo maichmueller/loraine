@@ -4,10 +4,10 @@
 
 #include "fieldcard.h"
 
-class Landmark: public FieldCard {
+class Landmark: public Cloneable<Landmark, inherit_constructors<FieldCard>> {
   public:
    // use base class constructors
-   using FieldCard::FieldCard;
+   using Cloneable::Cloneable;
 
 };
 

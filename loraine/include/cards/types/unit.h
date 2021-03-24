@@ -7,7 +7,8 @@
 #include "cardbase.h"
 #include "fieldcard.h"
 
-class Unit: public FieldCard {
+class Unit: public Cloneable<Unit, inherit_constructors<FieldCard>>  {
+
   public:
    struct ConstUnitState {
       // the fixed reference damage the common deals.
@@ -73,13 +74,13 @@ class Unit: public FieldCard {
       MutableState mutable_state,
       ConstUnitState const_unit_state,
       MutableUnitState mutable_unit_state)
-       : FieldCard(const_state, std::move(mutable_state)),
+       : Cloneable(const_state, std::move(mutable_state)),
          m_unit_mutables(std::move(mutable_unit_state)),
          m_unit_immutables(std::move(const_unit_state))
    {
    }
    ~Unit() override = default;
-   Unit(const Unit& card) = default;
+   Unit(const Unit& unit) = default;
    Unit& operator=(const Unit& unit) = delete;
    Unit(Unit&&) = delete;
    Unit& operator=(Unit&&) = delete;

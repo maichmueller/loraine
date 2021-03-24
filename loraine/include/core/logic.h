@@ -9,18 +9,19 @@
 #include <array>
 
 #include "action_handler.h"
-#include "cards/card.h"
-#include "core/state.h"
 #include "events/event_labels.h"
 #include "events/eventbase.h"
 
 // forward declare
-class Action;
+class State;
 
 class Logic {
   public:
    explicit Logic(uptr< ActionHandlerBase > act_handler = std::make_unique< MulliganModeHandler >())
-       : m_action_handler(std::move(act_handler)){};
+       : m_action_handler(std::move(act_handler))
+   {
+      m_action_handler->logic(this);
+   };
 
    Logic(const Logic& l) = delete;
    Logic(Logic&& l) noexcept = default;
@@ -35,26 +36,31 @@ class Logic {
    // Beginning of LoR logic implementations
 
    // methods to handle in the specific action handler mode of the state.
-   inline bool is_valid(const sptr< Action >& action) { return m_action_handler->is_valid(action); }
-   inline void handle(const sptr< Action >& action)
+   [[nodiscard]] inline bool is_valid(const actions::Action& action) const
    {
-      if(is_valid(action)) {
-         m_action_handler->handle(action);
-      }
+      return m_action_handler->is_valid(action);
    }
-   inline std::vector< ActionLabel > currently_accepted_actions()
+   [[nodiscard]] bool in_combat() const
+   {
+      auto combat_label = ActionHandlerBase::Label::COMBAT;
+      return m_action_handler->label() == combat_label
+             || m_prev_action_handler->label() == combat_label;
+   };
+   inline std::vector< actions::ActionLabel > accepted_action_labels()
    {
       return *(m_action_handler->accepted_actions());
    }
-   std::vector< sptr< Targetable > > request_action();
-   std::vector< sptr< Action > > available_actions();
-
+   inline std::vector< actions::Action > valid_actions(const State& state)
+   {
+      return m_action_handler->valid_actions(state);
+   }
+   [[nodiscard]] actions::Action request_action() const;
    /**
     * Play a fieldcard onto the board
     * @param card: shared_ptr<Card>,
     *    the card to play
     * @param replaces: optional<size_t>,
-    *    index of the card in the camp it is supposed to replace.
+    *    index of the card in the camp it is supposed to m_replace.
     *    This only applies if the board is full.
     */
    void play(const sptr< FieldCard >& card, std::optional< size_t > replaces);
@@ -67,7 +73,7 @@ class Logic {
     * @param: spell: shared_ptr<Spell>,
     *    The floating to cast.
     */
-   void cast(const sptr< Spell >& spell);
+   void cast(const std::vector< sptr< Spell >>& spells_vec);
    /**
     * Summon a specific common card to either the camp or the battlefield.
     * @param: unit: shared_ptr<Unit>,
@@ -134,9 +140,44 @@ class Logic {
    void start_round();
    void end_round();
 
-   void transition_action_handler(std::unique_ptr< ActionHandlerBase >&& new_handler)
+   template < typename NewHandlerType, typename... Args >
+   inline void transition_action_handler(Args&&... args)
    {
-      m_action_handler = std::move(new_handler);
+      // assert the chosen handler type is any of the ones we have. It is not directly necessary to
+      // do, but would improve the error message
+      static_assert(
+         utils::is_any_v<
+            NewHandlerType,
+            DefaultModeHandler,
+            CombatModeHandler,
+            MulliganModeHandler,
+            TargetModeHandler >,
+         "Given NewHandlerType is not one of the designated handlers.");
+
+      // move current handler into previous
+      m_prev_action_handler = std::move(m_action_handler);
+
+      // assign new handler
+      if constexpr(std::is_same_v< NewHandlerType, DefaultModeHandler >) {
+         m_action_handler = std::make_unique< DefaultModeHandler >(
+            this, std::forward< Args >(args)...);
+      } else if constexpr(std::is_same_v< NewHandlerType, CombatModeHandler >) {
+         m_action_handler = std::make_unique< CombatModeHandler >(
+            this, std::forward< Args >(args)...);
+      } else if constexpr(std::is_same_v< NewHandlerType, MulliganModeHandler >) {
+         m_action_handler = std::make_unique< MulliganModeHandler >(
+            this, std::forward< Args >(args)...);
+      } else {
+         m_action_handler = std::make_unique< TargetModeHandler >(
+            this, std::forward< Args >(args)...);
+      }
+   }
+   inline void restore_previous_handler()
+   {
+      utils::throw_if_no_value(
+         m_prev_action_handler, "Previous action handler pointer holds no value.");
+      m_action_handler = std::move(m_prev_action_handler);
+      m_prev_action_handler = nullptr;
    }
 
    void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
@@ -171,17 +212,27 @@ class Logic {
     * The optional team parameter decides whose cards are to be filtered. If
     * left as empty, then both teams' cards are filtered
     */
-   std::vector< Target > filter_targets_bf(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets_bf(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_camp(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets_camp(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_board(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets_board(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_hand(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets_hand(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_deck(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets_deck(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
-   std::vector< Target > filter_targets_everywhere(
+   std::vector< sptr< Targetable > > filter_targets_everywhere(
       const Filter& filter,
       std::optional< Team > opt_team);
 
@@ -190,10 +241,12 @@ class Logic {
     * needs to be known at compile time.
     */
    template < events::EventLabel event_type, typename... Params >
-   constexpr inline void trigger_event(Params... params);
+   inline void trigger_event(Params&&... params);
 
    template < Location range >
-   std::vector< Target > filter_targets(const Filter& filter, std::optional< Team > opt_team);
+   std::vector< sptr< Targetable > > filter_targets(
+      const Filter& filter,
+      std::optional< Team > opt_team);
 
    void retreat_to_camp(Team team);
    void process_camp_queue(Team team);
@@ -206,11 +259,10 @@ class Logic {
    void shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n);
    inline void obliterate(const sptr< Card >& card)
    {
-      uncover_card(card);
+      card->uncover();
       _remove(card);
    }
 
-   static inline void uncover_card(const sptr< Card >& card) { card->mutables().hidden = false; }
    bool check_status();
    [[nodiscard]] bool check_daybreak(Team team) const;
    [[nodiscard]] bool check_nightfall(Team team) const;
@@ -223,17 +275,10 @@ class Logic {
    State* m_state = nullptr;
    /// the current action handler for incoming actions
    std::unique_ptr< ActionHandlerBase > m_action_handler;
+   /// the previous action handler for incoming actions
+   std::unique_ptr< ActionHandlerBase > m_prev_action_handler = nullptr;
 
    /// private logic helpers
-  private:
-   void _move_units(const std::vector< size_t >& positions, Team team, bool to_bf);
-   void _move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf);
-
-   bool _move_spell(const sptr< Spell >& spell, bool to_stack);
-
-   void _mulligan(
-      const std::vector< sptr< Card > >& hand_blue,
-      const std::vector< sptr< Card > >& hand_red);
 
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
    void _cast_spellstack();
@@ -243,8 +288,7 @@ class Logic {
    void _deactivate_battlemode();
    void _remove(const sptr< Card >& card);
 
-   void _resolve_battle();
-   void _resolve_spell_stack(bool burst);
+
    void _check_enlightenment(Team team);
    void _play_event_triggers(const sptr< Card >& card, const Team& team);
    void _copy_grants(
@@ -253,7 +297,9 @@ class Logic {
 };
 
 template < Location range >
-std::vector< Target > Logic::filter_targets(const Filter& filter, std::optional< Team > opt_team)
+std::vector< sptr< Targetable > > Logic::filter_targets(
+   const Filter& filter,
+   std::optional< Team > opt_team)
 {
    if constexpr(range == Location::BATTLEFIELD) {
       return filter_targets_bf(filter, opt_team);
@@ -277,7 +323,7 @@ void Logic::clamp_mana()
 {
    for(int p = 0; p < n_teams; ++p) {
       Team team = static_cast< Team >(p);
-      if constexpr(floating_mana) {
+      if(floating_mana) {
          auto clamped_floating_mana = std::max(
             std::min(
                static_cast< size_t >(state()->config().MAX_FLOATING_MANA),
@@ -298,8 +344,9 @@ void Logic::clamp_mana()
       }
    }
 }
+
 template < events::EventLabel event_label, typename... Params >
-constexpr void Logic::trigger_event(Params... params)
+void Logic::trigger_event(Params&&... params)
 {
    auto& event = m_state->events()[static_cast< size_t >(event_label)];
    // the event_label is used as index pointer to the actual type inside the LOREvent variant.

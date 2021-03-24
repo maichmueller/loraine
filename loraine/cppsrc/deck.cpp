@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include "cards/card.h"
-#include "random.h"
+#include "utils/random.h"
 
 std::vector< size_t > Deck::_find_indices(const FilterFunc& filter) const
 {
@@ -91,17 +91,8 @@ std::set< Region > Deck::identify_regions(std::initializer_list< value_type > ca
    return identify_regions(ContainerType(cards));
 }
 
-template < class RNG >
-sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
-{
-   auto indices = _find_indices(
-      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
-   random::shuffle_inplace(m_cards, rng);
-   return draw_by_index(indices[0]);
-}
-
 template < typename RNG >
-void Deck::shuffle_into(const sptr< Card >& card, size_t top_n, RNG&& rng)
+void Deck::shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n)
 {
    auto deck_size = m_cards.size();
    if(top_n > deck_size) {
@@ -109,6 +100,15 @@ void Deck::shuffle_into(const sptr< Card >& card, size_t top_n, RNG&& rng)
    }
    auto max = std::min(top_n, deck_size);
    std::uniform_int_distribution< size_t > dist(0, max);
-   auto pos = m_cards.begin() + (deck_size - dist(std::forward<RNG>(rng)));
+   auto pos = m_cards.begin() + (deck_size - dist(std::forward< RNG >(rng)));
    m_cards.insert(pos, card);
+}
+
+template < class RNG >
+sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
+{
+   auto indices = _find_indices(
+      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
+   random::shuffle_inplace(m_cards, rng);
+   return draw_by_index(indices[0]);
 }

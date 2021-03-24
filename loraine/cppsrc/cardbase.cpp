@@ -21,7 +21,8 @@ void Card::remove_effect(events::EventLabel e_type, const EffectBase& effect)
          [&](const auto& val) { return val.first == e_type; });
       eff_vec_iter != m_mutables.effects.end()) {
       auto& eff_vec = (*eff_vec_iter).second;
-      auto position = std::find(eff_vec.begin(), eff_vec.end(), effect);
+      auto position = std::find_if(
+         eff_vec.begin(), eff_vec.end(), [&](const auto& eff_ptr) { return (*eff_ptr) == effect; });
       if(position != eff_vec.end()) {
          if(eff_vec.size() == 1) {
             m_mutables.effects.erase(eff_vec_iter);
@@ -47,14 +48,7 @@ void Card::effects(events::EventLabel e_type, std::vector< sptr< EffectBase > > 
       curr_vec.emplace_back(std::move(eff));
    }
 }
-bool Card::check_play_tribute(const State& state) const
-{
-   size_t total_mana = state.mana(m_mutables.owner);
-   if(is_spell()) {
-      total_mana += state.floating_mana(m_mutables.owner);
-   }
-   return mana_cost() <= total_mana && _check_play_condition(state);
-}
+
 std::vector< sptr< Grant > > Card::all_grants() const
 {
    return mutables().grants_temp + mutables().grants;
@@ -70,10 +64,13 @@ void Card::store_grant(const sptr< Grant >& grant)
 bool Card::has_effect(events::EventLabel e_type, const EffectBase& effect) const
 {
    auto found_effects = m_mutables.effects.find(e_type);
-   bool found = found_effects != m_mutables.effects.end();
-   if(found) {
+   if(found_effects != m_mutables.effects.end()) {
       const auto& effects = found_effects->second;
-      return std::find(effects.begin(), effects.end(), effect) != effects.end();
+      return std::find_if(
+                effects.begin(),
+                effects.end(),
+                [&](const auto& eff_ptr) { return (*eff_ptr) == effect; })
+             == effects.end();
    }
    return false;
 }

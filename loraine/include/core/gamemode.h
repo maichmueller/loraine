@@ -25,16 +25,20 @@ class GameMode {
 
    bool run_game();
 
-   GameMode(Config cfg, SymArr<std::vector<CardToken> > decks)
-       : m_state(std::move(std::make_shared<State>()))
+   GameMode(const Config& cfg, SymArr<Deck > decks, SymArr<sptr<Controller>> controllers)
+      : m_state(cfg, decks, controllers)
    {
    }
+//   GameMode(const Config& cfg, SymArr<std::vector<CardToken> > decks, SymArr<sptr<Controller>> controllers)
+//      : m_state(cfg, decks, controllers)
+//   {
+//   }
 
    auto state() { return m_state; }
    [[nodiscard]] auto state() const { return m_state; }
 
   private:
-   sptr< State > m_state;
+   State m_state;
 };
 
 #endif  // LORAINE_GAMEMODE_H

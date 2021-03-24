@@ -48,10 +48,20 @@ class TargeterBase {
 
 template < TargetingMode mode, TargetingTeam affiliation, Location range >
 class Targeter: public TargeterBase {
+   using TargeterBase::TargeterBase;
+
+  protected:
+   using base = Targeter< mode, affiliation, range >;
 };
 
 class NoneTargeter:
     public Targeter< TargetingMode::AUTOMATIC, TargetingTeam::ANY, Location::BOARD > {
+  public:
+   NoneTargeter() : base(TargetingMode::AUTOMATIC) {}
+   std::vector< sptr< Targetable > > operator()(const State& /*state*/, Team /*team*/) override
+   {
+      return {};
+   };
 };
 
 template < TargetingTeam affiliation, Location range >

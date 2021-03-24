@@ -4,13 +4,14 @@
 
 #include "cardbase.h"
 
-class TrapCard: public Card {
+class TrapCard: public Cloneable<abstract_method<TrapCard>, inherit_constructors<Card>> {
+  public:
    struct MutableTrapState {
       std::vector< sptr< Card > > trapped_cards;
    };
 
    TrapCard(ConstState const_state, MutableState mut_state, MutableTrapState mut_trap_state)
-       : Card(std::move(const_state), std::move(mut_state)),
+       : Cloneable(std::move(const_state), std::move(mut_state)),
          m_trap_mutables(std::move(mut_trap_state))
    {
    }

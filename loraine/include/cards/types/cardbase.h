@@ -26,7 +26,10 @@ class Grant;
 /**
  * Abstract base class (abc) for LOR cards.
  */
-class Card: public EventListener< Card >, public Targetable {
+class Card:
+    public Cloneable< abstract_method< Card > >,
+    public EventListener< Card >,
+    public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 
@@ -146,6 +149,8 @@ class Card: public EventListener< Card >, public Targetable {
 
    // manipulations
 
+   inline void uncover() { m_mutables.hidden = false; }
+
    void add_effect(events::EventLabel e_type, sptr< EffectBase > effect);
    void remove_effect(events::EventLabel e_type, const EffectBase& effect);
 
@@ -192,12 +197,12 @@ class Card: public EventListener< Card >, public Targetable {
    /*
     * Copy Constructor
     */
-   Card(const Card& card) = default;
+   Card(const Card& card);
 
    /*
     * Deleted copy assignment operator
     */
-   Card& operator=(const Card&) = delete;
+   Card& operator=(const Card&);
 
    /*
     * Move assignment operator

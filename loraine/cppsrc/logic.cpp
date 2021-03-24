@@ -1,22 +1,21 @@
 #include "core/logic.h"
+
+#include "core/action.h"
 #include "core/state.h"
 
-std::vector< sptr< Targetable > > Logic::request_action()
+actions::Action Logic::request_action() const
 {
-   sptr<Action> action = nullptr;
-   while(action == nullptr) {
-      compute_legal_actions(*m_state);
-      action = m_state->player(m_state->active_team()).controller()->choose_action(*m_state);
-      if(not is_valid(action)) {
-         action = nullptr;
-      }
-   }
-
+   return m_action_handler->request_action(*state());
 }
 
+void Logic::cast(const std::vector< sptr< Spell >>& spells_vec) {
+  for(const auto& spell : spells_vec) {
+     trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+  }
+}
 
 //
-//void Logic::check_status()
+// void Logic::check_status()
 //{
 //   auto& cfg = m_state->config();
 //   auto nexus_health = {m_state->player(Team::BLUE), m_state->player(Team::RED)};
@@ -39,46 +38,46 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   m_terminal_checked = true;
 //}
 //
-//void Logic::damage_nexus(size_t amount, Team team)
+// void Logic::damage_nexus(size_t amount, Team team)
 //{
 //   m_state->nexus_health(team) -= amount;
 //}
-//void Logic::heal_nexus(size_t amount, Team team)
+// void Logic::heal_nexus(size_t amount, Team team)
 //{
 //   m_state->nexus_health(team) = std::min(
 //      m_state->nexus_health(team) + static_cast< long >(amount),
 //      static_cast< long >(m_state->config().START_NEXUS_HEALTH));
 //}
-//bool Logic::round_ended() const
+// bool Logic::round_ended() const
 //{
 //   return m_state->pass_flag(Team::BLUE) && m_state->pass_flag(Team::RED);
 //}
 //
-//bool Logic::pass()
+// bool Logic::pass()
 //{
 //   m_state->pass_flag(m_state->active_team()) = true;
 //   return round_ended();
 //}
-//void Logic::reset_pass(Team team)
+// void Logic::reset_pass(Team team)
 //{
 //   m_state->player(team).flags()->pass = false;
 //}
 //
-//void Logic::reset_pass()
+// void Logic::reset_pass()
 //{
 //   m_state->player(m_state->active_team()).flags()->pass = false;
 //}
-//auto Logic::is_enlightened(Team team) const
+// auto Logic::is_enlightened(Team team) const
 //{
 //   return m_state->managems(team) == m_state->config().MAX_MANA;
 //}
 //
-//void Logic::shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n)
+// void Logic::shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n)
 //{
 //   m_state->player(team).deck()->shuffle_into(card, top_n, m_state->rng());
 //}
 //
-//void Logic::_move_units(const std::vector< size_t >& positions, Team team, bool to_bf)
+// void Logic::_move_units(const std::vector< size_t >& positions, Team team, bool to_bf)
 //{
 //   auto min_target_pos = m_state->board()->count_units(team, not to_bf);
 //   auto& battlefield = m_state->board()->battlefield(team);
@@ -104,7 +103,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      }
 //   }
 //}
-//void Logic::_move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf)
+// void Logic::_move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf)
 //{
 //   auto& battlefield = m_state->board()->battlefield(team);
 //   auto& camp = m_state->board()->camp(team);
@@ -145,7 +144,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//bool Logic::run_game()
+// bool Logic::run_game()
 //{
 //   // decide the team who starts attacking
 //   Team starting_team = Team(std::uniform_int_distribution< size_t >(0, 1)(random::engine()));
@@ -174,7 +173,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//bool Logic::_do_action(const sptr< Action >& action)
+// bool Logic::_do_action(const sptr< Action >& action)
 //{
 //   auto action_type = action->action_label();
 //   bool flip_initiative = true;  // whether the other team gets to act next.
@@ -227,7 +226,8 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //               flip_initiative = false;
 //            } else {
 //               flip_initiative = _do_action(
-//                  std::make_shared< PlayAction >(m_state->round(), spell->mutables().owner, spell));
+//                  std::make_shared< PlayAction >(m_state->round(), spell->mutables().owner,
+//                  spell));
 //            }
 //         }
 //
@@ -259,7 +259,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   m_state->commit_to_history(action, BLUE);
 //   return flip_initiative;
 //}
-//void Logic::_activate_battlemode(Team attack_team)
+// void Logic::_activate_battlemode(Team attack_team)
 //{
 //   m_state->set_battle_mode(true);
 //   m_state->attacker(attack_team);
@@ -310,12 +310,12 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      m_state->token_attack(false, attack_team);
 //   }
 //}
-//void Logic::_deactivate_battlemode()
+// void Logic::_deactivate_battlemode()
 //{
 //   m_state->set_battle_mode(false);
 //   m_state->reset_attacker();
 //}
-//void Logic::_resolve_spell_stack(bool burst)
+// void Logic::_resolve_spell_stack(bool burst)
 //{
 //   auto& spell_stack = m_state->spell_stack();
 //   if(burst) {
@@ -329,7 +329,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      }
 //   }
 //}
-//void Logic::_resolve_battle()
+// void Logic::_resolve_battle()
 //{
 //   m_state->set_battle_resolution_mode(true);
 //   auto attacker = m_state->attacker().value();
@@ -397,7 +397,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   m_state->set_battle_resolution_mode(false);
 //}
-//void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
+// void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 //{
 //   sptr< long > damage = std::make_shared< long >(unit_att->power());
 //   if(*damage > 0) {
@@ -409,7 +409,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      nexus_strike(unit_def->mutables().owner, damage, unit_att);
 //   }
 //}
-//void Logic::damage_unit(
+// void Logic::damage_unit(
 //   const sptr< Card >& cause,
 //   const sptr< Unit >& unit,
 //   const sptr< long >& damage)
@@ -420,7 +420,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
 //   *damage += -health_def;
 //}
-//void Logic::kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
+// void Logic::kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 //{
 //   killed_unit->kill();
 //   _trigger_event(events::DieEvent(killer, Target(killed_unit), cause));
@@ -432,7 +432,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   _remove(killed_unit);
 //}
 //
-//void Logic::nexus_strike(const sptr< Unit >& striking_unit)
+// void Logic::nexus_strike(const sptr< Unit >& striking_unit)
 //{
 //   Team attacked_nexus = opponent(striking_unit->mutables().owner);
 //   sptr< long > att_power = std::make_shared< long >(striking_unit->power());
@@ -444,7 +444,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//std::vector< sptr< Card > > Logic::_draw_n_cards(Team team, int n)
+// std::vector< sptr< Card > > Logic::_draw_n_cards(Team team, int n)
 //{
 //   std::vector< sptr< Card > > hand(n);
 //   auto& deck = m_state->deck(team);
@@ -454,7 +454,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   return hand;
 //}
-//void Logic::_mulligan(
+// void Logic::_mulligan(
 //   const std::vector< sptr< Card > >& hand_blue,
 //   const std::vector< sptr< Card > >& hand_red)
 //{
@@ -463,14 +463,14 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   auto mull_act_blue = m_agents[BLUE]->choose_mulligan(*m_state, hand_blue);
 //   auto mull_act_red = m_agents[RED]->choose_mulligan(*m_state, hand_red);
 //
-//   std::array< std::array< bool, INITIAL_HAND_SIZE >, 2 > replace = {
+//   std::array< std::array< bool, INITIAL_HAND_SIZE >, 2 > m_replace = {
 //      mull_act_blue->replace_decisions(), mull_act_red->replace_decisions()};
 //
 //   for(int p = BLUE; p != RED; ++p) {
 //      auto& curr_hand = hands.at(p);
 //      State::HandType new_hand;
 //      auto nr_cards_to_replace = 0;
-//      auto replace_for_p = replace.at(p);
+//      auto replace_for_p = m_replace.at(p);
 //      auto hand_size = curr_hand.size();
 //      for(auto i = 0U; i < hand_size; ++i) {
 //         if(replace_for_p.at(i)) {
@@ -491,7 +491,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      m_state->hand(new_hand, Team(p));
 //   }
 //}
-//void Logic::_end_round()
+// void Logic::_end_round()
 //{
 //   // first let all m_effects trigger that state an effect with the "Round End" keyword
 //   auto active_team = m_state->active_team();
@@ -537,7 +537,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   regenerate_units(active_team);
 //   regenerate_units(passive_team);
 //}
-//void Logic::_start_round()
+// void Logic::_start_round()
 //{
 //   m_state->incr_round();
 //
@@ -553,8 +553,8 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   m_state->token_scout(RED, false);
 //
 //   // the round start events is to be triggered by the team that also ended the previous round.
-//   _trigger_event(events::RoundStartEvent(m_state->active_team(), std::make_shared< long >(round)));
-//   for(int team = BLUE; team != RED; ++team) {
+//   _trigger_event(events::RoundStartEvent(m_state->active_team(), std::make_shared< long
+//   >(round))); for(int team = BLUE; team != RED; ++team) {
 //      give_managems(Team(team));
 //   }
 //   m_state->refill_mana(BLUE);
@@ -563,19 +563,19 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   draw_card(BLUE);
 //   draw_card(RED);
 //}
-//void Logic::give_managems(Team team, long amount)
+// void Logic::give_managems(Team team, long amount)
 //{
 //   m_state->incr_managems(team, amount);
 //   _check_enlightenment(team);
 //}
 //
-//void Logic::_check_enlightenment(Team team)
+// void Logic::_check_enlightenment(Team team)
 //{
 //   if(m_state->is_enlightened(team)) {
 //      _trigger_event(events::EnlightenmentEvent(team));
 //   }
 //}
-//void Logic::retreat_to_camp(Team team)
+// void Logic::retreat_to_camp(Team team)
 //{
 //   process_camp_queue(team);
 //
@@ -608,7 +608,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      curr_idx += 1;
 //   }
 //}
-//void Logic::play_spells()
+// void Logic::play_spells()
 //{
 //   auto& spell_stack = m_state->spell_stack();
 //   auto& spell_prestack = m_state->spell_prestack();
@@ -622,7 +622,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   spell_prestack.clear();
 //}
 //
-//void Logic::play(const sptr< Card >& card, std::optional< size_t > replaces)
+// void Logic::play(const sptr< Card >& card, std::optional< size_t > replaces)
 //{
 //   Team team = card->mutables().owner;
 //   spend_mana(team, card->mana_cost(), false);
@@ -639,7 +639,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   m_event_listener.register_card(card);
 //   _play_event_triggers(card, team);
 //}
-//void Logic::_play_event_triggers(const sptr< Card >& card, const Team& team)
+// void Logic::_play_event_triggers(const sptr< Card >& card, const Team& team)
 //{
 //   if(card->has_effect(events::EventLabel::DAYBREAK) && check_daybreak(team)) {
 //      _trigger_event(events::DaybreakEvent(team, card));
@@ -649,11 +649,11 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   _trigger_event(events::PlayEvent(team, card));
 //}
-//void Logic::cast(const sptr< Spell >& spell)
+// void Logic::cast(const sptr< Spell >& spell)
 //{
 //   _trigger_event(events::CastEvent(spell->mutables().owner, spell));
 //}
-//void Logic::process_camp_queue(Team team)
+// void Logic::process_camp_queue(Team team)
 //{
 //   // the logic of LOR for deciding how many units in the m_queue fit into the
 //   // camp goes by 2 different modes:
@@ -671,7 +671,8 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   // then, starting from the end, any common of the battlefield, which no longer finds space
 //   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
 //   size_t camp_units_count = m_state->board()->count_units(team, true);
-//   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit) {
+//   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit)
+//   {
 //      return not unit->has_keyword(Keyword::EPHEMERAL);
 //   });
 //   auto& queue = m_state->board()->camp_queue(team);
@@ -686,7 +687,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      }
 //   }
 //}
-//void Logic::spend_mana(Team team, size_t cost, bool floating_mana)
+// void Logic::spend_mana(Team team, size_t cost, bool floating_mana)
 //{
 //   long int rem_mana_to_pay = cost;
 //   if(floating_mana) {
@@ -699,7 +700,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//void Logic::draw_card(Team team)
+// void Logic::draw_card(Team team)
 //{
 //   auto deck = m_state->deck(team);
 //   auto card_drawn = deck.back();
@@ -711,7 +712,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //      obliterate(card_drawn);
 //   }
 //}
-//void Logic::summon(const sptr< Unit >& unit, bool to_bf)
+// void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
 //   m_state->board()->add_to_queue(unit);
 //   Team team = unit->mutables().owner;
@@ -719,7 +720,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   m_event_listener.register_card(unit);
 //   _trigger_event(events::SummonEvent(team, unit));
 //}
-//void Logic::summon_to_battlefield(const sptr< Unit >& unit)
+// void Logic::summon_to_battlefield(const sptr< Unit >& unit)
 //{
 //   Team team = unit->mutables().owner;
 //   auto bf = m_state->board()->battlefield(team);
@@ -734,7 +735,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//void Logic::summon_exact_copy(const sptr< Unit >& unit)
+// void Logic::summon_exact_copy(const sptr< Unit >& unit)
 //{
 //   Team team = unit->mutables().owner;
 //   auto copied_unit = std::make_shared< Unit >(*unit);
@@ -745,7 +746,8 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   _trigger_event(events::SummonEvent(team, unit));
 //}
 //
-//std::vector< Target > Logic::filter_targets_bf(const Filter& filter, std::optional< Team > opt_team)
+// std::vector< Target > Logic::filter_targets_bf(const Filter& filter, std::optional< Team >
+// opt_team)
 //{
 //   std::vector< Target > targets;
 //
@@ -766,7 +768,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   return targets;
 //}
 //
-//std::vector< Target > Logic::filter_targets_camp(
+// std::vector< Target > Logic::filter_targets_camp(
 //   const Filter& filter,
 //   std::optional< Team > opt_team)
 //{
@@ -788,7 +790,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   return targets;
 //}
-//std::vector< Target > Logic::filter_targets_hand(
+// std::vector< Target > Logic::filter_targets_hand(
 //   const Filter& filter,
 //   std::optional< Team > opt_team)
 //{
@@ -811,7 +813,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   return targets;
 //}
 //
-//std::vector< Target > Logic::filter_targets_deck(
+// std::vector< Target > Logic::filter_targets_deck(
 //   const Filter& filter,
 //   std::optional< Team > opt_team)
 //{
@@ -834,7 +836,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   return targets;
 //}
 //
-//std::vector< Target > Logic::filter_targets_board(
+// std::vector< Target > Logic::filter_targets_board(
 //   const Filter& filter,
 //   std::optional< Team > opt_team)
 //{
@@ -849,7 +851,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   return targets;
 //}
-//std::vector< Target > Logic::filter_targets_everywhere(
+// std::vector< Target > Logic::filter_targets_everywhere(
 //   const Filter& filter,
 //   std::optional< Team > opt_team)
 //{
@@ -867,14 +869,14 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //   return targets;
 //}
-//void Logic::heal(Team team, const sptr< Unit >& unit, long amount)
+// void Logic::heal(Team team, const sptr< Unit >& unit, long amount)
 //{
 //   if(amount > 0) {
 //      unit->heal(amount);
 //      _trigger_event(events::HealUnitEvent(team, unit, std::make_shared< long >(amount)));
 //   }
 //}
-//bool Logic::check_daybreak(Team team) const
+// bool Logic::check_daybreak(Team team) const
 //{
 //   const auto& history = m_state->history()->at(team).at(m_state->round());
 //   // if no play action is found in the history (actions are committed to history only
@@ -887,7 +889,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //             })
 //          == history.end();
 //}
-//bool Logic::check_nightfall(Team team) const
+// bool Logic::check_nightfall(Team team) const
 //{
 //   const auto& history = m_state->history(team)->at(m_state->round());
 //   // if any play action is found in the current history (actions are committed to history only
@@ -900,7 +902,7 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //             })
 //          != history.end();
 //}
-//void Logic::_remove(const sptr< Card >& card)
+// void Logic::_remove(const sptr< Card >& card)
 //{
 //   m_event_listener.unregister_card(card);
 //   if(auto loc = card->mutables().location; loc == Location::CAMP) {
@@ -912,12 +914,12 @@ std::vector< sptr< Targetable > > Logic::request_action()
 //   }
 //}
 //
-//void Logic::_copy_grants(
+// void Logic::_copy_grants(
 //   const std::vector< sptr< Grant > >& grants,
 //   const std::shared_ptr< Unit >& unit)
 //{
 //}
-//void Logic::_cast_spellstack()
+// void Logic::_cast_spellstack()
 //{
 //   auto stack = m_state->spell_stack();
 //   // iterate from the end, since the stack is LIFO

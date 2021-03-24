@@ -4,6 +4,7 @@
 
 #include <uuid.h>
 
+#include "uuid.h"
 #include <optional>
 #include <tuple>
 #include <variant>
@@ -11,7 +12,56 @@
 #include "random.h"
 #include "types.h"
 
+
+template < typename T, typename Allocator >
+std::vector< T, Allocator >& operator+(
+   std::vector< T, Allocator >& vec1,
+   const std::vector< T, Allocator >& vec2)
+{
+   vec1.reserve(vec1.size() + vec2.size());
+   for(const auto& elem : vec2) {
+      vec1.emplace_back(elem);
+   }
+   return vec1;
+}
+template < typename T, typename Allocator >
+std::vector< T, Allocator > operator+(
+   const std::vector< T, Allocator >& vec1,
+   const std::vector< T, Allocator >& vec2)
+{
+   auto vec = vec1;
+   vec.reserve(vec1.size() + vec2.size());
+   for(const auto& elem : vec2) {
+      vec.emplace_back(elem);
+   }
+   return vec;
+}
+template < typename T, typename Allocator >
+std::vector< T, Allocator >& operator+(
+   std::vector< T, Allocator >& vec1,
+   std::vector< T, Allocator >&& vec2)
+{
+   vec1.reserve(vec1.size() + vec2.size());
+   for(auto&& elem : vec2) {
+      vec1.emplace_back(std::move(elem));
+   }
+   return vec1;
+}
+template < typename T, typename Allocator >
+std::vector< T, Allocator >& operator+(
+   std::vector< T, Allocator >&& vec1,
+   std::vector< T, Allocator >&& vec2)
+{
+   vec1.reserve(vec1.size() + vec2.size());
+   for(auto&& elem : vec2) {
+      vec1.emplace_back(std::move(elem));
+   }
+   return vec1;
+}
+
+
 namespace utils {
+
 inline UUID new_uuid()
 {
    // safer to wrap static variable in function call, in case of exception throw.
@@ -33,10 +83,40 @@ struct deduction_help {
    std::tuple< Args... > t;
 };
 
+template < class T, class... Ts >
+struct is_any: std::disjunction< std::is_same< T, Ts >... > {
+};
+template < class T, class... Ts >
+inline constexpr bool is_any_v = is_any< T, Ts... >::value;
+
+template < class T, class... Ts >
+struct are_same: std::conjunction< std::is_same< T, Ts >... > {
+};
+template < class T, class... Ts >
+inline constexpr bool are_same_v = are_same< T, Ts... >::value;
+
+template < std::size_t I, class T >
+struct variant_element;
+
+// recursive case
+template < std::size_t I, class Head, class... Tail >
+struct variant_element< I, std::variant< Head, Tail... > >:
+    variant_element< I - 1, std::variant< Tail... > > {
+};
+
+// base case
+template < class Head, class... Tail >
+struct variant_element< 0, std::variant< Head, Tail... > > {
+   using type = Head;
+};
+
+template < std::size_t I, class T >
+using variant_element_t = typename variant_element< I, T >::type;
+
 template < template < typename... > class Base, typename Derived, typename... Args >
 struct CRTP {
-   Derived* derived() { return static_cast< Derived* >(*this); }
-   Derived const* derived() const { return static_cast< Derived const* >(*this); }
+   Derived* derived() { return static_cast< Derived* >(this); }
+   Derived const* derived() const { return static_cast< Derived const* >(this); }
 
   private:
    constexpr CRTP() = default;
@@ -46,22 +126,19 @@ struct CRTP {
 template < size_t N, typename T >
 struct getter {
    auto operator()(const T& t) { return std::get< N >(t); }
-   using type = std::result_of_t< getter(const T&) >;
+   using type = std::invoke_result_t< getter(const T&) >;
 };
 template < size_t N, typename T >
 using getter_t = getter< N, T >;
 
-// template < typename, typename = void >
-// struct has_sort_method: std::false_type {
-//};
-//
-// template < typename T >
-// struct has_sort_method< T, std::void_t< decltype(&T::sort_subscribers) > >:
-//   std::is_same< _sort_func_return_type, decltype(std::declval< T >().sort_subscribers()) > {
-//};
-
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)
+{
+   return ptr != nullptr;
+}
+
+template < typename T >
+inline bool has_value(const uptr< T >& ptr)
 {
    return ptr != nullptr;
 }
@@ -71,10 +148,21 @@ inline bool has_value(const std::optional< T >& t)
    return t.has_value();
 }
 template < typename T >
-inline void throw_if_no_value(const sptr< T >& ptr)
+inline void throw_if_no_value(
+   const sptr< T >& ptr,
+   const std::string& msg = "Shared pointer is nullptr.")
 {
    if(not has_value(ptr)) {
-      throw std::logic_error("Shared pointer is null.");
+      throw std::logic_error(msg);
+   }
+}
+template < typename T >
+inline void throw_if_no_value(
+   const uptr< T >& ptr,
+   const std::string& msg = "Unique pointer is nullptr.")
+{
+   if(not has_value(ptr)) {
+      throw std::logic_error(msg);
    }
 }
 template < typename T >
@@ -103,46 +191,22 @@ reversion_wrapper< T > reverse(T&& iterable)
    return {iterable};
 }
 
-template < typename T, typename Allocator >
-std::vector< T, Allocator >& operator+(
-   std::vector< T, Allocator >& vec1, const std::vector< T, Allocator >& vec2)
+template < typename VectorT, typename IndexVectorT >
+void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
 {
-   vec1.reserve(vec1.size() + vec2.size());
-   for(const auto& elem : vec2) {
-      vec1.emplace_back(elem);
-   }
-   return vec1;
+   static_assert(
+      std::is_integral_v<typename IndexVectorT::value_type>,
+      "Index vector value_type needs to be an integer type");
+   std::for_each(indices.crbegin(), indices.crend(), [&v](auto index) {
+     v.erase(std::next(begin(v), index));
+   });
 }
-template < typename T, typename Allocator >
-std::vector< T, Allocator > operator+(
-   const std::vector< T, Allocator >& vec1, const std::vector< T, Allocator >& vec2)
+template < typename VectorT, typename IndexVectorT >
+void remove_by_indices(VectorT& v, const IndexVectorT& indices)
 {
-   auto vec = vec1;
-   vec.reserve(vec1.size() + vec2.size());
-   for(const auto& elem : vec2) {
-      vec.emplace_back(elem);
-   }
-   return vec;
-}
-template < typename T, typename Allocator >
-std::vector< T, Allocator >& operator+(
-   std::vector< T, Allocator >& vec1, std::vector< T, Allocator >&& vec2)
-{
-   vec1.reserve(vec1.size() + vec2.size());
-   for(auto&& elem : vec2) {
-      vec1.emplace_back(std::move(elem));
-   }
-   return vec1;
-}
-template < typename T, typename Allocator >
-std::vector< T, Allocator >& operator+(
-   std::vector< T, Allocator >&& vec1, std::vector< T, Allocator >&& vec2)
-{
-   vec1.reserve(vec1.size() + vec2.size());
-   for(auto&& elem : vec2) {
-      vec1.emplace_back(std::move(elem));
-   }
-   return vec1;
+   auto indices_copy = indices;
+   std::sort(indices_copy.begin(), indices_copy.end());
+   remove_by_sorted_indices(v, indices_copy);
 }
 
 /*
@@ -173,25 +237,6 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
-
-
-template< std::size_t I, class T >
-struct variant_element;
-
-// recursive case
-template< std::size_t I, class Head, class... Tail >
-struct variant_element<I, std::variant<Head, Tail...>>
-   : variant_element<I-1, std::variant<Tail...>> { };
-
-// base case
-template< class Head, class... Tail >
-struct variant_element<0, std::variant<Head, Tail...>> {
-   using type = Head;
-};
-
-template< std::size_t I, class T >
-using variant_element_t = typename variant_element<I, T>::type;
-
 
 }  // namespace utils
 

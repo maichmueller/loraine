@@ -2,8 +2,8 @@
 #ifndef LORAINE_CONTROLLER_H
 #define LORAINE_CONTROLLER_H
 
-#include "core/action.h"
 #include "cards/effect.h"
+#include "core/action.h"
 #include "core/gamedefs.h"
 #include "utils/types.h"
 
@@ -25,13 +25,10 @@ class Controller {
 
    [[nodiscard]] auto uuid() const { return m_uuid; }
 
-   virtual sptr< Action > choose_action(const State& state) = 0;
-   virtual sptr< MulliganAction > choose_mulligan(
-      State& state,
-      std::vector< sptr< Card > > hand) = 0;
-   virtual std::optional< std::vector< sptr< Targetable > > > choose_targets(
+   virtual actions::Action choose_action(const State& state) = 0;
+   virtual actions::Action choose_targets(
       const State& state,
-      sptr< EffectBase > targeting_effect) = 0;
+      const sptr< EffectBase >& effect) = 0;
 };
 
 #endif  // LORAINE_CONTROLLER_H

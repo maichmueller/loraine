@@ -30,6 +30,7 @@ class Player {
       Mana mana = {0, 0, 0},
       Flags flags = {false, false, false, false, false});
 
+
    inline auto* nexus() { return &m_nexus; }
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
    [[nodiscard]] inline auto team() const { return m_team; }

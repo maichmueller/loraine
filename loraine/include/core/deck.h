@@ -2,7 +2,7 @@
 #ifndef LORAINE_DECK_H
 #define LORAINE_DECK_H
 
-#include <random.h>
+#include <utils/random.h>
 
 #include <functional>
 #include <map>
@@ -70,7 +70,7 @@ class Deck {
     *   the range from the top to shuffle the card into
     */
     template <typename RNG>
-   void shuffle_into(const sptr< Card >& card, size_t top_n, RNG&& rng);
+   void shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n);
 
    /**
     * Draw the top card

@@ -9,14 +9,20 @@
 
 struct Record {
   public:
+   Record() = default;
+   Record(const Record&) = default;
+   Record(Record&&) = default;
+   Record& operator=(const Record&) = default;
+   Record& operator=(Record&&) = default;
+
    virtual ~Record() = default;
 };
 struct ActionRecord: public Record {
-   ActionRecord(sptr< Action > action, Team team) : team(team), action(std::move(action)) {}
+   ActionRecord(actions::Action action, Team team) : team(team), action(std::move(action)) {}
 
   private:
    Team team;
-   sptr< Action > action;
+   actions::Action action;
 };
 
 template < typename EventClass >

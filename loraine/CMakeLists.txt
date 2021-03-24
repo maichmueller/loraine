@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
+        ${LORAINE_SRC_DIR}/action.cpp
         ${LORAINE_SRC_DIR}/action_handler.cpp
         ${LORAINE_SRC_DIR}/event_types.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp

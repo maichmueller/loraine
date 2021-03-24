@@ -8,9 +8,9 @@
 #include "core/logic.h"
 #include "events/lor_events/construction.h"
 
-void State::commit_to_history(sptr< Action > action, Team team)
+void State::commit_to_history(uptr< Record >&& record)
 {
-   m_history[team][m_round].emplace_back(std::move(action));
+   (*m_history)[m_round].emplace_back(std::move(record));
 }
 
 void State::to_graveyard(const sptr< Card >& unit)
@@ -39,7 +39,7 @@ Status State::status()
 State::State(
    const Config& cfg,
    SymArr< Deck > decks,
-   SymArr< sptr< Controller > > players,
+   SymArr< sptr< Controller > > controllers,
    Team starting_team,
    random::rng_type rng)
     : m_config(cfg),
@@ -52,12 +52,12 @@ State::State(
                 cfg.PASSIVE_POWERS_BLUE,
                 cfg.NEXUS_KEYWORDS_BLUE),
              decks[0],
-             std::move(players[0])),
+             std::move(controllers[0])),
           Player(
              Team(1),
              Nexus(Team(1), cfg.START_NEXUS_HEALTH, cfg.PASSIVE_POWERS_RED, cfg.NEXUS_KEYWORDS_RED),
              decks[1],
-             std::move(players[1]))}),
+             std::move(controllers[1]))}),
       m_starting_team(starting_team),
       m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
       m_logic(std::make_shared< Logic >()),
@@ -65,7 +65,6 @@ State::State(
       m_events(_init_events()),
       m_turn(starting_team),
       m_spell_stack(),
-      m_spell_prestack(),
       m_rng(rng)
 {
 }
@@ -73,13 +72,22 @@ State::State(
 State::State(
    const Config& cfg,
    SymArr< Deck > decks,
-   SymArr< sptr< Controller > > players,
+   SymArr< sptr< Controller > > controllers,
    random::rng_type rng)
     : State(
        cfg,
        std::move(decks),
-       std::move(players),
+       std::move(controllers),
        Team(random::bernoulli_sample(0.5, rng)),
        rng)
+{
+}
+State::State(const State& other)
+    : m_config(other.m_config),
+      m_players({m_players[0].deck()}other.m_players),
+      m_starting_team(other.m_starting_team),
+      m_board(other.m_board),
+      m_logic(other.m_logic)
+      m_round(other.m_round)
 {
 }

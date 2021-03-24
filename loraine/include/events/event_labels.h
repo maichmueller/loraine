@@ -8,9 +8,9 @@ namespace events {
 enum class EventLabel {
    ATTACK = 0,  // declaring attacker
    BEHOLD,  // the team has an 8+ mana common in hand or in play
+   BLOCK, // a unit blocked an attacking unit
    CAPTURE,  // A common has captured another common
    CAST,  // casting spells/skills (activation events, not committing events)
-   BLOCK,  // declaring blockers
    DAYBREAK,  // the played card is the first to be played in this round
    DIE,  // a common dies
    DISCARD,  // removing a card from hand (not playing)

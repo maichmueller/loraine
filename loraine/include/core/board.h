@@ -15,7 +15,7 @@ class Landmark;
 
 class Board {
   public:
-   using BfType = std::vector< sptr< FieldCard > >;
+   using BfType = std::vector< sptr< Unit > >;
    using CampType = std::vector< sptr< FieldCard > >;
    using CampQueueType = std::queue< sptr< FieldCard > >;
 
@@ -60,10 +60,10 @@ class Board {
       const std::function< bool(const sptr< FieldCard >&) >& filter) const;
    [[nodiscard]] size_t count_units(Team team, bool in_camp) const;
 
-   auto& battlefield(Team team) { return m_battlefield[team]; }
-   [[nodiscard]] auto& battlefield(Team team) const { return m_battlefield[team]; }
-   auto& camp(Team team) { return m_camp[team]; }
-   [[nodiscard]] auto& camp(Team team) const { return m_camp[team]; }
+   auto* battlefield(Team team) { return &m_battlefield[team]; }
+   [[nodiscard]] auto* battlefield(Team team) const { return &m_battlefield[team]; }
+   auto* camp(Team team) { return &m_camp[team]; }
+   [[nodiscard]] auto* camp(Team team) const { return &m_camp[team]; }
    [[nodiscard]] std::vector< sptr< Unit > > camp_units(Team team) const;
    auto& camp_queue(Team team) { return m_camp_queue.at(team); }
    [[nodiscard]] auto& camp_queue(Team team) const { return m_camp_queue.at(team); }
