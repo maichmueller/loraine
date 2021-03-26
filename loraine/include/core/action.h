@@ -26,7 +26,6 @@ enum class ActionLabel {
    PLACE_UNIT,
    PLACE_SPELL,
    MULLIGAN,
-   PASS,
    PLAY,
    TARGETING
 };
@@ -52,18 +51,8 @@ class ActionBase: public utils::CRTP< ActionBase, Derived, ActionT > {
 };
 
 /**
- * Action for passing
- */
-class PassAction: public ActionBase< PassAction, actions::ActionType< ActionLabel::PASS > > {
-  public:
-   using base = ActionBase< PassAction, actions::ActionType< ActionLabel::PASS > >;
-   using base::base;
-
-   bool execute_impl(State& state);
-};
-/**
  * This is the action for accepting the outcome of whatever
- * the current state is.
+ * the current state is. Counts as pass if nothing has been done
  */
 class AcceptAction: public ActionBase< AcceptAction, actions::ActionType< ActionLabel::ACCEPT > > {
   public:
@@ -73,8 +62,7 @@ class AcceptAction: public ActionBase< AcceptAction, actions::ActionType< Action
    bool execute_impl(State& state);
 
   private:
-   void _resolve_battle();
-   void _resolve_spell_stack(State& state, bool burst);
+
 };
 /**
  * Action for playing a fieldcard
@@ -242,7 +230,6 @@ class Action {
       ChoiceAction,
       DragEnemyAction,
       MulliganAction,
-      PassAction,
       PlaceSpellAction,
       PlaceUnitAction,
       PlayAction,
@@ -280,7 +267,6 @@ class Action {
    [[nodiscard]] bool is_choice() const { return label() == ActionLabel::CHOICE; }
    [[nodiscard]] bool is_dragging_enemy() const { return label() == ActionLabel::DRAG_ENEMY; }
    [[nodiscard]] bool is_mulligan() const { return label() == ActionLabel::MULLIGAN; }
-   [[nodiscard]] bool is_pass() const { return label() == ActionLabel::PASS; }
    [[nodiscard]] bool is_placing_spell() const { return label() == ActionLabel::PLACE_SPELL; }
    [[nodiscard]] bool is_placing_unit() const { return label() == ActionLabel::PLACE_UNIT; }
    [[nodiscard]] bool is_play() const { return label() == ActionLabel::PLAY; }

@@ -63,8 +63,9 @@ class virtual_inherit_from: virtual public T {
  *      template <typename... Ts>
  *      class CRTPMixinClass : Ts... {...};
  *      class A : public CRTPMixinClass<A, BaseOfA> {...};
- * In such a scenario, this helper struct will make sure that CRTPMixinClass enables A to inherit
- * the constructors of BaseOfA.
+ * In such a scenario, this helper struct will make sure that CRTPMixinClass enables A to use
+ * the constructors of BaseOfA or even simply forward them via a using statement of
+ * using Cloneable<...>::Cloneable.
  */
 template < typename Head, typename... Tail >
 struct inherit_constructors: public Head, public inherit_constructors< Tail... > {
@@ -91,11 +92,11 @@ class Cloneable: public Bases... {
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:
-   virtual Cloneable *clone_impl() const override
+   Cloneable *clone_impl() const override
    {
       return new Derived(static_cast< const Derived & >(*this));
    }
@@ -110,11 +111,11 @@ class Cloneable< Derived, inherit_constructors< Bases... > >:
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:
-   virtual Cloneable *clone_impl() const override
+   Cloneable *clone_impl() const override
    {
       return new Derived(static_cast< const Derived & >(*this));
    }
@@ -127,7 +128,7 @@ class Cloneable< abstract_method< Derived >, Bases... >: public Bases... {
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:
@@ -143,7 +144,7 @@ class Cloneable< abstract_method< Derived >, inherit_constructors< Bases... > >:
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:
@@ -157,7 +158,7 @@ class Cloneable< Derived > {
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:
@@ -174,7 +175,7 @@ class Cloneable< abstract_method< Derived > > {
 
    uptr< Derived > clone() const
    {
-      return std::make_unique< Derived >(static_cast< Derived * >(this->clone_impl()));
+      return uptr< Derived >(static_cast< Derived * >(this->clone_impl()));
    }
 
   private:

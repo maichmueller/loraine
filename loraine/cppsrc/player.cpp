@@ -18,3 +18,4 @@ Player::Player(
       m_flags(flags)
 {
 }
+Player::Player(const Player& other): m_team(other.m_team), m_nexus(other.m_nexus) {}

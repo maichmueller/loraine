@@ -55,6 +55,9 @@ class Logic {
       return m_action_handler->valid_actions(state);
    }
    [[nodiscard]] actions::Action request_action() const;
+
+   Status step();
+
    /**
     * Play a fieldcard onto the board
     * @param card: shared_ptr<Card>,
@@ -67,13 +70,19 @@ class Logic {
    /**
     * play all the spells that have been added to the spellstack
     */
-   void play_spells();
+   void play_spell(const sptr< Spell >& spell);
    /**
-    * Cast the given floating. This does not check whether the given floating is also played.
+    * Cast the given floating. This does not check whether the given spell is also played.
     * @param: spell: shared_ptr<Spell>,
-    *    The floating to cast.
+    *    The spell to cast.
     */
-   void cast(const std::vector< sptr< Spell >>& spells_vec);
+   template <
+      typename Container,
+      typename =
+      std::enable_if_t< std::is_same_v< sptr< Spell >, typename std::decay_t<Container>::value_type > > >
+   void cast(Container&& spells_vec);
+
+   void cast(const sptr<Spell>& spell);
    /**
     * Summon a specific common card to either the camp or the battlefield.
     * @param: unit: shared_ptr<Unit>,
@@ -263,7 +272,7 @@ class Logic {
       _remove(card);
    }
 
-   bool check_status();
+   Status check_status();
    [[nodiscard]] bool check_daybreak(Team team) const;
    [[nodiscard]] bool check_nightfall(Team team) const;
 
@@ -279,6 +288,8 @@ class Logic {
    std::unique_ptr< ActionHandlerBase > m_prev_action_handler = nullptr;
 
    /// private logic helpers
+   void _resolve_battle();
+   void _resolve_spell_stack(bool burst);
 
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
    void _cast_spellstack();
@@ -287,7 +298,6 @@ class Logic {
 
    void _deactivate_battlemode();
    void _remove(const sptr< Card >& card);
-
 
    void _check_enlightenment(Team team);
    void _play_event_triggers(const sptr< Card >& card, const Team& team);
@@ -354,5 +364,16 @@ void Logic::trigger_event(Params&&... params)
    using targeted_event_t = std::invoke_result_t< decltype(&events::create_event< event_label >) >;
    std::get< targeted_event_t >(event).trigger(*state(), std::forward< Params >(params)...);
 }
+
+template <
+   typename Container,
+   typename >
+void Logic::cast(Container&& spells_vec)
+{
+   for(const auto& spell : spells_vec) {
+      trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+   }
+}
+
 
 #endif  // LORAINE_LOGIC_H

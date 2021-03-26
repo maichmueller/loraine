@@ -22,11 +22,9 @@ class Pool {
 };
 
 class UUID {
-   explicit UUID(Pool& pool) : m_pool(&pool), m_value(pool.get()) {}
-
+   UUID(uint64_t value) : m_value(value) {}
   private:
    uint64_t m_value;
-   Pool* m_pool;
 };
 
 }  // namespace uuids

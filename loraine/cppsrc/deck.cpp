@@ -64,6 +64,7 @@ sptr< Card > Deck::draw_card()
    m_cards.pop_back();
    return card;
 }
+
 sptr< Card > Deck::draw_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
@@ -78,6 +79,7 @@ sptr< Card > Deck::draw_by_index(size_t index)
    m_cards.erase(pos);
    return popped_card;
 }
+
 std::set< Region > Deck::identify_regions(const Deck::ContainerType& container)
 {
    std::set< Region > rs;
@@ -86,6 +88,7 @@ std::set< Region > Deck::identify_regions(const Deck::ContainerType& container)
    }
    return rs;
 }
+
 std::set< Region > Deck::identify_regions(std::initializer_list< value_type > cards)
 {
    return identify_regions(ContainerType(cards));
@@ -111,4 +114,12 @@ sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
       [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
    random::shuffle_inplace(m_cards, rng);
    return draw_by_index(indices[0]);
+}
+
+Deck::Deck(const Deck& other) : m_cards(), m_regions(other.m_regions)
+{
+   m_cards.reserve(other.m_cards.size());
+   for(const auto& card : other.m_cards) {
+      m_cards.emplace_back(card->clone());
+   }
 }

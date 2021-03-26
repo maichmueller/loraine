@@ -33,13 +33,23 @@ class Nexus: public EventListener< Nexus >, public Targetable {
       return m_effects.find(e_type) != m_effects.end();
    }
    [[nodiscard]] bool has_effect(events::EventLabel e_type, const EffectBase& effect) const;
+   [[nodiscard]] inline bool has_keyword(Keyword kword) const
+   {
+      return m_keywords.at(static_cast< unsigned long >(kword));
+   }
+   [[nodiscard]] inline bool has_any_keyword(std::initializer_list< Keyword > kwords) const
+   {
+      return std::any_of(kwords.begin(), kwords.end(), [&](const auto& kw) {
+        return m_keywords.at(static_cast< unsigned long >(kw));
+      });
+   }
 
    inline void change_health(long health) { m_health += health; }
 
   private:
    Team m_team;
    long m_health;
-   const char* m_name = "Nexus";
+   const std::string m_name = "Nexus";
    KeywordMap m_keywords;
    EffectMap m_effects;
 };

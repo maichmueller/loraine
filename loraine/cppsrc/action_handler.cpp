@@ -4,9 +4,9 @@
 #include "cards/effect.h"
 #include "core/logic.h"
 
-//namespace actions {
+// namespace actions {
 //
-//bool ActionHandlerBase::_handle(const PlaceSpellAction& action)
+// bool ActionHandlerBase::_handle(const PlaceSpellAction& action)
 //{
 //   auto spell = action.spell();
 //   bool to_stack = action.to_stack();
@@ -55,13 +55,13 @@
 //   }
 //   return false;
 //}
-//bool ActionHandlerBase::_handle(const PassAction& action)
+// bool ActionHandlerBase::_handle(const PassAction& action)
 //{
 //   logic()->reset_pass(action.team());
 //   return true;
 //}
 //
-//bool DefaultModeHandler::handle(const Action& action)
+// bool DefaultModeHandler::handle(const Action& action)
 //{
 //   if(action.is_pass()) {
 //      return ActionHandlerBase::_handle(action.detail< PassAction >());
@@ -84,7 +84,7 @@
 //      + std::to_string(int(action.label())));
 //}
 //
-//bool DefaultModeHandler::_handle(const PlayAction& action)
+// bool DefaultModeHandler::_handle(const PlayAction& action)
 //{
 //   auto card = action.card_played();
 //   auto* state = logic()->state();
@@ -104,7 +104,7 @@
 //      // for a manual targeter we need to ask the controller to make the decision
 //   }
 //}
-//bool DefaultModeHandler::_handle(const AcceptAction& action)
+// bool DefaultModeHandler::_handle(const AcceptAction& action)
 //{
 //   auto* state = logic()->state();
 //   auto team = action.team();
@@ -148,11 +148,11 @@ actions::Action ActionHandlerBase::request_action(const State& state) const
          // TODO: Add punishment reward option to agent for RL agents for choosing invalid moves too
          //  often?
          // either passing or accepting must be valid actions at all times.
-         if(auto pass_act = actions::Action(actions::PassAction(state.active_team()));
+         if(auto pass_act = actions::Action(actions::AcceptAction(state.active_team()));
             is_valid(pass_act)) {
             return pass_act;
          }
-         return actions::Action(actions::AcceptAction(state.active_team()));
+         return actions::Action(actions::CancelAction(state.active_team()));
       }
    }
 }
@@ -161,8 +161,9 @@ actions::Action TargetModeHandler::request_action(const State& state) const
    int n_invalid_choices = 0;
    while(true) {
       auto action = state.player(state.active_team())
-         .controller()
-         ->choose_targets(state, state.targeting_buffer()->back());;
+                       .controller()
+                       ->choose_targets(state, state.targeting_buffer()->back());
+      ;
 
       if(is_valid(action)) {
          return action;

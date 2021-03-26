@@ -32,10 +32,11 @@ enum class Location {
    CAMP,
    BOARD,  // Board = Camp + Battlefield
    DECK,
+   EVERYWHERE,
    GRAVEYARD,
    TOSSED,
    HAND,
-   SPELLSTACK,
+   SPELLSTACK
 };
 
 constexpr const size_t n_locations = static_cast< size_t >(Location::SPELLSTACK) + 1;

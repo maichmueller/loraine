@@ -14,12 +14,11 @@ class GameMode;
 class Card;
 class Controller;
 
-
 /**
  * The base class for effects in the game.
  */
 
-class EffectBase {
+class EffectBase: public Cloneable< EffectBase > {
   public:
    enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 
@@ -80,7 +79,9 @@ class EffectBase {
  * @tparam Events
  */
 template < typename... Events >
-class Effect: public EffectBase, public EventCallInterface< Events... > {
+class Effect:
+    public Cloneable< Effect< Events... >, EffectBase >,
+    public EventCallInterface< Events... > {
 };
 
 #endif  // LORAINE_EFFECT_H

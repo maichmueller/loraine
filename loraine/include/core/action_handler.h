@@ -73,6 +73,7 @@ class ActionHandler: public ActionHandlerBase {
    template < typename... Args >
    ActionHandler(Args... args)
        : ActionHandlerBase(
+          Derived::handler_label,
           std::forward< Args >(args)...,
           std::vector< actions::ActionLabel >{AcceptedActions...})
    {
@@ -82,7 +83,6 @@ class ActionHandler: public ActionHandlerBase {
 class DefaultModeHandler:
     public ActionHandler<
        DefaultModeHandler,
-       actions::ActionLabel::PASS,
        actions::ActionLabel::ACCEPT,
        actions::ActionLabel::PLAY,
        actions::ActionLabel::DRAG_ENEMY,
@@ -90,6 +90,7 @@ class DefaultModeHandler:
        actions::ActionLabel::PLACE_SPELL > {
   public:
    using base::base;
+   constexpr static Label handler_label = Label::DEFAULT;
    bool is_valid(const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const State& action) const override;
 };
@@ -101,6 +102,7 @@ class CombatModeHandler:
        actions::ActionLabel::PLACE_SPELL > {
   public:
    using base::base;
+   constexpr static Label handler_label = Label::COMBAT;
    bool is_valid(const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const State& action) const override;
 };
@@ -109,6 +111,7 @@ class TargetModeHandler:
     public ActionHandler< TargetModeHandler, actions::ActionLabel::TARGETING > {
   public:
    using base::base;
+   constexpr static Label handler_label = Label::TARGET;
    [[nodiscard]] actions::Action request_action(const State& state) const override;
    bool is_valid(const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const State& action) const override;
@@ -118,7 +121,7 @@ class MulliganModeHandler:
     public ActionHandler< MulliganModeHandler, actions::ActionLabel::MULLIGAN > {
   public:
    using base::base;
-
+   constexpr static Label handler_label = Label::MULLIGAN;
    bool is_valid(const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const State& action) const override;
 };

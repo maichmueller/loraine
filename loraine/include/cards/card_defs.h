@@ -64,6 +64,7 @@ enum class Keyword {
    EPHEMERAL,
    FAST,
    FEARSOME,
+   FOCUS,
    FLEETING,
    FROSTBITE,
    FURY,

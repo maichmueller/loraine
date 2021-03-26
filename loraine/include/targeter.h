@@ -17,7 +17,7 @@ enum class TargetingMode {
    AUTOMATIC,
 };
 
-class TargeterBase {
+class TargeterBase: public Cloneable< abstract_method< TargeterBase > > {
   public:
    explicit TargeterBase(TargetingMode mode) : m_mode(mode), m_filter() {}
    explicit TargeterBase(Filter filter)
@@ -42,30 +42,52 @@ class TargeterBase {
    }
 
   private:
-   TargetingMode m_mode;
+   const TargetingMode m_mode;
    Filter m_filter{};
 };
 
 template < TargetingMode mode, TargetingTeam affiliation, Location range >
-class Targeter: public TargeterBase {
-   using TargeterBase::TargeterBase;
+class Targeter:
+    public Cloneable< abstract_method< Targeter< mode, affiliation, range > >, inherit_constructors< TargeterBase >  > {
+  private:
+   using base = Cloneable<
+      abstract_method< Targeter< mode, affiliation, range > >,
+      inherit_constructors< TargeterBase > >;
 
-  protected:
-   using base = Targeter< mode, affiliation, range >;
+  public:
+   Targeter() : base(mode) {}
+   explicit Targeter(const Filter& filter) : base(mode, filter) {}
+};
+
+template < TargetingTeam affiliation, Location range >
+class AutomaticTargeter:
+    public Cloneable<
+       abstract_method< AutomaticTargeter< affiliation, range > >,
+       inherit_constructors< Targeter< TargetingMode::AUTOMATIC, affiliation, range > > > {
+  private:
+   using base = Cloneable<
+      abstract_method< AutomaticTargeter< affiliation, range > >,
+      inherit_constructors< Targeter< TargetingMode::AUTOMATIC, affiliation, range > > >;
+
+  public:
+   using base::base;
 };
 
 class NoneTargeter:
-    public Targeter< TargetingMode::AUTOMATIC, TargetingTeam::ANY, Location::BOARD > {
+    public Cloneable<
+       NoneTargeter,
+       AutomaticTargeter< TargetingTeam::ANY, Location::EVERYWHERE > > {
+  private:
+   using base = Cloneable<
+      NoneTargeter,
+      AutomaticTargeter< TargetingTeam::ANY, Location::EVERYWHERE > >;
+
   public:
-   NoneTargeter() : base(TargetingMode::AUTOMATIC) {}
+   NoneTargeter() : base() {}
    std::vector< sptr< Targetable > > operator()(const State& /*state*/, Team /*team*/) override
    {
       return {};
    };
-};
-
-template < TargetingTeam affiliation, Location range >
-class AutomaticTargeter: public Targeter< TargetingMode::AUTOMATIC, affiliation, range > {
 };
 
 #endif  // LORAINE_TARGETER_H

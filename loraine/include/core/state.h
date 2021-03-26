@@ -55,17 +55,20 @@ class State {
    [[nodiscard]] inline auto* round() { return &m_round; }
    [[nodiscard]] inline auto round() const { return m_round; }
 
-   inline void turn(size_t turn) { m_turn = turn; }
+   inline auto& turn() { return m_turn; }
    [[nodiscard]] inline auto turn() const { return m_turn; }
 
    inline void attacker(Team team) { m_attacker = team; }
    [[nodiscard]] inline auto attacker() const { return m_attacker; }
    inline void reset_attacker() { m_attacker.reset(); }
 
+   inline void requires_resolution(bool value) { m_requires_resolution = value;}
+   [[nodiscard]] inline auto requires_resolution() const { return m_requires_resolution; }
+
    [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
 
    [[nodiscard]] auto config() const { return m_config; }
-   [[nodiscard]] auto* logic() const { return m_logic; }
+   [[nodiscard]] auto logic() const { return m_logic; }
    [[nodiscard]] inline auto starting_team() const { return m_starting_team; }
    [[nodiscard]] inline auto& player(Team team) { return m_players[team]; }
    [[nodiscard]] inline auto& player(Team team) const { return m_players[team]; }
@@ -98,8 +101,9 @@ class State {
    SymArr< Player > m_players;
    Team m_starting_team;
    Board m_board;
-   Logic* m_logic;
+   sptr<Logic> m_logic;
    std::array< events::LOREvent, events::n_events > m_events;
+
    std::tuple<
       std::optional< sptr< FieldCard > >,
       std::vector< sptr< Unit > >,
@@ -111,6 +115,7 @@ class State {
    size_t m_turn;
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
+   bool m_requires_resolution = false;
    bool m_status_checked = false;
 
    SpellStackType m_spell_stack{};

@@ -29,7 +29,11 @@ class Player {
       sptr< Controller > controller,
       Mana mana = {0, 0, 0},
       Flags flags = {false, false, false, false, false});
-
+   ~Player() = default;
+   Player(const Player& other);
+   Player& operator=(const Player& other) = default;
+   Player(Player&& other) = default;
+   Player& operator=(Player&& other) = default;
 
    inline auto* nexus() { return &m_nexus; }
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }

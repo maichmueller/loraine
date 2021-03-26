@@ -33,6 +33,10 @@ bool actions::PlaceSpellAction::execute_impl(State& state)
       spell_buffer->emplace_back(m_spell);
       spell_stack->emplace_back(m_spell);
       m_spell->move(Location::SPELLSTACK, spell_stack->size() - 1);
+      if(state.targeting_buffer()->empty()
+         && (m_spell->has_keyword(Keyword::BURST) || m_spell->has_keyword(Keyword::FOCUS))) {
+         state.logic()->play_spell(m_spell);
+      }
    } else {
       reset_targets(effects_to_cast);
       spell_buffer->erase(
@@ -140,18 +144,29 @@ bool actions::TargetingAction::execute_impl(State& state)
 {
    // only set the chosen targets to the last element on the targeting buffer, which is the one that
    // requested targets
-   state.targeting_buffer()->back()->targets(m_targets);
+   auto* buffer = state.targeting_buffer();
+   buffer->back()->targets(m_targets);
+   if(auto assoc_card = buffer->back()->associated_card();
+      buffer->size() == 1 &&  // the current effect to choose targets for is the last in the buffer
+      assoc_card->is_spell() &&  // the effect belongs to a spell
+      assoc_card->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
+      // if the effect to target is the last one in the buffer, and the effects belong to a BURST or
+      // FOCUS spell, then that spell is immediately played
+      auto spell = to_spell(assoc_card);
+      state.logic()->play_spell(spell);
+      state.logic()->cast(spell);
+   }
+   // remove the last effect from the targeting buffer, since we just chose its targets
+   buffer->pop_back();
+   return false;
 }
-bool actions::PassAction::execute_impl(State& state)
-{
-   state.logic()->pass();
-   return true;
-}
+
 bool actions::AcceptAction::execute_impl(State& state)
 {
    if(auto* buffer = state.spell_buffer(); not buffer->empty()) {
       for(auto& spell : *buffer) {
          spell->uncover();
+         state.logic()->play_spell(spell);
       }
       buffer->clear();
    } else if(auto* bf_buffer = state.bf_buffer(); not bf_buffer->empty()) {
@@ -169,23 +184,17 @@ bool actions::AcceptAction::execute_impl(State& state)
          // all other times other than attack or block declarations
          // TODO: Branch kept alive for later logging here
       }
+   } else if(
+      state.spell_stack()->empty() && state.board()->battlefield(team())->empty()
+      && state.board()->battlefield(opponent(team()))->empty()) {
+      // if the entire board is resolved, then the player has simply passed initiative
+      state.logic()->pass();
    } else {
       // the spell stack buffer is empty and no attack or block were declared, so whatever the
       // current board state is, has been accepted. Thus we go on to resolve the spell stack and any
       // open combat
-      _resolve_spell_stack(state, false);
-      _resolve_battle();
+      state.requires_resolution(true);
    }
 
    return true;
-}
-void actions::AcceptAction::_resolve_spell_stack(State& state, bool burst)
-{
-   auto* spell_stack = state.spell_stack();
-   if(burst) {
-      state.logic()->cast({spell_stack->back()});
-      spell_stack->pop_back();
-   } else {
-      state.logic()->cast(*spell_stack);
-   }
 }

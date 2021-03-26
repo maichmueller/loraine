@@ -7,11 +7,56 @@ actions::Action Logic::request_action() const
 {
    return m_action_handler->request_action(*state());
 }
+void Logic::cast(const sptr< Spell >& spell)
+{
+   return cast(std::vector< sptr< Spell > >{spell});
+}
 
-void Logic::cast(const std::vector< sptr< Spell >>& spells_vec) {
-  for(const auto& spell : spells_vec) {
-     trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
-  }
+void Logic::play_spell(const sptr< Spell >& spell)
+{
+   spell->uncover();
+   trigger_event< events::EventLabel::PLAY >(m_state->active_team(), spell);
+}
+
+void Logic::_resolve_spell_stack(bool burst)
+{
+   auto* spell_stack = m_state->spell_stack();
+   if(burst) {
+      m_state->logic()->cast(spell_stack->back());
+      spell_stack->pop_back();
+   } else {
+      m_state->logic()->cast(*spell_stack);
+   }
+}
+Status Logic::step()
+{
+   bool flip_initiative = false;
+   while(not flip_initiative) {
+      if(auto* targ_buffer = m_state->targeting_buffer(); targ_buffer->empty()) {
+         // if no targets are currently required, then simply ask the current player for action
+         auto action = request_action();
+         flip_initiative = action.execute(*m_state);
+      } else {
+         // the targeting buffer is currently not empty so we demand targets
+         transition_action_handler< TargetModeHandler >();
+         while(not targ_buffer->empty()) {
+            auto action = request_action();
+            flip_initiative = action.execute(*m_state);
+         }
+         restore_previous_handler();
+      }
+   }
+   if(m_state->requires_resolution()) {
+      _resolve_spell_stack(false);
+      _resolve_battle();
+      m_state->requires_resolution(false);
+   } else if(
+      m_state->player(Team::BLUE).flags()->pass && m_state->player(Team::RED).flags()->pass) {
+      end_round();
+      start_round();
+   }
+   m_state->turn() += 1;
+   return check_status();
 }
 
 //
@@ -195,7 +240,7 @@ void Logic::cast(const std::vector< sptr< Spell >>& spells_vec) {
 //            auto card = cast_action->card_played();
 //            if(card->immutables().card_type == CardType::SPELL) {
 //               auto spell = to_spell(card);
-//               play_spells();
+//               play_spell();
 //               if(spell->has_keyword(Keyword::BURST)) {
 //                  _resolve_spell_stack(true);
 //                  flip_initiative = false;
@@ -608,7 +653,7 @@ void Logic::cast(const std::vector< sptr< Spell >>& spells_vec) {
 //      curr_idx += 1;
 //   }
 //}
-// void Logic::play_spells()
+// void Logic::play_spell()
 //{
 //   auto& spell_stack = m_state->spell_stack();
 //   auto& spell_prestack = m_state->spell_prestack();

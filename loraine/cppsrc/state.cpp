@@ -59,7 +59,7 @@ State::State(
              decks[1],
              std::move(controllers[1]))}),
       m_starting_team(starting_team),
-      m_board(std::make_shared< Board >(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE)),
+      m_board(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE),
       m_logic(std::make_shared< Logic >()),
       m_attacker(starting_team),
       m_events(_init_events()),
@@ -67,6 +67,7 @@ State::State(
       m_spell_stack(),
       m_rng(rng)
 {
+   m_logic->state(*this);
 }
 
 State::State(
@@ -84,10 +85,9 @@ State::State(
 }
 State::State(const State& other)
     : m_config(other.m_config),
-      m_players({m_players[0].deck()}other.m_players),
+      m_players({m_players[0].deck()} other.m_players),
       m_starting_team(other.m_starting_team),
       m_board(other.m_board),
-      m_logic(other.m_logic)
-      m_round(other.m_round)
+      m_logic(other.m_logic) m_round(other.m_round)
 {
 }

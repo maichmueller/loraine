@@ -30,18 +30,19 @@ class Card:
     public Cloneable< abstract_method< Card > >,
     public EventListener< Card >,
     public Targetable {
+
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 
    struct ConstState {
       // the card code
-      const char* const code;
+      const std::string code;
       // the cards' name
-      const char* const name;
+      const std::string name;
       // the description text of the cards
-      const char* const effect_desc;
+      const std::string effect_desc;
       // text of the cards in context of the lol universe
-      const char* const lore;
+      const std::string lore;
       // the region the cards is from
       const Region region;
       // the subgroup the cards belongs to
@@ -133,6 +134,12 @@ class Card:
    {
       return m_mutables.keywords.at(static_cast< unsigned long >(kword));
    }
+   [[nodiscard]] inline bool has_any_keyword(std::initializer_list< Keyword > kwords) const
+   {
+      return std::any_of(kwords.begin(), kwords.end(), [&](const auto& kw) {
+         return m_mutables.keywords.at(static_cast< unsigned long >(kw));
+      });
+   }
    [[nodiscard]] inline bool has_effect(events::EventLabel e_type) const
    {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
@@ -187,7 +194,7 @@ class Card:
    /*
     * A defaulted virtual destructor needed bc of inheritance
     */
-   virtual ~Card() = default;
+   ~Card() override = default;
 
    /*
     *  Basic constructor

@@ -33,10 +33,17 @@ class Deck {
    using size_type = typename ContainerType::size_type;
    using difference_type = typename ContainerType::difference_type;
 
+   /// constructors
+
    Deck() : m_cards(), m_regions() {}
    Deck(std::initializer_list< value_type > cards) : m_cards(cards) {}
    explicit Deck(ContainerType cards) : m_cards(std::move(cards)) {}
    explicit Deck(ContainerType&& cards) : m_cards(std::move(cards)) {}
+   Deck(const Deck& other);
+   Deck& operator=(const Deck& other) = delete;
+   Deck(Deck&& other) = default;
+   Deck& operator=(Deck&& other) = default;
+   ~Deck() = default;
 
    /// forwarded functions from container
 
