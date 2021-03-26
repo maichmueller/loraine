@@ -35,7 +35,7 @@ class State;
  *          i)    mulligan the starting hand cards
  *
  */
-class ActionHandlerBase {
+class ActionHandlerBase: public Cloneable< abstract_method< ActionHandlerBase > > {
   public:
    enum Label { DEFAULT = 0, COMBAT, MULLIGAN, TARGET };
    explicit ActionHandlerBase(
@@ -49,7 +49,12 @@ class ActionHandlerBase {
        : m_label(label), m_logic(nullptr), m_accepted_actions(std::move(accepted_actions))
    {
    }
-   virtual ~ActionHandlerBase() = default;
+   ~ActionHandlerBase() override = default;
+   ActionHandlerBase(const ActionHandlerBase& other);
+   ActionHandlerBase(ActionHandlerBase&& other) = default;
+   ActionHandlerBase& operator=(ActionHandlerBase&& other) = delete;
+   ActionHandlerBase& operator=(const ActionHandlerBase& other) = delete;
+
    [[nodiscard]] virtual actions::Action request_action(const State& state) const;
    [[nodiscard]] virtual bool is_valid(const actions::Action& action) const = 0;
    [[nodiscard]] virtual std::vector< actions::Action > valid_actions(const State& state) const = 0;
@@ -67,12 +72,17 @@ class ActionHandlerBase {
 };
 
 template < typename Derived, actions::ActionLabel... AcceptedActions >
-class ActionHandler: public ActionHandlerBase {
+class ActionHandler:
+    public Cloneable<
+       abstract_method< ActionHandler< Derived, AcceptedActions... > >,
+       inherit_constructors< ActionHandlerBase > > {
   public:
-   using base = ActionHandler< Derived, AcceptedActions... >;
+   using base = Cloneable<
+      abstract_method< ActionHandler< Derived, AcceptedActions... > >,
+      inherit_constructors< ActionHandlerBase > >;
    template < typename... Args >
    ActionHandler(Args... args)
-       : ActionHandlerBase(
+       : base(
           Derived::handler_label,
           std::forward< Args >(args)...,
           std::vector< actions::ActionLabel >{AcceptedActions...})
@@ -81,14 +91,25 @@ class ActionHandler: public ActionHandlerBase {
 };
 
 class DefaultModeHandler:
-    public ActionHandler<
+    public Cloneable<
        DefaultModeHandler,
-       actions::ActionLabel::ACCEPT,
-       actions::ActionLabel::PLAY,
-       actions::ActionLabel::DRAG_ENEMY,
-       actions::ActionLabel::PLACE_UNIT,
-       actions::ActionLabel::PLACE_SPELL > {
+       inherit_constructors< ActionHandler<
+          DefaultModeHandler,
+          actions::ActionLabel::ACCEPT,
+          actions::ActionLabel::PLAY,
+          actions::ActionLabel::DRAG_ENEMY,
+          actions::ActionLabel::PLACE_UNIT,
+          actions::ActionLabel::PLACE_SPELL > > > {
   public:
+   using base = Cloneable<
+      DefaultModeHandler,
+      inherit_constructors< ActionHandler<
+         DefaultModeHandler,
+         actions::ActionLabel::ACCEPT,
+         actions::ActionLabel::PLAY,
+         actions::ActionLabel::DRAG_ENEMY,
+         actions::ActionLabel::PLACE_UNIT,
+         actions::ActionLabel::PLACE_SPELL > > >;
    using base::base;
    constexpr static Label handler_label = Label::DEFAULT;
    bool is_valid(const actions::Action& action) const override;
@@ -96,11 +117,19 @@ class DefaultModeHandler:
 };
 
 class CombatModeHandler:
-    public ActionHandler<
+    public Cloneable<
        CombatModeHandler,
-       actions::ActionLabel::ACCEPT,
-       actions::ActionLabel::PLACE_SPELL > {
+       inherit_constructors< ActionHandler<
+          CombatModeHandler,
+          actions::ActionLabel::ACCEPT,
+          actions::ActionLabel::PLACE_SPELL > > > {
   public:
+   using base = Cloneable<
+      CombatModeHandler,
+      inherit_constructors< ActionHandler<
+         CombatModeHandler,
+         actions::ActionLabel::ACCEPT,
+         actions::ActionLabel::PLACE_SPELL > > >;
    using base::base;
    constexpr static Label handler_label = Label::COMBAT;
    bool is_valid(const actions::Action& action) const override;
@@ -108,8 +137,19 @@ class CombatModeHandler:
 };
 
 class TargetModeHandler:
-    public ActionHandler< TargetModeHandler, actions::ActionLabel::TARGETING > {
+    public Cloneable<
+       TargetModeHandler,
+       inherit_constructors< ActionHandler<
+          TargetModeHandler,
+          actions::ActionLabel::ACCEPT,
+          actions::ActionLabel::TARGETING > > > {
   public:
+   using base = Cloneable<
+      TargetModeHandler,
+      inherit_constructors< ActionHandler<
+         TargetModeHandler,
+         actions::ActionLabel::ACCEPT,
+         actions::ActionLabel::TARGETING > > >;
    using base::base;
    constexpr static Label handler_label = Label::TARGET;
    [[nodiscard]] actions::Action request_action(const State& state) const override;
@@ -118,8 +158,15 @@ class TargetModeHandler:
 };
 
 class MulliganModeHandler:
-    public ActionHandler< MulliganModeHandler, actions::ActionLabel::MULLIGAN > {
+    public Cloneable<
+       MulliganModeHandler,
+       inherit_constructors<
+          ActionHandler< MulliganModeHandler, actions::ActionLabel::MULLIGAN > > > {
   public:
+   using base = Cloneable<
+      MulliganModeHandler,
+      inherit_constructors<
+         ActionHandler< MulliganModeHandler, actions::ActionLabel::MULLIGAN > > >;
    using base::base;
    constexpr static Label handler_label = Label::MULLIGAN;
    bool is_valid(const actions::Action& action) const override;

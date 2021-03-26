@@ -134,6 +134,10 @@
 //}
 //}  // namespace actions
 
+ActionHandlerBase::ActionHandlerBase(const ActionHandlerBase& other)
+    : m_label(other.m_label), m_logic(other.m_logic), m_accepted_actions(other.m_accepted_actions)
+{
+}
 actions::Action ActionHandlerBase::request_action(const State& state) const
 {
    int n_invalid_choices = 0;

@@ -15,7 +15,7 @@
 // forward declare
 class State;
 
-class Logic {
+class Logic: public Cloneable< Logic > {
   public:
    explicit Logic(uptr< ActionHandlerBase > act_handler = std::make_unique< MulliganModeHandler >())
        : m_action_handler(std::move(act_handler))
@@ -23,7 +23,7 @@ class Logic {
       m_action_handler->logic(this);
    };
 
-   Logic(const Logic& l) = delete;
+   Logic(const Logic& other);
    Logic(Logic&& l) noexcept = default;
    Logic& operator=(Logic&& rhs) = default;
    Logic& operator=(const Logic& rhs) = delete;
@@ -78,11 +78,11 @@ class Logic {
     */
    template <
       typename Container,
-      typename =
-      std::enable_if_t< std::is_same_v< sptr< Spell >, typename std::decay_t<Container>::value_type > > >
+      typename = std::enable_if_t<
+         std::is_same_v< sptr< Spell >, typename std::decay_t< Container >::value_type > > >
    void cast(Container&& spells_vec);
 
-   void cast(const sptr<Spell>& spell);
+   void cast(const sptr< Spell >& spell);
    /**
     * Summon a specific common card to either the camp or the battlefield.
     * @param: unit: shared_ptr<Unit>,
@@ -365,15 +365,12 @@ void Logic::trigger_event(Params&&... params)
    std::get< targeted_event_t >(event).trigger(*state(), std::forward< Params >(params)...);
 }
 
-template <
-   typename Container,
-   typename >
+template < typename Container, typename >
 void Logic::cast(Container&& spells_vec)
 {
    for(const auto& spell : spells_vec) {
       trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
    }
 }
-
 
 #endif  // LORAINE_LOGIC_H

@@ -3,10 +3,18 @@
 #include "core/action.h"
 #include "core/state.h"
 
+Logic::Logic(const Logic& other)
+    : m_state(other.m_state),
+      m_action_handler(other.m_action_handler->clone()),
+      m_prev_action_handler(other.m_prev_action_handler->clone())
+{
+}
+
 actions::Action Logic::request_action() const
 {
    return m_action_handler->request_action(*state());
 }
+
 void Logic::cast(const sptr< Spell >& spell)
 {
    return cast(std::vector< sptr< Spell > >{spell});
@@ -17,7 +25,6 @@ void Logic::play_spell(const sptr< Spell >& spell)
    spell->uncover();
    trigger_event< events::EventLabel::PLAY >(m_state->active_team(), spell);
 }
-
 void Logic::_resolve_spell_stack(bool burst)
 {
    auto* spell_stack = m_state->spell_stack();

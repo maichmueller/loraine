@@ -31,9 +31,9 @@ class Player {
       Flags flags = {false, false, false, false, false});
    ~Player() = default;
    Player(const Player& other);
-   Player& operator=(const Player& other) = default;
    Player(Player&& other) = default;
-   Player& operator=(Player&& other) = default;
+   Player& operator=(const Player& other) = delete;
+   Player& operator=(Player&& other) = delete;
 
    inline auto* nexus() { return &m_nexus; }
    [[nodiscard]] inline auto* nexus() const { return &m_nexus; }

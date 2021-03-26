@@ -25,7 +25,7 @@ void State::to_tossed(const sptr< Card >& card)
 std::array< events::LOREvent, events::n_events > State::_init_events()
 {
    std::array< events::LOREvent, events::n_events > arr;
-   events::fill_event_array< events::n_events >(arr);
+   events::fill_event_array< events::n_events - 1 >(arr);
    return arr;
 }
 Status State::status()
@@ -85,9 +85,10 @@ State::State(
 }
 State::State(const State& other)
     : m_config(other.m_config),
-      m_players({m_players[0].deck()} other.m_players),
+      m_players(other.m_players),
       m_starting_team(other.m_starting_team),
       m_board(other.m_board),
-      m_logic(other.m_logic) m_round(other.m_round)
+      m_logic(other.m_logic->clone()),
+      m_round(other.m_round)
 {
 }

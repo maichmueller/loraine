@@ -2,6 +2,8 @@
 #include "core/player.h"
 
 #include <utility>
+
+#include "cards/card.h"
 Player::Player(
    Team team,
    Nexus nexus,
@@ -18,4 +20,18 @@ Player::Player(
       m_flags(flags)
 {
 }
-Player::Player(const Player& other): m_team(other.m_team), m_nexus(other.m_nexus) {}
+Player::Player(const Player& other)
+    : m_team(other.m_team),
+      m_nexus(other.m_nexus),
+      m_controller(other.m_controller),  // the controller is not copied, since we assume the same
+                                         // BOT or human should control this copy
+      m_hand(),  // hand is only a vector and thus needs to be coopied manually
+      m_deck(other.m_deck),  // deck has copy constructor which clones the card pointers
+      m_mana(other.m_mana),
+      m_flags(other.m_flags)
+{
+   m_hand.reserve(other.m_hand.size());
+   for(const auto& card : other.m_hand) {
+      m_hand.emplace_back(card->clone());
+   }
+}

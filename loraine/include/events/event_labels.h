@@ -32,7 +32,6 @@ enum class EventLabel {
    SUPPORT,  // supporting the common on the right of the attacking common
    TARGET,  // targeting a common with a floating/skill
    UNIT_DAMAGE,  // any common on the field takes damage
-   COUNTER
 };
 
 template <events::EventLabel event_type>
@@ -40,7 +39,7 @@ struct EventLabelType {
    events::EventLabel value = event_type;
 };
 
-constexpr const size_t n_events = static_cast< size_t >(EventLabel::COUNTER) + 1;
+constexpr const size_t n_events = static_cast< size_t >(EventLabel::UNIT_DAMAGE) + 1;
 
 }  // namespace lor_events
 
