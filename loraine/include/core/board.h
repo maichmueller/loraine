@@ -32,6 +32,19 @@ class Board {
       size_t camp_size,
       size_t bf_size,
       SymArr< BfType > bfs,
+      SymArr< CampType > camps)
+      : m_camp_size(camp_size),
+        m_battlefield_size(bf_size),
+        m_battlefield(std::move(bfs)),
+        m_camp(std::move(camps)),
+        m_camp_queue()
+   {
+      _reserve_space();
+   }
+   Board(
+      size_t camp_size,
+      size_t bf_size,
+      SymArr< BfType > bfs,
       SymArr< CampType > camps,
       SymArr< CampQueueType > queues)
        : m_camp_size(camp_size),

@@ -2,7 +2,7 @@
 #ifndef LORAINE_CARD_H
 #define LORAINE_CARD_H
 
-#include <cards/tribute.h>
+#include <cards/toll.h>
 
 #include <map>
 #include <set>
@@ -81,7 +81,7 @@ class Card:
       // all m_effects
       EffectMap effects = {};
       // condition
-      uptr< PlayCondition > play_condition = {};
+      uptr< Toll > play_toll = nullptr;
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants
@@ -227,7 +227,8 @@ class Card:
    // variable attributes of the card
    MutableState m_mutables;
 
-   [[nodiscard]] virtual bool _check_play_condition(const State& state) const = 0;
+   EffectMap _clone_effect_map(const EffectMap& emap);
+
 };
 
 template < typename T >

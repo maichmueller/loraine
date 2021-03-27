@@ -89,7 +89,6 @@ class Unit: public Cloneable<Unit, inherit_constructors<FieldCard>>  {
    const ConstUnitState m_unit_immutables;
    MutableUnitState m_unit_mutables;
 
-   [[nodiscard]] bool _check_play_condition(const State& state) const override;
    static void _default_kill(Unit& unit) { unit.unit_mutables().alive = false; }
    static long _default_damage(Unit& unit, long amount)
    {

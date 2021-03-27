@@ -9,7 +9,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/state.cpp
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/nexus.cpp
-        ${LORAINE_SRC_DIR}/tribute.cpp
+        ${LORAINE_SRC_DIR}/toll.cpp
         ${LORAINE_SRC_DIR}/player.cpp
         ${LORAINE_SRC_DIR}/record.cpp
 

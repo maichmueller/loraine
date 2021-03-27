@@ -5,14 +5,10 @@
 #include "cardbase.h"
 
 class Spell: public Cloneable<Spell, inherit_constructors<Card>> {
-   [[nodiscard]] bool _check_play_condition(const State& state) const override;
-   [[nodiscard]] virtual bool _check_cast_condition(const GameMode& game) const;
 
   public:
    // use base class constructors
    using Cloneable::Cloneable;
-
-   [[nodiscard]] virtual bool check_cast_condition(const GameMode& game) const;
 };
 
 class Skill : public Spell {

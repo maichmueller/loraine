@@ -33,12 +33,11 @@ class EffectBase: public Cloneable< EffectBase > {
          m_uuid(utils::new_uuid())
    {
    }
-   EffectBase(const EffectBase& effect) = default;
+   EffectBase(const EffectBase& effect);
    EffectBase(EffectBase&& effect) noexcept = default;
    EffectBase& operator=(EffectBase&& rhs) = default;
    EffectBase& operator=(const EffectBase& rhs) = default;
-
-   virtual ~EffectBase() = default;
+   ~EffectBase() override = default;
 
    inline void targets(std::vector< sptr< Targetable > > targets)
    {
@@ -56,6 +55,7 @@ class EffectBase: public Cloneable< EffectBase > {
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
 
+   void associated_card(sptr<Card> card) { m_assoc_card = std::move(card); }
    [[nodiscard]] auto associated_card() const { return m_assoc_card; }
    [[nodiscard]] auto effect_type() const { return m_effect_type; }
 
@@ -80,7 +80,7 @@ class EffectBase: public Cloneable< EffectBase > {
  */
 template < typename... Events >
 class Effect:
-    public Cloneable< Effect< Events... >, EffectBase >,
+    public Cloneable< Effect< Events... >, inherit_constructors<EffectBase> >,
     public EventCallInterface< Events... > {
 };
 

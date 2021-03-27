@@ -4,7 +4,7 @@
 #define LORAINE_ALL_H
 
 #include "cards/card_defs.h"
-#include "cards/card_types/card.h"
+#include "cards/card.h"
 #include "controller.h"
 #include "core/action.h"
 #include "core/board.h"

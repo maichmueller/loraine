@@ -1,19 +1,14 @@
-//
-// Created by Michael on 08.10.20.
-//
 
 #ifndef LORAINE_TEST_CARDS_H
 #define LORAINE_TEST_CARDS_H
 
-#include "cards/card_types/card.h"
+#include "cards/card.h"
 
 class TestUnit1: public Unit {
   public:
    TestUnit1(Team owner)
        : Unit(
-          Unit::ConstUnitData{5, 4},
-          Unit::MutableUnitData{5, 4},
-          Card::ConstData{
+          Card::ConstState{
              "CODE1",
              "TestUnit1",
              "",
@@ -25,7 +20,9 @@ class TestUnit1: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{5, 4},
+          Unit::MutableUnitState{5, 4})
    {
    }
 };
@@ -34,9 +31,7 @@ class TestUnit2: public Unit {
   public:
    TestUnit2(Team owner)
        : Unit(
-          Unit::ConstUnitData{4, 5},
-          Unit::MutableUnitData{4, 5},
-          Card::ConstData{
+          Card::ConstState{
              "CODE2",
              "TestUnit2",
              "",
@@ -48,7 +43,9 @@ class TestUnit2: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{4, 5},
+          Unit::MutableUnitState{4, 5})
    {
    }
 };
@@ -56,9 +53,7 @@ class TestUnit3: public Unit {
   public:
    TestUnit3(Team owner)
        : Unit(
-          Unit::ConstUnitData{3, 4},
-          Unit::MutableUnitData{3, 4},
-          Card::ConstData{
+          Card::ConstState{
              "CODE3",
              "TestUnit3",
              "",
@@ -70,7 +65,9 @@ class TestUnit3: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{3, 4},
+          Unit::MutableUnitState{3, 4})
    {
    }
 };
@@ -78,9 +75,7 @@ class TestUnit4: public Unit {
   public:
    TestUnit4(Team owner)
        : Unit(
-          Unit::ConstUnitData{5, 4},
-          Unit::MutableUnitData{5, 4},
-          Card::ConstData{
+          Card::ConstState{
              "CODE4",
              "TestUnit4",
              "",
@@ -92,7 +87,9 @@ class TestUnit4: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{5, 4},
+          Unit::MutableUnitState{5, 4})
    {
    }
 };
@@ -100,9 +97,7 @@ class TestUnit5: public Unit {
   public:
    TestUnit5(Team owner)
        : Unit(
-          Unit::ConstUnitData{5, 4},
-          Unit::MutableUnitData{5, 4},
-          Card::ConstData{
+          Card::ConstState{
              "CODE5",
              "TestUnit5",
              "",
@@ -114,7 +109,9 @@ class TestUnit5: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{5, 4},
+          Unit::MutableUnitState{5, 4})
    {
    }
 };
@@ -122,9 +119,7 @@ class TestUnit6: public Unit {
   public:
    TestUnit6(Team owner)
        : Unit(
-          Unit::ConstUnitData{5, 4},
-          Unit::MutableUnitData{5, 4},
-          Card::ConstData{
+          Card::ConstState{
              "CODE6",
              "TestUnit6",
              "",
@@ -136,7 +131,9 @@ class TestUnit6: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true},
+          Unit::ConstUnitState{5, 4},
+          Unit::MutableUnitState{5, 4})
    {
    }
 };
@@ -145,7 +142,7 @@ class TestSpell: public Spell {
   public:
    TestSpell(Team owner)
        : Spell(
-          Card::ConstData{
+          Card::ConstState{
              "CODE6",
              "TestUnit6",
              "",
@@ -157,7 +154,7 @@ class TestSpell: public Spell {
              CardType::SPELL,
              1,
           },
-          Card::MutableData{owner, Location::DECK,0, true})
+          Card::MutableState{owner, Location::DECK, 0, true})
    {
    }
 };

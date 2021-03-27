@@ -3,10 +3,7 @@
 
 #include "core/gamemode.h"
 
-bool Unit::_check_play_condition(const State &state) const
-{
-   return state.player(mutables().owner).mana()->common >= mana_cost();
-}
+
 void Unit::add_power(long amount, bool permanent)
 {
    if(permanent) {
