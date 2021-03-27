@@ -23,6 +23,17 @@ void Logic::cast(const sptr< Spell >& spell)
 void Logic::play_spell(const sptr< Spell >& spell)
 {
    spell->uncover();
+   size_t cost = spell->mana_cost();
+   auto* mana_resource = m_state->player(spell->mutables().owner).mana();
+   // the cost that will have to be paid with normal mana
+   long leftover_cost = cost - mana_resource->floating;
+   mana_resource->floating = std::max(0L, -leftover_cost);
+   if(leftover_cost > mana_resource->common) {
+      throw std::logic_error(
+         "The moved spell costs more than the total mana of the player. An invalid action "
+         "wasn't recognized.");
+   }
+   mana_resource->common -= leftover_cost;
    trigger_event< events::EventLabel::PLAY >(m_state->active_team(), spell);
 }
 void Logic::_resolve_spell_stack(bool burst)
@@ -64,6 +75,28 @@ Status Logic::step()
    }
    m_state->turn() += 1;
    return check_status();
+}
+void Logic::play(const sptr< FieldCard >& card, std::optional< size_t > replaces)
+{
+   size_t cost = card->mana_cost();
+   auto team = card->mutables().owner;
+   auto* mana_resource = m_state->player(team).mana();
+   // the cost that will have to be paid with normal mana
+   if(cost > mana_resource->common) {
+      throw std::logic_error(
+         "The played card costs more than the normal mana of the player. An invalid action "
+         "wasn't recognized.");
+   }
+   mana_resource->common -= cost;
+
+   auto& camp = *m_state->board()->camp(team);
+   if(utils::has_value(replaces)) {
+      size_t replace_idx = replaces.value();
+      obliterate(camp[replace_idx]);
+       camp[replace_idx] = card;
+   } else {
+       camp.emplace_back(card);
+   }
 }
 
 //
@@ -766,7 +799,7 @@ Status Logic::step()
 //}
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
-//   m_state->board()->add_to_queue(unit);
+//   m_state->board()->add_to_camp_queue(unit);
 //   Team team = unit->mutables().owner;
 //   process_camp_queue(team);
 //   m_event_listener.register_card(unit);
@@ -791,7 +824,7 @@ Status Logic::step()
 //{
 //   Team team = unit->mutables().owner;
 //   auto copied_unit = std::make_shared< Unit >(*unit);
-//   m_state->board()->add_to_queue(unit);
+//   m_state->board()->add_to_camp_queue(unit);
 //   process_camp_queue(team);
 //   _copy_grants(unit->all_grants(), copied_unit);
 //   m_event_listener.register_card(copied_unit);

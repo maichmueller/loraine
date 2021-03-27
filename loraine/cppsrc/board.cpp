@@ -18,8 +18,8 @@ size_t Board::count_units(
          }
       }
    } else {
-      for(const auto& pot_unit : m_battlefield.at(team)) {
-         if(has_value(pot_unit) && filter(pot_unit)) {
+      for(const auto& pot_unit : m_bf.at(team)) {
+         if(utils::has_value(pot_unit) && filter(pot_unit)) {
             sum += 1;
          } else {
             break;
@@ -44,13 +44,13 @@ std::vector< sptr<Unit> > Board::camp_units(Team team) const
    }
    return units;
 }
-void Board::add_to_queue(const sptr< FieldCard >& card)
+void Board::add_to_camp_queue(const sptr< FieldCard >& card)
 {
    m_camp_queue[card->mutables().owner].emplace(card);
 }
-void Board::add_to_queue(std::vector< sptr<FieldCard> >&& cards)
+void Board::add_to_camp_queue(std::vector< sptr<FieldCard> >&& units)
 {
-   for(auto&& card : cards) {
+   for(auto&& card : units) {
       m_camp_queue[card->mutables().owner].emplace(std::move(card));
    }
 }

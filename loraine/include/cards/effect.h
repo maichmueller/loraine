@@ -5,6 +5,7 @@
 #include "core/gamedefs.h"
 #include "core/targetable.h"
 #include "events/eventbase.h"
+#include "events/event_listener.h"
 #include "targeter.h"
 #include "utils/types.h"
 #include "utils/utils.h"
@@ -18,7 +19,7 @@ class Controller;
  * The base class for effects in the game.
  */
 
-class EffectBase: public Cloneable< EffectBase > {
+class EffectBase: public Cloneable< EffectBase >, public EventListener< EffectBase > {
   public:
    enum class Type { AOE = 0, AURA, SIMPLE, TARGETING };
 

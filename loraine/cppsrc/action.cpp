@@ -33,6 +33,7 @@ bool actions::PlaceSpellAction::execute_impl(State& state)
       spell_buffer->emplace_back(m_spell);
       spell_stack->emplace_back(m_spell);
       m_spell->move(Location::SPELLSTACK, spell_stack->size() - 1);
+
       if(state.targeting_buffer()->empty()
          && (m_spell->has_keyword(Keyword::BURST) || m_spell->has_keyword(Keyword::FOCUS))) {
          state.logic()->play_spell(m_spell);
@@ -75,6 +76,7 @@ bool actions::PlaceUnitAction::execute_impl(State& state)
       // enough for small vector sizes
       utils::remove_by_indices(bf, m_indices_vec);
    }
+    return false;
 }
 bool actions::DragEnemyAction::execute_impl(State& state)
 {
@@ -112,6 +114,7 @@ bool actions::MulliganAction::execute_impl(State& state)
          hand[i] = deck.draw_card();
       }
    }
+   return true;
 }
 bool actions::CancelAction::execute_impl(State& state)
 {

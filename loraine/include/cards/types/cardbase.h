@@ -28,7 +28,6 @@ class Grant;
  */
 class Card:
     public Cloneable< abstract_method< Card > >,
-    public EventListener< Card >,
     public Targetable {
 
   public:

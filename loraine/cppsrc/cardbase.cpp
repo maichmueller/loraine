@@ -94,8 +94,7 @@ Card::EffectMap Card::_clone_effect_map(const Card::EffectMap& emap)
 {
    EffectMap emap_new;
    for(const auto& [elabel, effect_container] : emap) {
-      std::remove_cv< decltype(effect_container) >::type
-         new_entry;  // probably a std::vector, but im tired of adapting everytime...
+      EffectMap::mapped_type new_entry;  // should be std::vector
       new_entry.reserve(effect_container.size());  // reserve the memory needed to clone
       std::transform(
          effect_container.begin(),
