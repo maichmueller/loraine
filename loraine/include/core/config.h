@@ -28,6 +28,7 @@ struct Config {
    const size_t INITIAL_HAND_SIZE = 4;
    const size_t MAX_ROUNDS = 40;
    const size_t INVALID_ACTIONS_LIMIT = 40;
+   const size_t ENLIGHTENMENT_THRESHOLD = 10;
 
    const Nexus::EffectMap PASSIVE_POWERS_BLUE = {};
    const Nexus::EffectMap PASSIVE_POWERS_RED = {};

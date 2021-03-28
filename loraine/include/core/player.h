@@ -10,9 +10,11 @@ class Player {
   public:
    struct Flags {
       bool attack_token = false;
+      bool scout_token = false;
+      bool plunder_token = false;
       bool is_daybreak = false;
       bool is_nightfall = false;
-      bool plunder_token = false;
+      bool enlightened = false;
       bool pass = false;
    };
    struct Mana {
@@ -28,7 +30,7 @@ class Player {
       Deck deck,
       sptr< Controller > controller,
       Mana mana = {0, 0, 0},
-      Flags flags = {false, false, false, false, false});
+      Flags flags = {false, false, false, false, false, false, false});
    ~Player() = default;
    Player(const Player& other);
    Player(Player&& other) = default;

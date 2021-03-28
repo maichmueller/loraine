@@ -10,11 +10,11 @@
 #include "utils/utils.h"
 #include "core/logic.h"
 
-bool GameMode::run_game()
+void GameMode::run_game()
 {
    while(true) {
-      if(auto terminality = m_state.logic()->step() != ONGOING) {
-         return terminality;
+      if(auto terminality = m_state.logic()->step(); terminality != Status::ONGOING) {
+         return;
       }
    }
 }

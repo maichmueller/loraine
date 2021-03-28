@@ -54,6 +54,7 @@ void Logic::_resolve_spell_stack(bool burst)
 }
 Status Logic::step()
 {
+   _start_round();
    bool flip_initiative = false;
    while(not flip_initiative) {
       if(auto* targ_buffer = m_state->targeting_buffer(); targ_buffer->empty()) {
@@ -76,8 +77,7 @@ Status Logic::step()
       m_state->requires_resolution(false);
    } else if(
       m_state->player(Team::BLUE).flags()->pass && m_state->player(Team::RED).flags()->pass) {
-      end_round();
-      start_round();
+      _end_round();
    }
    m_state->turn() += 1;
    return check_status();
@@ -131,29 +131,188 @@ void Logic::_trigger_nightfall_if(const sptr< Card >& card)
    }
 }
 
-//
-// void Logic::check_status()
+void Logic::_start_round()
+{
+   auto& round = m_state->round();
+   round += 1;
+   for(Team team : {Team::RED, Team::BLUE}) {
+      auto& flags = *m_state->player(team).flags();
+      flags.plunder_token = false;
+      flags.is_daybreak = true;
+      flags.is_nightfall = false;
+      flags.attack_token = false;
+      flags.scout_token = false;
+      reset_pass(team);
+      auto& mana = *m_state->player(team).mana();
+      give_managems(Team(team));
+      refill_mana(BLUE, false);
+   }
+
+   Team active_team = Team(m_state->starting_team() + round % 2);
+   m_state->attacker(active_team);
+
+   trigger_event< events::EventLabel::ROUND_START >(m_state->active_team(), round);
+
+   draw_card(BLUE);
+   draw_card(RED);
+}
+void Logic::refill_mana(Team team, bool normal_mana)
+{
+   auto& mana = *m_state->player(team).mana();
+   if(normal_mana) {
+      mana.common = mana.gems;
+   } else {
+      mana.common = m_state->config().MAX_FLOATING_MANA;
+   }
+}
+
+void Logic::draw_card(Team team)
+{
+   auto* deck = m_state->player(team).deck();
+   if(deck->empty()) {
+      _set_status(Status::win(opponent(team), false));
+      return;
+   }
+   auto card_drawn = deck->pop();
+   trigger_event< events::EventLabel::DRAW_CARD >(team, card_drawn);
+   if(auto* hand = m_state->player(team).hand();
+      hand->size() < m_state->config().HAND_CARDS_LIMIT) {
+      hand->emplace_back(card_drawn);
+   } else {
+      obliterate(card_drawn);
+   }
+}
+
+void Logic::give_managems(Team team, long amount)
+{
+   m_state->player(team).mana()->gems += amount;
+   trigger_event< events::EventLabel::GAIN_MANAGEM >(team, amount);
+   _check_enlightenment(team);
+}
+void Logic::_check_enlightenment(Team team)
+{
+   auto& player = m_state->player(team);
+   if(not player.flags()->enlightened
+      && player.mana()->gems >= m_state->config().ENLIGHTENMENT_THRESHOLD) {
+      player.flags()->enlightened = true;
+      trigger_event< events::EventLabel::ENLIGHTENMENT >(team);
+   }
+}
+
+void Logic::spend_mana(const sptr< Card >& card)
+{
+   long common_mana_cost = card->mana_cost();
+   auto* mana_resource = m_state->player(card->mutables().owner).mana();
+
+   if(card->is_spell()) {
+      common_mana_cost = static_cast< size_t >(card->mana_cost() - mana_resource->floating);
+      // we have either spent all spell mana and thus reach 0, or there will be leftovers, which
+      // will see `-common_mana_cost` > 0
+      mana_resource->floating = std::max(0L, -common_mana_cost);
+   }
+   if(common_mana_cost > 0) {
+      // there is some mana left to pay
+      if(common_mana_cost > mana_resource->common) {
+         throw std::logic_error(
+            "The played card " + card->immutables().name + "costs more than the total mana of the player. An invalid action "
+            "wasn't recognized.");
+      }
+      mana_resource->common -= common_mana_cost;
+   }
+}
+
+// void Logic::retreat_to_camp(Team team)
 //{
-//   auto& cfg = m_state->config();
-//   auto nexus_health = {m_state->player(Team::BLUE), m_state->player(Team::RED)};
-//   if(m_state->round() > cfg.MAX_ROUNDS) {
-//      m_state->m_status = Status::TIE;
-//   }
-//   if(m_nexus_health[BLUE] < 1) {
-//      if(m_nexus_health[RED] < 1) {
-//         m_terminal = Status::TIE;
+//   process_camp_queue(team);
+//
+//   size_t camp_units_count = m_state->board()->count_units(team, true);
+//   size_t bf_units_count = m_state->board()->count_units(team, false);
+//   // obliterate any battling units which won't find space on the board
+//   auto& bf = m_state->board()->battlefield(team);
+//   if(auto nr_units_to_obliterate = bf_units_count + camp_units_count - CAMP_SIZE;
+//      nr_units_to_obliterate > 0) {
+//      size_t last_deleted_idx = BATTLEFIELD_SIZE;
+//      for(size_t i = 0; i < nr_units_to_obliterate; ++i) {
+//         for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
+//            if(auto opt_unit = bf.at(idx); has_value(opt_unit)) {
+//               auto unit_to_obliterate = opt_unit;
+//               obliterate(unit_to_obliterate);
+//               reset(opt_unit);
+//               last_deleted_idx = idx;
+//            }
+//         }
 //      }
-//      m_terminal = Status::RED_WINS_NEXUS;
 //   }
-//   if(m_nexus_health[RED] < 1) {
-//      if(m_nexus_health[BLUE] < 1) {
-//         m_terminal = Status::TIE;
+//   // now move back the battlefield units
+//   size_t curr_idx = camp_units_count - 1;
+//   auto& camp = m_state->board()->camp(team);
+//   for(auto& opt_unit : bf) {
+//      if(has_value(opt_unit)) {
+//         camp.at(curr_idx) = opt_unit;
+//         reset(opt_unit);
 //      }
-//      m_terminal = BLUE_WINS_NEXUS;
+//      curr_idx += 1;
 //   }
-//   m_terminal = Status::ONGOING;
-//   m_terminal_checked = true;
 //}
+
+// void Logic::process_camp_queue(Team team)
+//{
+//   // the logic of LOR for deciding how many units in the m_queue fit into the
+//   // camp goes by 2 different modes:
+//   // 1) default play mode, and
+//   // 2) battle resolution mode
+//
+//   // In 1) the card will be obliterated, if there is no space currently on the board left,
+//   // after having considered all previous units in the m_queue. Otherwise, it is placed
+//   // in the camp. When a common is summoned when attack is declared (e.g. Kalista summoning
+//   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
+//   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
+//   // units are ephemeral and expected to die on strike), then that common would be placed
+//   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
+//   // through "Death's Hand" floating removing ephemeral or the ephemeral was shadow-blocked),
+//   // then, starting from the end, any common of the battlefield, which no longer finds space
+//   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
+//   size_t camp_units_count = m_state->board()->count_units(team, true);
+//   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit)
+//   {
+//      return not unit->has_keyword(Keyword::EPHEMERAL);
+//   });
+//   auto& queue = m_state->board()->camp_queue(team);
+//   size_t units_in_queue = queue.size();
+//   auto& camp = m_state->board()->camp(team);
+//   if(auto rem_slots = CAMP_SIZE - camp_units_count - bf_units_count; rem_slots > 0) {
+//      size_t curr_idx = camp_units_count - 1;
+//      for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots); ++counter) {
+//         camp.at(curr_idx) = queue.front();
+//         queue.pop();
+//         curr_idx += 1;
+//      }
+//   }
+//}
+
+//
+
+//
+Status Logic::check_status()
+{
+   const auto& cfg = m_state->config();
+   if(m_state->round() > cfg.MAX_ROUNDS) {
+      m_state->m_status = Status::TIE;
+   }
+   auto& player_blue = m_state->player(Team::BLUE);
+   auto& player_red = m_state->player(Team::RED);
+   if(player_blue.nexus()->health() < 1) {
+      if(player_red.nexus()->health() < 1) {
+         _set_status(Status::TIE);
+      }
+      _set_status(Status::RED_WINS_NEXUS);
+   } else if(player_red.nexus()->health() < 1) {
+      _set_status(Status::BLUE_WINS_NEXUS);
+   }
+   _set_status(Status::ONGOING);
+   m_state->m_status_checked = true;
+   return m_state->m_status;
+}
 //
 // void Logic::damage_nexus(size_t amount, Team team)
 //{
@@ -170,125 +329,28 @@ void Logic::_trigger_nightfall_if(const sptr< Card >& card)
 //   return m_state->pass_flag(Team::BLUE) && m_state->pass_flag(Team::RED);
 //}
 //
-// bool Logic::pass()
-//{
-//   m_state->pass_flag(m_state->active_team()) = true;
-//   return round_ended();
-//}
-// void Logic::reset_pass(Team team)
-//{
-//   m_state->player(team).flags()->pass = false;
-//}
-//
-// void Logic::reset_pass()
-//{
-//   m_state->player(m_state->active_team()).flags()->pass = false;
-//}
-// auto Logic::is_enlightened(Team team) const
-//{
-//   return m_state->managems(team) == m_state->config().MAX_MANA;
-//}
-//
-// void Logic::shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n)
-//{
-//   m_state->player(team).deck()->shuffle_into(card, top_n, m_state->rng());
-//}
-//
-// void Logic::_move_units(const std::vector< size_t >& positions, Team team, bool to_bf)
-//{
-//   auto min_target_pos = m_state->board()->count_units(team, not to_bf);
-//   auto& battlefield = m_state->board()->battlefield(team);
-//   auto& camp = m_state->board()->camp(team);
-//   if(to_bf) {
-//      for(size_t i = 0; i < positions.size(); ++i) {
-//         size_t source_pos = positions.at(i);
-//         size_t target_pos = i + min_target_pos;
-//         auto& unit = camp.at(source_pos);
-//         unit->move(Location::BATTLEFIELD, target_pos);
-//         battlefield.at(target_pos) = to_unit(unit);
-//         camp.erase(camp.begin() + source_pos);
-//      }
-//   } else {
-//      for(size_t i = 0; i < positions.size(); ++i) {
-//         size_t source_pos = positions.at(i);
-//         size_t target_pos = i + min_target_pos;
-//         auto& unit = battlefield.at(source_pos);
-//         throw_if_no_value(unit);
-//         unit->move(Location::CAMP, target_pos);
-//         camp.at(target_pos) = unit;
-//         reset(unit);
-//      }
-//   }
-//}
-// void Logic::_move_units_opp(const std::map< size_t, size_t >& positions, Team team, bool to_bf)
-//{
-//   auto& battlefield = m_state->board()->battlefield(team);
-//   auto& camp = m_state->board()->camp(team);
-//
-//   std::function< void(size_t, size_t) > move_lambda;
-//   if(to_bf) {
-//      auto& bf_opp = m_state->board()->battlefield(Team(1 - team));
-//      move_lambda = [&camp, &battlefield, bf_opp](size_t source_pos, size_t target_pos) {
-//         auto& unit = camp.at(source_pos);
-//         const auto& unit_opp = bf_opp.at(target_pos);
-//         throw_if_no_value(unit_opp);
-//         if(not unit->has_keyword(Keyword::CHALLENGER)
-//            && not unit_opp->has_keyword(Keyword::VULNERABLE)) {
-//            throw std::logic_error(
-//               "A common was dragged which was neither VULNERABLE nor had been challenged by a "
-//               "CHALLENGER.");
-//         }
-//         // move the common to the battlefield now
-//         unit->move(Location::BATTLEFIELD, target_pos);
-//         battlefield.at(target_pos) = to_unit(unit);
-//         // remove the moved common from the camp
-//         auto camp_iter = camp.begin();
-//         std::advance(camp_iter, source_pos);
-//         camp.erase(camp_iter);
-//      };
-//   } else {
-//      move_lambda = [&](size_t source_pos, size_t target_pos) {
-//         auto& unit = battlefield.at(source_pos);
-//         throw_if_no_value(unit);
-//         unit->move(Location::CAMP, target_pos);
-//         camp.at(target_pos) = unit;
-//         reset(unit);
-//      };
-//   }
-//
-//   for(const auto& pos : positions) {
-//      move_lambda(pos.first, pos.second);
-//   }
-//}
-//
-// bool Logic::run_game()
-//{
-//   // decide the team who starts attacking
-//   Team starting_team = Team(std::uniform_int_distribution< size_t >(0, 1)(random::engine()));
-//   m_state->starting_team(starting_team);
-//
-//   // draw the starting cards for each team and let them _mulligan
-//   auto hand_blue = _draw_n_cards(BLUE, INITIAL_HAND_SIZE);
-//   auto hand_red = _draw_n_cards(RED, INITIAL_HAND_SIZE);
-//   _mulligan(hand_blue, hand_red);
-//
-//   // the actual run of the game. We play until the state says it is in a
-//   // terminal state.
-//
-//   while(true) {
-//      // ask current agent for action
-//      Team turn = m_state->active_team();
-//      auto action = m_agents[turn]->choose_action(*m_state);
-//
-//      if(_do_action(action)) {
-//         m_state->incr_turn();
-//      }
-//
-//      if(auto terminality = m_state->status() != ONGOING) {
-//         return terminality;
-//      }
-//   }
-//}
+bool Logic::pass()
+{
+   m_state->player(m_state->active_team()).flags()->pass = true;
+   return round_ended();
+}
+void Logic::reset_pass(Team team)
+{
+   m_state->player(team).flags()->pass = false;
+}
+
+void Logic::reset_pass()
+{
+   m_state->player(m_state->active_team()).flags()->pass = false;
+}
+void Logic::_set_status(Status status)
+{
+   if(m_state->m_status == Status::ONGOING) {
+      // once the status is set to anything but ongoing, it is frozen
+      m_state->m_status = status;
+   }
+}
+
 //
 // bool Logic::_do_action(const sptr< Action >& action)
 //{
@@ -654,181 +716,7 @@ void Logic::_trigger_nightfall_if(const sptr< Card >& card)
 //   regenerate_units(active_team);
 //   regenerate_units(passive_team);
 //}
-// void Logic::_start_round()
-//{
-//   m_state->incr_round();
-//
-//   m_state->token_plunder(false, BLUE);
-//   m_state->token_plunder(false, RED);
-//   m_state->reset_pass_all();
-//
-//   size_t round = m_state->round();
-//   auto attacker = Team(m_state->starting_team() + round % 2);
-//   m_state->token_attack(attacker == BLUE, BLUE);
-//   m_state->token_attack(attacker == RED, RED);
-//   m_state->token_scout(BLUE, false);
-//   m_state->token_scout(RED, false);
-//
-//   // the round start events is to be triggered by the team that also ended the previous round.
-//   _trigger_event(events::RoundStartEvent(m_state->active_team(), std::make_shared< long
-//   >(round))); for(int team = BLUE; team != RED; ++team) {
-//      give_managems(Team(team));
-//   }
-//   m_state->refill_mana(BLUE);
-//   m_state->refill_mana(RED);
-//
-//   draw_card(BLUE);
-//   draw_card(RED);
-//}
-// void Logic::give_managems(Team team, long amount)
-//{
-//   m_state->incr_managems(team, amount);
-//   _check_enlightenment(team);
-//}
-//
-// void Logic::_check_enlightenment(Team team)
-//{
-//   if(m_state->is_enlightened(team)) {
-//      _trigger_event(events::EnlightenmentEvent(team));
-//   }
-//}
-// void Logic::retreat_to_camp(Team team)
-//{
-//   process_camp_queue(team);
-//
-//   size_t camp_units_count = m_state->board()->count_units(team, true);
-//   size_t bf_units_count = m_state->board()->count_units(team, false);
-//   // obliterate any battling units which won't find space on the board
-//   auto& bf = m_state->board()->battlefield(team);
-//   if(auto nr_units_to_obliterate = bf_units_count + camp_units_count - CAMP_SIZE;
-//      nr_units_to_obliterate > 0) {
-//      size_t last_deleted_idx = BATTLEFIELD_SIZE;
-//      for(size_t i = 0; i < nr_units_to_obliterate; ++i) {
-//         for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
-//            if(auto opt_unit = bf.at(idx); has_value(opt_unit)) {
-//               auto unit_to_obliterate = opt_unit;
-//               obliterate(unit_to_obliterate);
-//               reset(opt_unit);
-//               last_deleted_idx = idx;
-//            }
-//         }
-//      }
-//   }
-//   // now move back the battlefield units
-//   size_t curr_idx = camp_units_count - 1;
-//   auto& camp = m_state->board()->camp(team);
-//   for(auto& opt_unit : bf) {
-//      if(has_value(opt_unit)) {
-//         camp.at(curr_idx) = opt_unit;
-//         reset(opt_unit);
-//      }
-//      curr_idx += 1;
-//   }
-//}
-// void Logic::play_spell()
-//{
-//   auto& spell_stack = m_state->spell_stack();
-//   auto& spell_prestack = m_state->spell_prestack();
-//   for(const auto& spell : spell_prestack) {
-//      Team team = spell->mutables().owner;
-//      spell_stack.emplace_back(spell);
-//      spend_mana(team, spell->mana_cost(), true);
-//      uncover_card(spell);
-//      _play_event_triggers(spell, team);
-//   }
-//   spell_prestack.clear();
-//}
-//
-// void Logic::play(const sptr< Card >& card, std::optional< size_t > replaces)
-//{
-//   Team team = card->mutables().owner;
-//   spend_mana(team, card->mana_cost(), false);
-//   auto& camp = m_state->board()->camp(team);
-//   uncover_card(card);
-//   if(replaces.has_value()) {
-//      auto& card_to_replace = camp.at(replaces.value());
-//      obliterate(card_to_replace);
-//      camp.at(replaces.value()) = card;
-//   } else {
-//      camp.at(m_state->board()->count_units(team, true) - 1) = card;
-//   }
-//   card->move(Location::CAMP, has_value(replaces) ? replaces.value() : camp.size() - 1);
-//   m_event_listener.register_card(card);
-//   _play_event_triggers(card, team);
-//}
-// void Logic::_play_event_triggers(const sptr< Card >& card, const Team& team)
-//{
-//   if(card->has_effect(events::EventLabel::DAYBREAK) && check_daybreak(team)) {
-//      _trigger_event(events::DaybreakEvent(team, card));
-//   }
-//   if(card->has_effect(events::EventLabel::NIGHTFALL) && check_nightfall(team)) {
-//      _trigger_event(events::NightfallEvent(team, card));
-//   }
-//   _trigger_event(events::PlayEvent(team, card));
-//}
-// void Logic::cast(const sptr< Spell >& spell)
-//{
-//   _trigger_event(events::CastEvent(spell->mutables().owner, spell));
-//}
-// void Logic::process_camp_queue(Team team)
-//{
-//   // the logic of LOR for deciding how many units in the m_queue fit into the
-//   // camp goes by 2 different modes:
-//   // 1) default play mode, and
-//   // 2) battle resolution mode
-//
-//   // In 1) the card will be obliterated, if there is no space currently on the board left,
-//   // after having considered all previous units in the m_queue. Otherwise, it is placed
-//   // in the camp. When a common is summoned when attack is declared (e.g. Kalista summoning
-//   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
-//   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
-//   // units are ephemeral and expected to die on strike), then that common would be placed
-//   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
-//   // through "Death's Hand" floating removing ephemeral or the ephemeral was shadow-blocked),
-//   // then, starting from the end, any common of the battlefield, which no longer finds space
-//   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
-//   size_t camp_units_count = m_state->board()->count_units(team, true);
-//   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit)
-//   {
-//      return not unit->has_keyword(Keyword::EPHEMERAL);
-//   });
-//   auto& queue = m_state->board()->camp_queue(team);
-//   size_t units_in_queue = queue.size();
-//   auto& camp = m_state->board()->camp(team);
-//   if(auto rem_slots = CAMP_SIZE - camp_units_count - bf_units_count; rem_slots > 0) {
-//      size_t curr_idx = camp_units_count - 1;
-//      for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots); ++counter) {
-//         camp.at(curr_idx) = queue.front();
-//         queue.pop();
-//         curr_idx += 1;
-//      }
-//   }
-//}
-// void Logic::spend_mana(Team team, size_t cost, bool floating_mana)
-//{
-//   long int rem_mana_to_pay = cost;
-//   if(floating_mana) {
-//      auto curr_floating_mana = m_state->floating_mana(team);
-//      rem_mana_to_pay = static_cast< long int >(cost - curr_floating_mana);
-//      m_state->floating_mana(-rem_mana_to_pay, team);
-//   }
-//   if(rem_mana_to_pay > 0) {
-//      m_state->mana(m_state->mana(team) + rem_mana_to_pay, team);
-//   }
-//}
-//
-// void Logic::draw_card(Team team)
-//{
-//   auto deck = m_state->deck(team);
-//   auto card_drawn = deck.back();
-//   deck.pop_back();
-//   if(auto hand = m_state->hand(team); hand.size() < HAND_CARDS_LIMIT) {
-//      hand.emplace_back(card_drawn);
-//      _trigger_event(events::DrawCardEvent(team, card_drawn));
-//   } else {
-//      obliterate(card_drawn);
-//   }
-//}
+
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
 //   m_state->board()->add_to_camp_queue(unit);

@@ -58,6 +58,7 @@ class Logic: public Cloneable< Logic > {
 
    Status step();
 
+   void draw_card(Team team);
    /**
     * Play a fieldcard onto the board
     * @param card: shared_ptr<Card>,
@@ -71,6 +72,7 @@ class Logic: public Cloneable< Logic > {
     * play all the spells that have been added to the spellstack
     */
    void play_spell(const sptr< Spell >& spell);
+
    /**
     * Cast the given floating. This does not check whether the given spell is also played.
     * @param: spell: shared_ptr<Spell>,
@@ -81,7 +83,6 @@ class Logic: public Cloneable< Logic > {
       typename = std::enable_if_t<
          std::is_same_v< sptr< Spell >, typename std::decay_t< Container >::value_type > > >
    void cast(Container&& spells_vec);
-
    void cast(const sptr< Spell >& spell);
    /**
     * Summon a specific common card to either the camp or the battlefield.
@@ -124,6 +125,7 @@ class Logic: public Cloneable< Logic > {
     *   the team who recalled the card.
     */
    void recall(const sptr< Card >& recalled_card, Team recaller);
+
    /**
     * Let a common strike another.
     * @param unit_att: shared_ptr<Unit>,
@@ -132,7 +134,6 @@ class Logic: public Cloneable< Logic > {
     *   the struck common.
     */
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
-
    /**
     * Let a unit strike another.
     * @param unit_att: shared_ptr<Unit>,
@@ -142,12 +143,10 @@ class Logic: public Cloneable< Logic > {
     */
    void nexus_strike(const sptr< Unit >& striking_unit);
    void heal(Team team, const sptr< Unit >& unit, long amount);
+
    void
    damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
-
    void start_game();
-   void start_round();
-   void end_round();
 
    template < typename NewHandlerType, typename... Args >
    inline void transition_action_handler(Args&&... args)
@@ -197,7 +196,6 @@ class Logic: public Cloneable< Logic > {
    template < bool floating_mana = false >
    void clamp_mana();
 
-   [[nodiscard]] auto is_enlightened(Team team) const;
    [[nodiscard]] bool round_ended() const;
    bool pass();
 
@@ -260,22 +258,20 @@ class Logic: public Cloneable< Logic > {
    void retreat_to_camp(Team team);
    void process_camp_queue(Team team);
 
-   void draw_card(Team team);
-   void spend_mana(Team team, size_t cost, bool floating_mana);
-
+   void spend_mana(const sptr<Card>& card);
    // inline methods
 
    void shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n);
+
    inline void obliterate(const sptr< Card >& card)
    {
       card->uncover();
       _remove(card);
    }
-
    Status check_status();
-   /// The member declarations
 
   private:
+
    /// The associated state ptr, to be set in a delayed manner after state construction
    /// The logic object's lifetime is bound to the State object, so there should be no
    /// SegFault problems.
@@ -286,8 +282,11 @@ class Logic: public Cloneable< Logic > {
    std::unique_ptr< ActionHandlerBase > m_prev_action_handler = nullptr;
    /// private logic helpers
    void _resolve_battle();
-
    void _resolve_spell_stack(bool burst);
+
+   /// The member declarations
+   void _start_round();
+   void _end_round();
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
    void _cast_spellstack();
@@ -304,6 +303,8 @@ class Logic: public Cloneable< Logic > {
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants,
       const std::shared_ptr< Unit >& unit);
+   void refill_mana(Team team, bool normal_mana);
+   void _set_status(Status status);
 };
 
 template < Location range >
@@ -358,7 +359,7 @@ void Logic::clamp_mana()
 template < events::EventLabel event_label, typename... Params >
 void Logic::trigger_event(Params&&... params)
 {
-   auto& event = m_state->events()[static_cast< size_t >(event_label)];
+   auto& event = m_state->events()->at(static_cast< size_t >(event_label));
    // the event_label is used as index pointer to the actual type inside the LOREvent variant.
    // we need to infer this event_type and then call its trigger method.
    using targeted_event_t = std::invoke_result_t< decltype(&events::create_event< event_label >) >;

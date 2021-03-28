@@ -23,7 +23,7 @@ class CardToken;
 class GameMode {
   public:
 
-   bool run_game();
+   void run_game();
 
    GameMode(const Config& cfg, SymArr<Deck > decks, SymArr<sptr<Controller>> controllers)
       : m_state(cfg, decks, controllers)

@@ -47,12 +47,12 @@ class State {
 
    State(const State& other);
 
-   auto& events() { return m_events; }
-   [[nodiscard]] auto& events() const { return m_events; }
+   auto* events() { return &m_events; }
+   [[nodiscard]] auto* events() const { return &m_events; }
    [[nodiscard]] inline auto* board() { return &m_board; }
    [[nodiscard]] inline auto* board() const { return &m_board; }
 
-   [[nodiscard]] inline auto* round() { return &m_round; }
+   [[nodiscard]] inline auto& round() { return m_round; }
    [[nodiscard]] inline auto round() const { return m_round; }
 
    inline auto& turn() { return m_turn; }
@@ -67,7 +67,7 @@ class State {
 
    [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
 
-   [[nodiscard]] auto config() const { return m_config; }
+   [[nodiscard]] auto& config() const { return m_config; }
    [[nodiscard]] auto logic() const { return m_logic; }
    [[nodiscard]] inline auto starting_team() const { return m_starting_team; }
    [[nodiscard]] inline auto& player(Team team) { return m_players[team]; }

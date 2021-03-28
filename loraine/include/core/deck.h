@@ -47,18 +47,31 @@ class Deck {
 
    /// forwarded functions from container
 
-   [[nodiscard]] auto size() const { return m_cards.size(); }
-   [[nodiscard]] auto begin() const { return m_cards.begin(); }
-   [[nodiscard]] auto begin() { return m_cards.begin(); }
-   [[nodiscard]] auto end() const { return m_cards.end(); }
-   [[nodiscard]] auto end() { return m_cards.end(); }
+   [[nodiscard]] auto size() const noexcept { return m_cards.size(); }
+   [[nodiscard]] auto begin() const noexcept { return m_cards.begin(); }
+   [[nodiscard]] auto begin() noexcept { return m_cards.begin(); }
+   [[nodiscard]] auto end() const noexcept { return m_cards.end(); }
+   [[nodiscard]] auto end() noexcept { return m_cards.end(); }
    [[nodiscard]] inline auto& operator[](size_t n) { return m_cards[n]; }
    [[nodiscard]] inline auto& operator[](size_t n) const { return m_cards[n]; }
    [[nodiscard]] inline const auto& at(size_t idx) const { return m_cards.at(idx); }
    [[nodiscard]] inline auto& at(size_t idx) { return m_cards.at(idx); }
    [[nodiscard]] inline auto erase(const_iterator position) { return m_cards.erase(position); }
+   [[nodiscard]] inline auto empty() const noexcept { return m_cards.empty(); }
 
    /// actual member logic
+
+   /**
+    * Pop the top card from the stack and return it.
+    * @return shared_ptr<Card>,
+    *   the popped card
+    */
+   inline sptr< Card > pop()
+   {
+      auto last = m_cards.back();
+      m_cards.pop_back();
+      return last;
+   }
 
    /*
     * Method to filter out specific cards
@@ -76,7 +89,7 @@ class Deck {
     * @param top_n size_t,
     *   the range from the top to shuffle the card into
     */
-    template <typename RNG>
+   template < typename RNG >
    void shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n);
 
    /**
@@ -94,7 +107,7 @@ class Deck {
     * @param card_code const char*,
     *   the card code that needs to be matched
     */
-    template <class RNG>
+   template < class RNG >
    sptr< Card > draw_by_code(const char* card_code, RNG&& rng);
 
    static std::set< Region > identify_regions(const ContainerType& container);
