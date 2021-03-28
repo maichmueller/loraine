@@ -76,10 +76,14 @@ class Board {
    auto& camp_queue(Team team) { return m_camp_queue.at(team); }
    [[nodiscard]] auto& camp_queue(Team team) const { return m_camp_queue.at(team); }
 
+   void move_to_bf(const sptr<Unit>& card, size_t idx);
+   void move_to_bf(const sptr<Unit>& card);
+   void move_to_camp(const sptr<Unit>& card);
+
    void add_to_camp_queue(const sptr< FieldCard >& card);
    void add_to_camp_queue(std::vector< sptr< FieldCard > >&& units);
-   void add_to_bf_queue(const sptr< FieldCard >& card);
-   void add_to_bf_queue(std::vector< sptr< FieldCard > >&& units);
+   void add_to_bf_queue(const sptr< Unit >& unit);
+   void add_to_bf_queue(std::vector< sptr< Unit > >&& units);
 
   private:
    size_t m_camp_size_max;
