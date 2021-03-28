@@ -23,6 +23,9 @@ void Logic::cast(const sptr< Spell >& spell)
 void Logic::play_spell(const sptr< Spell >& spell)
 {
    spell->uncover();
+
+   // pay the mana cost
+
    size_t cost = spell->mana_cost();
    auto* mana_resource = m_state->player(spell->mutables().owner).mana();
    // the cost that will have to be paid with normal mana
@@ -34,7 +37,10 @@ void Logic::play_spell(const sptr< Spell >& spell)
          "wasn't recognized.");
    }
    mana_resource->common -= leftover_cost;
-   trigger_event< events::EventLabel::PLAY >(m_state->active_team(), spell);
+
+   trigger_event< events::EventLabel::PLAY >(spell->mutables().owner, spell);
+   _trigger_daybreak_if(spell);
+   _trigger_nightfall_if(spell);
 }
 void Logic::_resolve_spell_stack(bool burst)
 {
@@ -78,6 +84,10 @@ Status Logic::step()
 }
 void Logic::play(const sptr< FieldCard >& card, std::optional< size_t > replaces)
 {
+   card->uncover();
+
+   // pay the mana cost
+
    size_t cost = card->mana_cost();
    auto team = card->mutables().owner;
    auto* mana_resource = m_state->player(team).mana();
@@ -93,9 +103,31 @@ void Logic::play(const sptr< FieldCard >& card, std::optional< size_t > replaces
    if(utils::has_value(replaces)) {
       size_t replace_idx = replaces.value();
       obliterate(camp[replace_idx]);
-       camp[replace_idx] = card;
+      camp[replace_idx] = card;
    } else {
-       camp.emplace_back(card);
+      camp.emplace_back(card);
+   }
+   // trigger play events
+   trigger_event< events::EventLabel::PLAY >(card->mutables().owner, card);
+   _trigger_daybreak_if(card);
+   _trigger_nightfall_if(card);
+}
+void Logic::_trigger_daybreak_if(const sptr< Card >& card)
+{
+   Team team = card->mutables().owner;
+   auto daybreak = m_state->player(team).flags()->is_daybreak;  // copy before overwriting
+   m_state->player(team).flags()->is_daybreak = false;  // if there was daybreak, there is none now
+   if(daybreak && card->has_effect(events::EventLabel::DAYBREAK)) {
+      trigger_event< events::EventLabel::DAYBREAK >(team, card);
+   }
+}
+void Logic::_trigger_nightfall_if(const sptr< Card >& card)
+{
+   Team team = card->mutables().owner;
+   auto nightfall = m_state->player(team).flags()->is_nightfall;  // copy before overwriting
+   m_state->player(team).flags()->is_nightfall = true;  // from now on there is certainly nightfall
+   if(nightfall && card->has_effect(events::EventLabel::NIGHTFALL)) {
+      trigger_event< events::EventLabel::NIGHTFALL >(team, card);
    }
 }
 

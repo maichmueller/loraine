@@ -273,10 +273,8 @@ class Logic: public Cloneable< Logic > {
    }
 
    Status check_status();
-   [[nodiscard]] bool check_daybreak(Team team) const;
-   [[nodiscard]] bool check_nightfall(Team team) const;
-
    /// The member declarations
+
   private:
    /// The associated state ptr, to be set in a delayed manner after state construction
    /// The logic object's lifetime is bound to the State object, so there should be no
@@ -286,15 +284,17 @@ class Logic: public Cloneable< Logic > {
    std::unique_ptr< ActionHandlerBase > m_action_handler;
    /// the previous action handler for incoming actions
    std::unique_ptr< ActionHandlerBase > m_prev_action_handler = nullptr;
-
    /// private logic helpers
    void _resolve_battle();
+
    void _resolve_spell_stack(bool burst);
-
    std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
-   void _cast_spellstack();
 
+   void _cast_spellstack();
    void _activate_battlemode(Team attack_team);
+
+   void _trigger_daybreak_if(const sptr<Card>& card);
+   void _trigger_nightfall_if(const sptr<Card>& card);
 
    void _deactivate_battlemode();
    void _remove(const sptr< Card >& card);
