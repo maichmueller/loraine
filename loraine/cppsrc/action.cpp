@@ -111,7 +111,7 @@ bool actions::MulliganAction::execute_impl(State& state)
    random::shuffle_inplace(deck, state.rng());
    for(auto i = 0; i < m_replace.size(); ++i) {
       if(m_replace[i]) {
-         hand[i] = deck.draw_card();
+         hand[i] = deck.pop();
       }
    }
    return true;

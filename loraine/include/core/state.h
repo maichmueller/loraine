@@ -49,6 +49,7 @@ class State {
 
    auto* events() { return &m_events; }
    [[nodiscard]] auto* events() const { return &m_events; }
+
    [[nodiscard]] inline auto* board() { return &m_board; }
    [[nodiscard]] inline auto* board() const { return &m_board; }
 

@@ -8,7 +8,7 @@
 
 #include "gamedefs.h"
 #include "utils/types.h"
-
+#include <iostream>
 class FieldCard;
 class Unit;
 class Landmark;
@@ -76,9 +76,9 @@ class Board {
    auto& camp_queue(Team team) { return m_camp_queue.at(team); }
    [[nodiscard]] auto& camp_queue(Team team) const { return m_camp_queue.at(team); }
 
-   void move_to_bf(const sptr<Unit>& card, size_t idx);
-   void move_to_bf(const sptr<Unit>& card);
-   void move_to_camp(const sptr<Unit>& card);
+   void add_to_bf(const sptr<Unit>& card, size_t idx);
+   void add_to_bf(const sptr<Unit>& card);
+   void add_to_camp(const sptr<Unit>& card);
 
    void add_to_camp_queue(const sptr< FieldCard >& card);
    void add_to_camp_queue(std::vector< sptr< FieldCard > >&& units);
@@ -118,10 +118,12 @@ class Board {
     * @param until size_t,
     *   the index until which the placeholders need to be put
     */
+
    inline void _fill_with_nullptr(Team team, size_t until)
    {
       auto& bf = m_bf[team];
-      for(auto i = 0; i < until - m_bf.size(); ++i) {
+      auto stop = until - bf.size();
+      for(int i = 0; i < stop; ++i) {
          bf.emplace_back(nullptr);
       }
    }

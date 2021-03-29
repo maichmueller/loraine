@@ -32,7 +32,7 @@ auto Deck::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
 
    for(const auto& idx : indices) {
       size_t shifted_idx = idx - idx_shift;
-      popped_cards.emplace_back(draw_by_index(shifted_idx));
+      popped_cards.emplace_back(pop_by_index(shifted_idx));
       ++idx_shift;
    }
    return popped_cards;
@@ -58,20 +58,12 @@ auto Deck::find(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card >
    return _find_cards(filter);
 }
 
-sptr< Card > Deck::draw_card()
-{
-   sptr< Card > card = m_cards.back();
-   m_cards.pop_back();
-   return card;
-}
-
-sptr< Card > Deck::draw_by_index(size_t index)
+sptr< Card > Deck::pop_by_index(size_t index)
 {
    if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
-      std::stringstream msg;
-      msg << "Index " << std::to_string(index) << " out of bounds for deck of size "
-          << std::to_string(deck_size) << ".";
-      throw std::logic_error(msg.str());
+      throw std::out_of_range(
+         "Index " + std::to_string(index) + " out of bounds for deck of size "
+         + std::to_string(deck_size) + ".");
    }
    auto begin = std::begin(m_cards);
    auto pos = begin - index;
@@ -108,12 +100,12 @@ void Deck::shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n)
 }
 
 template < class RNG >
-sptr< Card > Deck::draw_by_code(const char* card_code, RNG&& rng)
+sptr< Card > Deck::pop_by_code(const char* card_code, RNG&& rng)
 {
    auto indices = _find_indices(
       [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
    random::shuffle_inplace(m_cards, rng);
-   return draw_by_index(indices[0]);
+   return pop_by_index(indices[0]);
 }
 
 Deck::Deck(const Deck& other) : m_cards(), m_regions(other.m_regions)
@@ -123,3 +115,4 @@ Deck::Deck(const Deck& other) : m_cards(), m_regions(other.m_regions)
       m_cards.emplace_back(card->clone());
    }
 }
+

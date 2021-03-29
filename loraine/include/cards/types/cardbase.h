@@ -80,7 +80,7 @@ class Card:
       // all m_effects
       EffectMap effects = {};
       // condition
-      uptr< Toll > play_toll = nullptr;
+      uptr< Toll > play_toll = std::make_unique<Toll>();
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants

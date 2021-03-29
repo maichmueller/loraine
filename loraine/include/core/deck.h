@@ -93,14 +93,20 @@ class Deck {
    void shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n);
 
    /**
-    * Draw the top card
-    */
-   sptr< Card > draw_card();
-
-   /**
     * Draw the card at a specific index
     */
-   sptr< Card > draw_by_index(size_t index);
+   sptr< Card > pop_by_index(size_t index);
+   /**
+    * Draw the cards at specific indices
+    */
+   template <
+      typename Container,
+      typename = std::enable_if_t< std::is_integral_v< typename Container::value_type > > >
+   std::vector< sptr< Card > > pop_by_index(Container indices);
+   template <
+      typename IntType,
+      typename = std::enable_if_t< std::is_integral_v< IntType > > >
+   std::vector< sptr<Card>> pop_by_index(std::initializer_list<IntType> indices);
 
    /**
     * Drawing randomly one of the cards that matches the given code.
@@ -108,7 +114,7 @@ class Deck {
     *   the card code that needs to be matched
     */
    template < class RNG >
-   sptr< Card > draw_by_code(const char* card_code, RNG&& rng);
+   sptr< Card > pop_by_code(const char* card_code, RNG&& rng);
 
    static std::set< Region > identify_regions(const ContainerType& container);
    static std::set< Region > identify_regions(std::initializer_list< value_type > cards);
@@ -129,5 +135,37 @@ class Deck {
 
    [[nodiscard]] std::vector< sptr< Card > > _find_cards(const FilterFunc& filter) const;
 };
+
+template < typename Container, typename >
+std::vector< sptr< Card > > Deck::pop_by_index(Container indices)
+{
+   std::sort(indices.begin(), indices.end());
+   if(not (indices.back() < m_cards.size())) {
+      throw std::out_of_range(
+         "Indices to pop exceed card container boundaries: Greatest index = "
+         + std::to_string(indices.back()) + " > " + std::to_string(m_cards.size())
+         + " = container size.");
+   }
+   std::vector< sptr< Card > > out;
+   out.reserve(indices.size());
+   size_t curr_idx = m_cards.size() - 1;
+   m_cards.erase(std::remove_if(m_cards.begin(), m_cards.end(), [&](const auto& card) {
+      bool match = curr_idx == indices.back();
+      curr_idx--;
+      if(match) {
+         indices.pop_back();
+         out.emplace_back(card);
+      }
+      return match;
+   }));
+   return out;
+}
+
+template <
+   typename IntType,
+   typename >
+std::vector< sptr<Card>> Deck::pop_by_index(std::initializer_list<IntType> indices) {
+   return pop_by_index<std::vector<IntType>>(indices);
+}
 
 #endif  // LORAINE_DECK_H

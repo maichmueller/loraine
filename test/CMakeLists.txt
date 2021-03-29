@@ -11,7 +11,7 @@ find_package("GTest")
 set(TEST_SOURCES
         tests.cpp
         test_board.cpp
-        test_cards.h test_cards.cpp)
+        test_cards.h test_cards.cpp test_deck.cpp test_logic.cpp)
 
 add_executable(tests ${TEST_SOURCES})
 target_include_directories(tests PRIVATE loraine)

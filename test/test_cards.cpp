@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(CardTest, CardTest_Basics)
+TEST(CardTest, Basics)
 {
    auto unit1 = std::make_shared< TestUnit1 >(BLUE);
    auto unit2 = std::make_shared< TestUnit2 >(BLUE);
