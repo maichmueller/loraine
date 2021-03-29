@@ -136,6 +136,18 @@ class Deck {
    [[nodiscard]] std::vector< sptr< Card > > _find_cards(const FilterFunc& filter) const;
 };
 
+
+#include "cards/card.h"
+
+template < class RNG >
+sptr< Card > Deck::pop_by_code(const char* card_code, RNG&& rng)
+{
+   auto indices = _find_indices(
+      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
+   random::shuffle_inplace(m_cards, rng);
+   return pop_by_index(indices[0]);
+}
+
 template < typename Container, typename >
 std::vector< sptr< Card > > Deck::pop_by_index(Container indices)
 {

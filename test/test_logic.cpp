@@ -5,5 +5,5 @@
 #include <gtest/gtest.h>
 
 TEST(LogicTest, Logic_Basics) {
-   State state();
+//   State state();
 }

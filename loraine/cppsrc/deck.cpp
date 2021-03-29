@@ -60,15 +60,15 @@ auto Deck::find(const FilterFunc& filter, bool pop) -> std::vector< sptr< Card >
 
 sptr< Card > Deck::pop_by_index(size_t index)
 {
-   if(auto deck_size = m_cards.size(); index + 1 > deck_size) {
+   if(auto deck_size = m_cards.size(); index >= deck_size) {
       throw std::out_of_range(
          "Index " + std::to_string(index) + " out of bounds for deck of size "
          + std::to_string(deck_size) + ".");
    }
-   auto begin = std::begin(m_cards);
-   auto pos = begin - index;
-   sptr< Card > popped_card = m_cards.at(std::distance(pos, begin) - 1);
-   m_cards.erase(pos);
+   auto rbegin = m_cards.rbegin();
+   auto pos = std::next(rbegin, index);
+   sptr< Card > popped_card = *pos;
+   m_cards.erase(pos.base());
    return popped_card;
 }
 
@@ -97,15 +97,6 @@ void Deck::shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n)
    std::uniform_int_distribution< size_t > dist(0, max);
    auto pos = m_cards.begin() + (deck_size - dist(std::forward< RNG >(rng)));
    m_cards.insert(pos, card);
-}
-
-template < class RNG >
-sptr< Card > Deck::pop_by_code(const char* card_code, RNG&& rng)
-{
-   auto indices = _find_indices(
-      [&card_code](const sptr< Card >& card) { return card->immutables().code == card_code; });
-   random::shuffle_inplace(m_cards, rng);
-   return pop_by_index(indices[0]);
 }
 
 Deck::Deck(const Deck& other) : m_cards(), m_regions(other.m_regions)
