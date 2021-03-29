@@ -9,7 +9,7 @@
 #include "utils/types.h"
 #include "utils/utils.h"
 
-// derive the listener classes:
+// derive the listener class:
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
 template < class Derived >
 class EventListener: public utils::CRTP< EventListener, Derived > {

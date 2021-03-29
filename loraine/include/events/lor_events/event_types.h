@@ -120,6 +120,20 @@ class LevelUpEvent:
        Team,
        const sptr< Card >& > {
 };
+
+/*
+ * 1st Arg: const sptr<Card>& = Nexus damaging card
+ * 2nd Arg: long = The damage
+ */
+class NexusDamageEvent:
+    public Event<
+       NexusDamageEvent,
+       EventLabelType< EventLabel::NEXUS_DAMAGE >,
+       Team,
+       const sptr< Card >&,
+       long > {
+};
+
 /*
  * 1st Arg: const sptr<Card>& = Nexus striking card
  * 2nd Arg: long = The damage
@@ -132,6 +146,7 @@ class NexusStrikeEvent:
        const sptr< Card >&,
        long > {
 };
+
 /*
  * 1st Arg: const sptr<Card>& = The nightfall causing card
  */
@@ -258,6 +273,7 @@ using LOREvent = std::variant<
    GainManagemEvent,
    HealUnitEvent,
    LevelUpEvent,
+   NexusDamageEvent,
    NexusStrikeEvent,
    NightfallEvent,
    PlayEvent,

@@ -33,7 +33,6 @@ class Event: public EventBase {
    SubVector subs;
    EventT event_ref;
 
-
    /// SFINAE to check whether the Derived Event has an 'order' method of correct signature.
 
    template < class, class = void >
@@ -49,8 +48,7 @@ class Event: public EventBase {
    };
 
   protected:
-   void _notify(Subscriber* subscriber, State& state, Args... args)
-   {
+   void _notify(Subscriber* subscriber, State& state, Args... args) {
       // passing in the event_ref is needed to distinguish among the event_call overloads
       subscriber->event_call(state, SignatureTuple(event_ref, args...));
    }
@@ -76,7 +74,10 @@ class Event: public EventBase {
 
    void subscribe(Subscriber* t) { subs.emplace_back(t); }
 
-   void unsubscribe(void* t) final { subs.erase(std::find(subs.begin(), subs.end(), static_cast< Subscriber* >(t))); }
+   void unsubscribe(void* t) final
+   {
+      subs.erase(std::find(subs.begin(), subs.end(), static_cast< Subscriber* >(t)));
+   }
 };
 
 #endif  // LORAINE_EVENT_H

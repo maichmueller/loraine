@@ -27,7 +27,7 @@ class Logic: public Cloneable< Logic > {
    Logic(Logic&& l) noexcept = default;
    Logic& operator=(Logic&& rhs) = default;
    Logic& operator=(const Logic& rhs) = delete;
-   ~Logic() = default;
+   ~Logic() override = default;
 
    void state(State& state) { m_state = &state; }
    auto state() { return m_state; }
@@ -58,6 +58,12 @@ class Logic: public Cloneable< Logic > {
 
    Status step();
 
+   // e.g. FIORA's win condition or Star Spring's.
+   inline void external_win_trigger(Team team, bool nexus = true)
+   {
+      _set_status(Status::win(team, nexus));
+   };
+
    void draw_card(Team team);
    /**
     * Play a fieldcard onto the board
@@ -74,9 +80,7 @@ class Logic: public Cloneable< Logic > {
    void play_spell(const sptr< Spell >& spell);
 
    /**
-    * Cast the given floating. This does not check whether the given spell is also played.
-    * @param: spell: shared_ptr<Spell>,
-    *    The spell to cast.
+    * Cast the given spells. This does not check whether the spell is also played.
     */
    template <
       typename Container,
@@ -149,37 +153,7 @@ class Logic: public Cloneable< Logic > {
    void start_game();
 
    template < typename NewHandlerType, typename... Args >
-   inline void transition_action_handler(Args&&... args)
-   {
-      // assert the chosen handler type is any of the ones we have. It is not directly necessary to
-      // do, but would improve the error message
-      static_assert(
-         utils::is_any_v<
-            NewHandlerType,
-            DefaultModeHandler,
-            CombatModeHandler,
-            MulliganModeHandler,
-            TargetModeHandler >,
-         "Given NewHandlerType is not one of the designated handlers.");
-
-      // move current handler into previous
-      m_prev_action_handler = std::move(m_action_handler);
-
-      // assign new handler
-      if constexpr(std::is_same_v< NewHandlerType, DefaultModeHandler >) {
-         m_action_handler = std::make_unique< DefaultModeHandler >(
-            this, std::forward< Args >(args)...);
-      } else if constexpr(std::is_same_v< NewHandlerType, CombatModeHandler >) {
-         m_action_handler = std::make_unique< CombatModeHandler >(
-            this, std::forward< Args >(args)...);
-      } else if constexpr(std::is_same_v< NewHandlerType, MulliganModeHandler >) {
-         m_action_handler = std::make_unique< MulliganModeHandler >(
-            this, std::forward< Args >(args)...);
-      } else {
-         m_action_handler = std::make_unique< TargetModeHandler >(
-            this, std::forward< Args >(args)...);
-      }
-   }
+   inline void transition_action_handler(Args&&... args);
    inline void restore_previous_handler()
    {
       utils::throw_if_no_value(
@@ -188,7 +162,7 @@ class Logic: public Cloneable< Logic > {
       m_prev_action_handler = nullptr;
    }
 
-   void kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause = {});
+   void kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause);
    void damage_nexus(size_t amount, Team team);
 
    void heal_nexus(size_t amount, Team team);
@@ -258,7 +232,7 @@ class Logic: public Cloneable< Logic > {
    void retreat_to_camp(Team team);
    void process_camp_queue(Team team);
 
-   void spend_mana(const sptr<Card>& card);
+   void spend_mana(const sptr< Card >& card);
    // inline methods
 
    void shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n);
@@ -271,7 +245,6 @@ class Logic: public Cloneable< Logic > {
    Status check_status();
 
   private:
-
    /// The associated state ptr, to be set in a delayed manner after state construction
    /// The logic object's lifetime is bound to the State object, so there should be no
    /// SegFault problems.
@@ -287,15 +260,10 @@ class Logic: public Cloneable< Logic > {
    /// The member declarations
    void _start_round();
    void _end_round();
-   std::vector< sptr< Card > > _draw_n_cards(Team team, int n = 1);
 
-   void _cast_spellstack();
-   void _activate_battlemode(Team attack_team);
+   void _trigger_daybreak_if(const sptr< Card >& card);
+   void _trigger_nightfall_if(const sptr< Card >& card);
 
-   void _trigger_daybreak_if(const sptr<Card>& card);
-   void _trigger_nightfall_if(const sptr<Card>& card);
-
-   void _deactivate_battlemode();
    void _remove(const sptr< Card >& card);
 
    void _check_enlightenment(Team team);
@@ -371,6 +339,37 @@ void Logic::cast(Container&& spells_vec)
 {
    for(const auto& spell : spells_vec) {
       trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+   }
+}
+
+template < typename NewHandlerType, typename... Args >
+void Logic::transition_action_handler(Args&&... args)
+{
+   // assert the chosen handler type is any of the ones we have. It is not directly necessary to
+   // do, but would improve the error message
+   static_assert(
+      utils::is_any_v<
+         NewHandlerType,
+         DefaultModeHandler,
+         CombatModeHandler,
+         MulliganModeHandler,
+         TargetModeHandler >,
+      "Given NewHandlerType is not one of the designated handlers.");
+
+   // move current handler into previous
+   m_prev_action_handler = std::move(m_action_handler);
+
+   // assign new handler
+   if constexpr(std::is_same_v< NewHandlerType, DefaultModeHandler >) {
+      m_action_handler = std::make_unique< DefaultModeHandler >(
+         this, std::forward< Args >(args)...);
+   } else if constexpr(std::is_same_v< NewHandlerType, CombatModeHandler >) {
+      m_action_handler = std::make_unique< CombatModeHandler >(this, std::forward< Args >(args)...);
+   } else if constexpr(std::is_same_v< NewHandlerType, MulliganModeHandler >) {
+      m_action_handler = std::make_unique< MulliganModeHandler >(
+         this, std::forward< Args >(args)...);
+   } else {
+      m_action_handler = std::make_unique< TargetModeHandler >(this, std::forward< Args >(args)...);
    }
 }
 

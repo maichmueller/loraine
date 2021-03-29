@@ -19,7 +19,8 @@ enum class EventLabel {
    GAIN_MANAGEM,  // gaining an amount of mana (e.g. round-start)
    HEAL_UNIT,  // healing a common for some amount
    LEVEL_UP,  // champion levels up
-   NEXUS_STRIKE,  // from direct attack
+   NEXUS_DAMAGE,  // from non-combat attack
+   NEXUS_STRIKE,  // from combat attack
    NIGHTFALL,  // the played card is not the first to be played in this round
    PLAY,  // summoning a common from hand or playing a floating
    RECALL,  // a common gets recalled from field back to the hand

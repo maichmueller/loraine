@@ -351,6 +351,7 @@ void Logic::_set_status(Status status)
    }
 }
 
+
 //
 // bool Logic::_do_action(const sptr< Action >& action)
 //{

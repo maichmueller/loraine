@@ -34,6 +34,7 @@ struct EventCallInterface:
                                                   event_call method*/
 {
 };
+
 /**
  * Single Event deduction end. Any combination of ListenerTypes, such as Listener<AttackEvent,
  * DamageEvent>, will inherit from each individual call pattern and thus be eligible as subscriber
