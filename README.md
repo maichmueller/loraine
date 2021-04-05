@@ -1,6 +1,6 @@
 ![linux](https://github.com/maichmueller/loraine/workflows/linux/badge.svg)
 
-LoRaine is intended to provide a simulator for the spell game Legends of Runeterra with the goal of enabling reinforcement learning to study AI solutions.
+LoRaine is intended to provide a simulator for the card game Legends of Runeterra with support for AI creation.
 
 ### Necessary Dependencies
 1. A C++ compiler that supports C++17. 
