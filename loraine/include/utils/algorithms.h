@@ -53,12 +53,12 @@ auto find_index(const Container& container, const T& elem) -> long
    return index;
 }
 
-template < template <typename, typename> class Container, typename T1, typename T2 >
+template < template < typename, typename > class Container, typename T1, typename T2 >
 void permute(Container< T1, T2 >& vec_like, std::vector< int >& perm_order)
 {
-   for (size_t i = 0; i < perm_order.size(); i++) {
+   for(size_t i = 0; i < perm_order.size(); i++) {
       auto current = i;
-      while (i != perm_order[current]) {
+      while(i != perm_order[current]) {
          auto next = perm_order[current];
          std::swap(vec_like[current], vec_like[next]);
          perm_order[current] = current;
@@ -96,6 +96,94 @@ void remove_element(Container& container, const T& elem)
       throw std::logic_error("Element to remove was not found in ContainerType.");
    }
    container.erase(container.begin() + index);
+}
+
+template < class InputIt, class UnaryPredicate >
+constexpr bool any_of(
+   InputIt first,
+   InputIt last,
+   UnaryPredicate p)
+{
+   return std::find_if(first, last, p) != last;
+}
+
+template < class Container, class UnaryPredicate >
+constexpr bool any_of(
+   const Container& container,
+   UnaryPredicate p)
+{
+   return std::find_if(container.begin(), container.end(), p) != container.end();
+}
+
+template < class InputIt, class UnaryPredicate >
+constexpr bool all_of(
+   InputIt first,
+   InputIt last,
+   UnaryPredicate p)
+{
+   return std::find_if_not(first, last, p) == last;
+}
+
+template < class Container, class UnaryPredicate >
+constexpr bool all_of(
+   const Container& container,
+   UnaryPredicate p)
+{
+   return std::find_if_not(container.begin(), container.end(), p) == container.end();
+}
+
+template < class InputIt, class UnaryPredicate >
+constexpr bool none_of(
+   InputIt first,
+   InputIt last,
+   UnaryPredicate p)
+{
+   return not any_of(first, last, p);
+}
+
+template < class Container, class UnaryPredicate >
+constexpr bool none_of(
+   const Container& container,
+   UnaryPredicate p)
+{
+   return not any_of(container, p);
+}
+
+template < typename Predicate, typename Container >
+Container apply(Predicate f, Container&& container)
+{
+   std::transform(container.begin(), container.end(), f);
+   return container;
+}
+template < typename Predicate, typename Container >
+Container apply(Predicate f, Container container)
+{
+   std::transform(container.begin(), container.end(), f);
+   return container;
+}
+template < typename Predicate, typename value_type >
+std::vector< value_type > apply(Predicate f, std::initializer_list< value_type >&& container)
+{
+   std::transform(container.begin(), container.end(), f);
+   return container;
+}
+
+template < typename VectorT, typename IndexVectorT >
+void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
+{
+   static_assert(
+      std::is_integral_v< typename IndexVectorT::value_type >,
+      "Index vector value_type needs to be an integer type");
+   std::for_each(indices.crbegin(), indices.crend(), [&v](auto index) {
+      v.erase(std::next(begin(v), index));
+   });
+}
+template < typename VectorT, typename IndexVectorT >
+void remove_by_indices(VectorT& v, const IndexVectorT& indices)
+{
+   auto indices_copy = indices;
+   std::sort(indices_copy.begin(), indices_copy.end());
+   remove_by_sorted_indices(v, indices_copy);
 }
 
 }  // namespace algo

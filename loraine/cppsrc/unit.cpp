@@ -3,7 +3,6 @@
 
 #include "core/gamemode.h"
 
-
 void Unit::add_power(long amount, bool permanent)
 {
    if(permanent) {
@@ -35,4 +34,39 @@ void Unit::power(size_t power, bool as_delta)
       m_unit_mutables.power_base = power;
       m_unit_mutables.power_delta = 0;
    }
+}
+long Unit::take_damage(const sptr< Card >& damaging_card, long amount)
+{
+   auto dmg_before = m_unit_mutables.damage;
+   if(has_keyword(Keyword::TOUGH)) {
+      --amount;
+   }
+   for(auto& dmg_modifier : m_unit_mutables.dmg_modifiers) {
+      dmg_modifier(*damaging_card, amount);
+   }
+   m_unit_mutables.damage += amount;
+   return m_unit_mutables.damage - dmg_before;
+}
+void Unit::kill(const sptr< Card >& cause)
+{
+   if(m_unit_mutables.kill_func) {
+      m_unit_mutables.kill_func(cause);
+   } else {
+      m_unit_mutables.alive = false;
+   }
+}
+void Unit::heal(size_t amount)
+{
+   m_unit_mutables.damage -= std::min(m_unit_mutables.damage, amount);
+}
+long Unit::health_raw() const
+{
+   long health_base = static_cast< long int >(m_unit_mutables.health_base);
+   long damage = static_cast< long >(m_unit_mutables.damage);
+   return health_base + m_unit_mutables.health_delta - damage;
+}
+
+long Unit::power_raw() const
+{
+   return m_unit_mutables.power_base + static_cast< size_t >(m_unit_mutables.power_delta);
 }

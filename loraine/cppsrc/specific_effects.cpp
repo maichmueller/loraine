@@ -3,10 +3,10 @@
 #include "cards/gallery/specific_effects.h"
 
 #include "core/gamemode.h"
-#include "core/targetable.h"
+#include "core/targeting.h"
 
 //void m_effects::fading_memories_cast(
-//   GameMode& game, const events::CastEvent& /*events*/, Effect& source_container)
+//   GameMode& game, const m_subscribed_events::CastEvent& /*m_subscribed_events*/, Effect& source_container)
 //{
 //   auto targets = source_container.targets();
 //   if(targets.empty()) {

@@ -62,9 +62,9 @@ class Deck {
    /// actual member logic
 
    /**
-    * Pop the top card from the stack and return it.
+    * Pop the top spell from the stack and return it.
     * @return shared_ptr<Card>,
-    *   the popped card
+    *   the popped spell
     */
    inline sptr< Card > pop()
    {
@@ -81,19 +81,19 @@ class Deck {
    std::vector< sptr< Card > > find(const FilterFunc& filter, bool pop);
 
    /**
-    * Shuffle a card into the top n cards of the ContainerType.
-    * If top_n == 0 (default), the card is shuffled randomly
+    * Shuffle a spell into the top n cards of the ContainerType.
+    * If top_n == 0 (default), the spell is shuffled randomly
     * somewhere into the deck.
     * @param card shared_ptr<Card>,
-    *   the pointer to the reshuffled card
+    *   the pointer to the reshuffled spell
     * @param top_n size_t,
-    *   the range from the top to shuffle the card into
+    *   the range from the top to shuffle the spell into
     */
    template < typename RNG >
    void shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n);
 
    /**
-    * Draw the card at a specific index
+    * Draw the spell at a specific index
     */
    sptr< Card > pop_by_index(size_t index);
    /**
@@ -111,7 +111,7 @@ class Deck {
    /**
     * Drawing randomly one of the cards that matches the given code.
     * @param card_code const char*,
-    *   the card code that needs to be matched
+    *   the spell code that needs to be matched
     */
    template < class RNG >
    sptr< Card > pop_by_code(const char* card_code, RNG&& rng);
@@ -154,7 +154,7 @@ std::vector< sptr< Card > > Deck::pop_by_index(Container indices)
    std::sort(indices.begin(), indices.end());
    if(not (indices.back() < m_cards.size())) {
       throw std::out_of_range(
-         "Indices to pop exceed card container boundaries: Greatest index = "
+         "Indices to pop exceed spell container boundaries: Greatest index = "
          + std::to_string(indices.back()) + " > " + std::to_string(m_cards.size())
          + " = container size.");
    }

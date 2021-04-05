@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.15)
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/action.cpp
-        ${LORAINE_SRC_DIR}/action_handler.cpp
+        ${LORAINE_SRC_DIR}/action_invoker.cpp
         ${LORAINE_SRC_DIR}/event_types.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
-        ${LORAINE_SRC_DIR}/state.cpp
+        ${LORAINE_SRC_DIR}/gamestate.cpp
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/nexus.cpp
         ${LORAINE_SRC_DIR}/toll.cpp
@@ -18,10 +18,11 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/logic.cpp
         ${LORAINE_SRC_DIR}/board.cpp
         ${LORAINE_SRC_DIR}/specific_effects.cpp
+
         ${LORAINE_SRC_DIR}/card_defs.cpp
         ${LORAINE_SRC_DIR}/effect.cpp
-        ${LORAINE_SRC_DIR}/targeter.cpp
-        ${LORAINE_SRC_DIR}/targetable.cpp
+        ${LORAINE_SRC_DIR}/targeting.cpp
+        ${LORAINE_SRC_DIR}/concrete_effects.cpp
 
         ${LORAINE_SRC_DIR}/cardfactory.cpp
 

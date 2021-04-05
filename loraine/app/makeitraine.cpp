@@ -1,5 +1,6 @@
 #include <core/gamedefs.h>
-#include "core/state.h"
+
+#include "core/gamestate.h"
 
 int main() {
 

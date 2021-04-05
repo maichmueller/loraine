@@ -8,7 +8,7 @@
 #include "grant.h"
 
 /*
- * Abstract Base Class for modifying grants after their play, but before execution time.
+ * Abstract Base Class for modifying grants after their play_event_triggers, but before execution time.
  *
  * */
 class GrantModifier {

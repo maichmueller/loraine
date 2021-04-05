@@ -4,14 +4,13 @@
 
 #include <uuid.h>
 
-#include "uuid.h"
 #include <optional>
 #include <tuple>
 #include <variant>
 
 #include "random.h"
 #include "types.h"
-
+#include "uuid.h"
 
 template < typename T, typename Allocator >
 std::vector< T, Allocator >& operator+(
@@ -58,7 +57,6 @@ std::vector< T, Allocator >& operator+(
    }
    return vec1;
 }
-
 
 namespace utils {
 
@@ -191,23 +189,6 @@ reversion_wrapper< T > reverse(T&& iterable)
    return {iterable};
 }
 
-template < typename VectorT, typename IndexVectorT >
-void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
-{
-   static_assert(
-      std::is_integral_v<typename IndexVectorT::value_type>,
-      "Index vector value_type needs to be an integer type");
-   std::for_each(indices.crbegin(), indices.crend(), [&v](auto index) {
-     v.erase(std::next(begin(v), index));
-   });
-}
-template < typename VectorT, typename IndexVectorT >
-void remove_by_indices(VectorT& v, const IndexVectorT& indices)
-{
-   auto indices_copy = indices;
-   std::sort(indices_copy.begin(), indices_copy.end());
-   remove_by_sorted_indices(v, indices_copy);
-}
 
 /*
  * Get the address of the function pointer.
@@ -237,6 +218,7 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
+
 
 }  // namespace utils
 

@@ -18,11 +18,13 @@ struct Record {
    virtual ~Record() = default;
 };
 struct ActionRecord: public Record {
-   ActionRecord(actions::Action action, Team team) : team(team), action(std::move(action)) {}
+   ActionRecord(sptr<actions::Action> action) : m_action(std::move(action)) {}
+
+   [[nodiscard]] auto team() const { return m_action->team();}
+   [[nodiscard]] auto action() const { return m_action;}
 
   private:
-   Team team;
-   actions::Action action;
+   sptr<actions::Action> m_action;
 };
 
 template < typename EventClass >

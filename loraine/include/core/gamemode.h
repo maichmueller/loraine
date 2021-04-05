@@ -2,7 +2,7 @@
 #ifndef LORAINE_GAMEMODE_H
 #define LORAINE_GAMEMODE_H
 
-#include <algorithms.h>
+#include <utils/algorithms.h>
 
 #include <optional>
 #include <utility>
@@ -11,8 +11,7 @@
 #include "controller.h"
 #include "core/config.h"
 #include "core/gamedefs.h"
-#include "core/state.h"
-#include "filters/filter.h"
+#include "core/gamestate.h"
 #include "grants/grant.h"
 #include "grants/grantfactory.h"
 #include "utils/types.h"
@@ -38,7 +37,7 @@ class GameMode {
    [[nodiscard]] auto state() const { return m_state; }
 
   private:
-   State m_state;
+   GameState m_state;
 };
 
 #endif  // LORAINE_GAMEMODE_H

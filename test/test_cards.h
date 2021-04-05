@@ -2,7 +2,8 @@
 #ifndef LORAINE_TEST_CARDS_H
 #define LORAINE_TEST_CARDS_H
 
-#include "cards/card.h"
+
+#include "all.h"
 
 class TestUnit1: public Unit {
   public:

@@ -8,19 +8,19 @@
 
 #include <array>
 
-#include "action_handler.h"
+#include "action_invoker.h"
 #include "events/event_labels.h"
 #include "events/eventbase.h"
 
 // forward declare
-class State;
+class GameState;
 
 class Logic: public Cloneable< Logic > {
   public:
-   explicit Logic(uptr< ActionHandlerBase > act_handler = std::make_unique< MulliganModeHandler >())
-       : m_action_handler(std::move(act_handler))
+   explicit Logic(uptr< ActionInvokerBase > act_invoker = std::make_unique< MulliganModeInvoker >())
+       : m_action_invoker(std::move(act_invoker))
    {
-      m_action_handler->logic(this);
+      m_action_invoker->logic(this);
    };
 
    Logic(const Logic& other);
@@ -29,32 +29,33 @@ class Logic: public Cloneable< Logic > {
    Logic& operator=(const Logic& rhs) = delete;
    ~Logic() override = default;
 
-   void state(State& state) { m_state = &state; }
+   void state(GameState& state) { m_state = &state; }
    auto state() { return m_state; }
    [[nodiscard]] auto state() const { return m_state; }
 
    // Beginning of LoR logic implementations
 
-   // methods to handle in the specific action handler mode of the state.
+   // methods to handle in the specific action invoker mode of the state.
    [[nodiscard]] inline bool is_valid(const actions::Action& action) const
    {
-      return m_action_handler->is_valid(action);
+      return m_action_invoker->is_valid(action);
    }
    [[nodiscard]] bool in_combat() const
    {
-      auto combat_label = ActionHandlerBase::Label::COMBAT;
-      return m_action_handler->label() == combat_label
-             || m_prev_action_handler->label() == combat_label;
+      auto combat_label = ActionInvokerBase::Label::COMBAT;
+      return m_action_invoker->label() == combat_label
+             || m_prev_action_invoker->label() == combat_label;
    };
-   inline std::vector< actions::ActionLabel > accepted_action_labels()
+   inline std::set< actions::ActionLabel > accepted_action_labels()
    {
-      return *(m_action_handler->accepted_actions());
+      return *(m_action_invoker->accepted_actions());
    }
-   inline std::vector< actions::Action > valid_actions(const State& state)
+   inline std::vector< actions::Action > valid_actions(const GameState& state)
    {
-      return m_action_handler->valid_actions(state);
+      return m_action_invoker->valid_actions(state);
    }
-   [[nodiscard]] actions::Action request_action() const;
+   void request_action() const;
+   bool invoke_actions();
 
    Status step();
 
@@ -65,31 +66,22 @@ class Logic: public Cloneable< Logic > {
    };
 
    void draw_card(Team team);
-   /**
-    * Play a fieldcard onto the board
-    * @param card: shared_ptr<Card>,
-    *    the card to play
-    * @param replaces: optional<size_t>,
-    *    index of the card in the camp it is supposed to m_replace.
-    *    This only applies if the board is full.
-    */
-   void play(const sptr< FieldCard >& card, std::optional< size_t > replaces);
-   /**
-    * play all the spells that have been added to the spellstack
-    */
-   void play_spell(const sptr< Spell >& spell);
 
+   void play_event_triggers(const sptr< Card >& card);
+
+   void place_in_camp(const sptr< FieldCard >& card, const std::optional< size_t >& replaces);
+
+   void init_attack(Team team);
+   void init_block(Team team);
+   void resolve();
+   void unsubscribe_effects(const sptr<Card>& card);
+   void subscribe_effects(const sptr<Card>& card, EffectBase::RegistrationTime registration_time);
    /**
     * Cast the given spells. This does not check whether the spell is also played.
     */
-   template <
-      typename Container,
-      typename = std::enable_if_t<
-         std::is_same_v< sptr< Spell >, typename std::decay_t< Container >::value_type > > >
-   void cast(Container&& spells_vec);
-   void cast(const sptr< Spell >& spell);
+   void cast(bool burst);
    /**
-    * Summon a specific common card to either the camp or the battlefield.
+    * Summon a specific common spell to either the camp or the battlefield.
     * @param: unit: shared_ptr<Unit>,
     *    the common to summon
     * @param: to_bf: boolean,
@@ -103,30 +95,30 @@ class Logic: public Cloneable< Logic > {
     */
    void give_managems(Team team, long amount = 1);
    /**
-    * Creates a card as determined by the code.
+    * Creates a spell as determined by the code.
     * @param team: shared_ptr<Card>,
-    *    the team who will own the new card
+    *    the team who will own the new spell
     * @param card_code: const char*,
-    *    the character code determining which card is created
+    *    the character code determining which spell is created
     * @returns: shared_ptr<Card>,
-    *    The created card
+    *    The created spell
     */
    sptr< Card > create(Team team, const char* card_code);
    /**
-    * Copy the given card (basic or exact).
+    * Copy the given spell (basic or exact).
     * @param card: shared_ptr<Card>,
-    *    the card to copy
+    *    the spell to copy
     * @param exact_copy: boolean,
-    *    decides whether to copy the card with all grants attached. Defaults to `false`.
+    *    decides whether to copy the spell with all grants attached. Defaults to `false`.
     * @returns: shared_ptr<Card>
-    *    the card copy.
+    *    the spell copy.
     */
    sptr< Card > copy(const sptr< Card >& card, bool exact_copy = false);
-   /** Recall the chosen card.
+   /** Recall the chosen spell.
     * @param recalled_card: shared_ptr<Card>,
-    *   the card to recall.
+    *   the spell to recall.
     * @param recaller: Team,
-    *   the team who recalled the card.
+    *   the team who recalled the spell.
     */
    void recall(const sptr< Card >& recalled_card, Team recaller);
 
@@ -137,7 +129,8 @@ class Logic: public Cloneable< Logic > {
     * @param unit_def: shared_ptr<Unit>,
     *   the struck common.
     */
-   void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
+   void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool combat_strike);
+   void strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2);
    /**
     * Let a unit strike another.
     * @param unit_att: shared_ptr<Unit>,
@@ -145,21 +138,21 @@ class Logic: public Cloneable< Logic > {
     * @param unit_def: shared_ptr<Unit>,
     *   the struck unit.
     */
-   void nexus_strike(const sptr< Unit >& striking_unit);
+   void nexus_strike(const sptr< Unit >& striking_unit, long dmg);
+   void nexus_damage(const sptr< Card >& damaging_card, bool simultaneous);
    void heal(Team team, const sptr< Unit >& unit, long amount);
 
-   void
-   damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, const sptr< long >& damage);
+   long damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg);
    void start_game();
 
-   template < typename NewHandlerType, typename... Args >
-   inline void transition_action_handler(Args&&... args);
-   inline void restore_previous_handler()
+   template < typename NewInvokerType, typename... Args >
+   inline void transition_action_invoker(Args&&... args);
+   inline void restore_previous_invoker()
    {
       utils::throw_if_no_value(
-         m_prev_action_handler, "Previous action handler pointer holds no value.");
-      m_action_handler = std::move(m_prev_action_handler);
-      m_prev_action_handler = nullptr;
+         m_prev_action_invoker, "Previous action invoker pointer holds no value.");
+      m_action_invoker = std::move(m_prev_action_invoker);
+      m_prev_action_invoker = nullptr;
    }
 
    void kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause);
@@ -171,7 +164,7 @@ class Logic: public Cloneable< Logic > {
    void clamp_mana();
 
    [[nodiscard]] bool round_ended() const;
-   bool pass();
+   void pass();
 
    void reset_pass(Team team);
    void reset_pass();
@@ -218,7 +211,7 @@ class Logic: public Cloneable< Logic > {
       std::optional< Team > opt_team);
 
    /*
-    * An api for triggering an event externally. Which events is supposed to be triggered
+    * An api for triggering an event externally. Which m_subscribed_events is supposed to be triggered
     * needs to be known at compile time.
     */
    template < events::EventLabel event_type, typename... Params >
@@ -246,16 +239,15 @@ class Logic: public Cloneable< Logic > {
 
   private:
    /// The associated state ptr, to be set in a delayed manner after state construction
-   /// The logic object's lifetime is bound to the State object, so there should be no
+   /// The logic object's lifetime is bound to the GameState object, so there should be no
    /// SegFault problems.
-   State* m_state = nullptr;
-   /// the current action handler for incoming actions
-   std::unique_ptr< ActionHandlerBase > m_action_handler;
-   /// the previous action handler for incoming actions
-   std::unique_ptr< ActionHandlerBase > m_prev_action_handler = nullptr;
+   GameState* m_state = nullptr;
+   /// the current action invoker for incoming actions
+   std::unique_ptr< ActionInvokerBase > m_action_invoker;
+   /// the previous action invoker for incoming actions
+   std::unique_ptr< ActionInvokerBase > m_prev_action_invoker = nullptr;
    /// private logic helpers
-   void _resolve_battle();
-   void _resolve_spell_stack(bool burst);
+
 
    /// The member declarations
    void _start_round();
@@ -295,7 +287,7 @@ std::vector< sptr< Targetable > > Logic::filter_targets(
    }
 }
 
-#include "state.h"
+#include "gamestate.h"
 
 template < bool floating_mana >
 void Logic::clamp_mana()
@@ -327,50 +319,31 @@ void Logic::clamp_mana()
 template < events::EventLabel event_label, typename... Params >
 void Logic::trigger_event(Params&&... params)
 {
-   auto& event = m_state->events()->at(static_cast< size_t >(event_label));
-   // the event_label is used as index pointer to the actual type inside the LOREvent variant.
-   // we need to infer this event_type and then call its trigger method.
-   using targeted_event_t = std::invoke_result_t< decltype(&events::create_event< event_label >) >;
-   std::get< targeted_event_t >(event).trigger(*state(), std::forward< Params >(params)...);
+   auto& event = m_state->event(event_label);
+//   dynamic_cast< events::label_to_event_helper_t< event_label >* >(event)->trigger(
+//      *state(), std::forward< Params >(params)...);
+   std::get< events::label_to_event_helper_t< event_label > >(event).trigger(
+      *state(), std::forward< Params >(params)...);
 }
 
-template < typename Container, typename >
-void Logic::cast(Container&& spells_vec)
+template < typename NewInvokerType, typename... Args >
+void Logic::transition_action_invoker(Args&&... args)
 {
-   for(const auto& spell : spells_vec) {
-      trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
-   }
-}
-
-template < typename NewHandlerType, typename... Args >
-void Logic::transition_action_handler(Args&&... args)
-{
-   // assert the chosen handler type is any of the ones we have. It is not directly necessary to
+   // assert the chosen invoker type is any of the ones we have. It is not directly necessary to
    // do, but would improve the error message
    static_assert(
       utils::is_any_v<
-         NewHandlerType,
-         DefaultModeHandler,
-         CombatModeHandler,
-         MulliganModeHandler,
-         TargetModeHandler >,
-      "Given NewHandlerType is not one of the designated handlers.");
+         NewInvokerType,
+         DefaultModeInvoker,
+         CombatModeInvoker,
+         MulliganModeInvoker,
+         ReplacingModeInvoker,
+         TargetModeInvoker >,
+      "Given NewInvokerType is not one of the designated invokers.");
 
-   // move current handler into previous
-   m_prev_action_handler = std::move(m_action_handler);
-
-   // assign new handler
-   if constexpr(std::is_same_v< NewHandlerType, DefaultModeHandler >) {
-      m_action_handler = std::make_unique< DefaultModeHandler >(
-         this, std::forward< Args >(args)...);
-   } else if constexpr(std::is_same_v< NewHandlerType, CombatModeHandler >) {
-      m_action_handler = std::make_unique< CombatModeHandler >(this, std::forward< Args >(args)...);
-   } else if constexpr(std::is_same_v< NewHandlerType, MulliganModeHandler >) {
-      m_action_handler = std::make_unique< MulliganModeHandler >(
-         this, std::forward< Args >(args)...);
-   } else {
-      m_action_handler = std::make_unique< TargetModeHandler >(this, std::forward< Args >(args)...);
-   }
+   // move current invoker into previous
+   m_prev_action_invoker = std::move(m_action_invoker);
+   m_action_invoker = std::make_unique< NewInvokerType >(this, std::forward< Args >(args)...);
 }
 
 #endif  // LORAINE_LOGIC_H

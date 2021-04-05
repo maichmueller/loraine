@@ -10,31 +10,29 @@
 #include <vector>
 
 #include "cards/card_defs.h"
-#include "cards/effect.h"
-#include "core/targetable.h"
+#include "core/targeting.h"
+#include "effects/effect.h"
 #include "events/event_labels.h"
 #include "events/event_listener.h"
 #include "events/eventbase.h"
+#include "utils/algorithms.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
 // forward-declarations
 
-class State;
+class GameState;
 class Grant;
 
 /**
  * Abstract base class (abc) for LOR cards.
  */
-class Card:
-    public Cloneable< abstract_method< Card > >,
-    public Targetable {
-
+class Card: public Cloneable< abstract_method< Card > >, public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
 
    struct ConstState {
-      // the card code
+      // the spell code
       const std::string code;
       // the cards' name
       const std::string name;
@@ -52,35 +50,35 @@ class Card:
       const Rarity rarity;
       // whether the cards is a floating or a common
       const CardType card_type;
-      // the mana it costs to play the cards (as default)
+      // the mana it costs to play_event_triggers the cards (as default)
       const size_t mana_cost_ref;
-      // whether a card is collectible (i.e. can be added to a deck)
+      // whether a spell is collectible (i.e. can be added to a deck)
       const bool is_collectible = true;
-      // was the card created by another
+      // was the spell created by another
       const std::optional< const char* const > creator = {};
-      // the unique id used to identify this specific instance of a card
+      // the unique id used to identify this specific instance of a spell
       const UUID uuid = utils::new_uuid();
    };
 
    struct MutableState {
-      // the team whose card this is
+      // the team whose spell this is
       Team owner;
-      // the current location of the card in the game
+      // the current location of the spell in the game
       Location location;
       // the index in the current location
       size_t position;
-      // whether the card is observable by all or only by the owner
+      // whether the spell is observable by all or only by the owner
       bool hidden;
       // when m_effects move the base cost to a new permanent value
       long int mana_cost_base = 0;
-      // the current change to the mana cost of the card
+      // the current change to the mana cost of the spell
       long int mana_cost_delta = 0;
       // all the m_keywords pertaining to the cards
       KeywordMap keywords = {};
       // all m_effects
       EffectMap effects = {};
       // condition
-      uptr< Toll > play_toll = std::make_unique<Toll>();
+      uptr< Toll > play_toll = std::make_unique< Toll >();
       // all permanent grants
       std::vector< sptr< Grant > > grants = {};
       // all temporary grants
@@ -104,6 +102,8 @@ class Card:
    {
       return m_mutables.effects.at(etype);
    }
+   [[nodiscard]] inline auto& effects() { return m_mutables.effects; }
+   [[nodiscard]] inline auto& effects() const { return m_mutables.effects; }
 
    [[nodiscard]] auto creator() const { return m_immutables.creator.value(); }
 
@@ -122,11 +122,11 @@ class Card:
    {
       return m_immutables.super_type == CardSuperType::SKILL;
    }
-   [[nodiscard]] inline bool is_champion() const { return is_unit() && not is_champion(); }
-   [[nodiscard]] inline bool is_follower() const
+   [[nodiscard]] inline bool is_champion() const
    {
-      return m_immutables.super_type == CardSuperType::SKILL;
+      return m_immutables.super_type == CardSuperType::CHAMPION;
    }
+   [[nodiscard]] inline bool is_follower() const { return is_unit() && not is_champion(); }
    [[nodiscard]] bool is_created() const { return utils::has_value(m_immutables.creator); }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
@@ -135,7 +135,7 @@ class Card:
    }
    [[nodiscard]] inline bool has_any_keyword(std::initializer_list< Keyword > kwords) const
    {
-      return std::any_of(kwords.begin(), kwords.end(), [&](const auto& kw) {
+      return algo::any_of(kwords, [&](const auto& kw) {
          return m_mutables.keywords.at(static_cast< unsigned long >(kw));
       });
    }
@@ -208,7 +208,7 @@ class Card:
    /*
     * Deleted copy assignment operator
     */
-   Card& operator=(const Card&);
+   Card& operator=(const Card&) = delete;
 
    /*
     * Move assignment operator
@@ -221,13 +221,12 @@ class Card:
    Card(Card&& card) = delete;
 
   private:
-   // fixed attributes of the card
+   // fixed attributes of the spell
    const ConstState m_immutables;
-   // variable attributes of the card
+   // variable attributes of the spell
    MutableState m_mutables;
 
    EffectMap _clone_effect_map(const EffectMap& emap);
-
 };
 
 template < typename T >

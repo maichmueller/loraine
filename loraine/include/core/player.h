@@ -15,11 +15,12 @@ class Player {
       bool is_daybreak = false;
       bool is_nightfall = false;
       bool enlightened = false;
+      bool has_played = false;
       bool pass = false;
    };
    struct Mana {
       size_t gems = 0;
-      size_t common = 0;  // common mana to play fieldcards with
+      size_t common = 0;  // common mana to play_event_triggers fieldcards with
       size_t floating = 0;  // mana exclusively for spells
    };
    using HandType = std::vector< sptr< Card > >;
@@ -30,7 +31,7 @@ class Player {
       Deck deck,
       sptr< Controller > controller,
       Mana mana = {0, 0, 0},
-      Flags flags = {false, false, false, false, false, false, false});
+      Flags flags = {false, false, false, false, false, false, false, false});
    ~Player() = default;
    Player(const Player& other);
    Player(Player&& other) = default;

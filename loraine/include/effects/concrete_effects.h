@@ -1,0 +1,8 @@
+
+#ifndef LORAINE_CONCRETE_EFFECTS_H
+#define LORAINE_CONCRETE_EFFECTS_H
+
+#include "effect.h"
+
+
+#endif  // LORAINE_CONCRETE_EFFECTS_H

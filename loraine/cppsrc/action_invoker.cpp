@@ -1,19 +1,19 @@
 
-#include "core/action_handler.h"
+#include "core/action_invoker.h"
 
-#include "cards/effect.h"
 #include "core/logic.h"
+#include "effects/effect.h"
 
 // namespace actions {
 //
-// bool ActionHandlerBase::_handle(const PlaceSpellAction& action)
+// bool ActionInvokerBase::_handle(const PlaceSpellAction& action)
 //{
 //   auto spell = action.spell();
 //   bool to_stack = action.to_stack();
 //
 //   auto* state = m_logic->state();
 //   auto* hand = state->player(spell->mutables().owner).hand();
-//   auto& effects_to_cast = spell->effects(events::EventLabel::CAST);
+//   auto& effects_to_cast = spell->effects(m_subscribed_events::EventLabel::CAST);
 //   auto* spell_stack = state->spell_stack();
 //   auto* spell_buffer = state->spell_buffer();
 //   if(to_stack) {
@@ -38,7 +38,7 @@
 //      }
 //      if(not state->targeting_buffer()->empty()) {
 //         // for a manual targeter we need to ask the controller to make the decision
-//         m_logic->transition_action_handler(
+//         m_logic->transition_action_invoker(
 //            std::make_unique< TargetModeHandler >(m_logic, this->clone()));
 //         auto targeting_action = m_logic->request_action(100);
 //      }
@@ -55,7 +55,7 @@
 //   }
 //   return false;
 //}
-// bool ActionHandlerBase::_handle(const PassAction& action)
+// bool ActionInvokerBase::_handle(const PassAction& action)
 //{
 //   logic()->reset_pass(action.team());
 //   return true;
@@ -64,12 +64,12 @@
 // bool DefaultModeHandler::handle(const Action& action)
 //{
 //   if(action.is_pass()) {
-//      return ActionHandlerBase::_handle(action.detail< PassAction >());
+//      return ActionInvokerBase::_handle(action.detail< PassAction >());
 //   }
 //   if(action.is_placing_spell()) {
-//      return ActionHandlerBase::_handle(action.detail< PlaceSpellAction >());
+//      return ActionInvokerBase::_handle(action.detail< PlaceSpellAction >());
 //   }
-//   if(action.is_play()) {
+//   if(action.is_play_finish()) {
 //      return _handle(action.detail< PlayAction >());
 //   }
 //   if(action.is_placing_unit()) {
@@ -86,16 +86,16 @@
 //
 // bool DefaultModeHandler::_handle(const PlayAction& action)
 //{
-//   auto card = action.card_played();
+//   auto spell = action.card_played();
 //   auto* state = logic()->state();
 //
-//   *(state->play_buffer()) = card;
+//   *(state->play_buffer()) = spell;
 //   if(state->board()->camp(action.team()).size() == state->config().CAMP_SIZE) {
-//      // the camp is actually full, ask for the card that should be removed for this fieldcard
-//      logic()->transition_action_handler(
+//      // the camp is actually full, ask for the spell that should be removed for this fieldcard
+//      logic()->transition_action_invoker(
 //         std::make_unique< TargetModeHandler >(logic(), this->clone()));
 //   }
-//   for(auto& effect : card->effects(events::EventLabel::PLAY)) {
+//   for(auto& effect : spell->effects(m_subscribed_events::EventLabel::PLAY_FIELDCARD)) {
 //      if(auto targeter = effect->targeter(); bool(targeter) && (not targeter->is_automatic())) {
 //         state->targeting_buffer()->emplace_back(effect);
 //      }
@@ -113,7 +113,7 @@
 //         logic()->reset_pass(action.team());
 //      } else {
 //         for(const auto& spell : *state->spell_buffer()) {
-//            logic()->trigger_event< events::EventLabel::PLAY >(team, spell);
+//            logic()->trigger_event< m_subscribed_events::EventLabel::PLAY_FIELDCARD >(team, spell);
 //         }
 //      }
 //   } else {
@@ -128,17 +128,21 @@
 //      state->player(team).flags()->attack_token = false;
 //
 //      // change the handler as we are now in combat mode
-//      logic()->transition_action_handler(std::make_unique< CombatModeHandler >(logic()));
+//      logic()->transition_action_invoker(std::make_unique< CombatModeHandler >(logic()));
 //   }
 //   return true;
 //}
 //}  // namespace actions
 
-ActionHandlerBase::ActionHandlerBase(const ActionHandlerBase& other)
+ActionInvokerBase::ActionInvokerBase(const ActionInvokerBase& other)
     : m_label(other.m_label), m_logic(other.m_logic), m_accepted_actions(other.m_accepted_actions)
 {
 }
-actions::Action ActionHandlerBase::request_action(const State& state) const
+bool ActionInvokerBase::invoke(actions::Action& action)
+{
+   return action.execute(*m_logic->state());
+}
+actions::Action ActionInvokerBase::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
    while(true) {
@@ -160,7 +164,7 @@ actions::Action ActionHandlerBase::request_action(const State& state) const
       }
    }
 }
-actions::Action TargetModeHandler::request_action(const State& state) const
+actions::Action TargetModeInvoker::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
    while(true) {

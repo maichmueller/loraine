@@ -26,7 +26,7 @@ Player::Player(const Player& other)
       m_controller(other.m_controller),  // the controller is not copied, since we assume the same
                                          // BOT or human should control this copy
       m_hand(),  // hand is only a vector and thus needs to be coopied manually
-      m_deck(other.m_deck),  // deck has copy constructor which clones the card pointers
+      m_deck(other.m_deck),  // deck has copy constructor which clones the spell pointers
       m_mana(other.m_mana),
       m_flags(other.m_flags)
 {

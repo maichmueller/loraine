@@ -11,13 +11,13 @@
 #include <vector>
 
 #include "core/gamedefs.h"
-#include "core/targetable.h"
+#include "core/targeting.h"
 #include "event_labels.h"
 #include "eventbase.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
-class State;
+class GameState;
 
 template < class Derived, class EventT, class... Args >
 class Event: public EventBase {
@@ -48,7 +48,7 @@ class Event: public EventBase {
    };
 
   protected:
-   void _notify(Subscriber* subscriber, State& state, Args... args) {
+   void _notify(Subscriber* subscriber, GameState& state, Args... args) {
       // passing in the event_ref is needed to distinguish among the event_call overloads
       subscriber->event_call(state, SignatureTuple(event_ref, args...));
    }
@@ -57,7 +57,7 @@ class Event: public EventBase {
    constexpr static auto event_type() { return EventT::value; }
    const auto& subscribers() const { return subs; }
 
-   void trigger(State& state, Args... args)
+   void trigger(GameState& state, Args... args)
    {
       // resort the subscribers according to whether the specific EventSpecialization has an
       // order method or not

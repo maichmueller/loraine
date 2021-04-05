@@ -1,105 +1,57 @@
 #include "core/logic.h"
 
 #include "core/action.h"
-#include "core/state.h"
+#include "core/gamestate.h"
 
 Logic::Logic(const Logic& other)
     : m_state(other.m_state),
-      m_action_handler(other.m_action_handler->clone()),
-      m_prev_action_handler(other.m_prev_action_handler->clone())
+      m_action_invoker(other.m_action_invoker->clone()),
+      m_prev_action_invoker(other.m_prev_action_invoker->clone())
 {
 }
 
-actions::Action Logic::request_action() const
+void Logic::request_action() const
 {
-   return m_action_handler->request_action(*state());
+   m_state->action_buffer()->emplace_back(
+      std::make_shared< actions::Action >(std::move(m_action_invoker->request_action(*state()))));
 }
 
-void Logic::cast(const sptr< Spell >& spell)
-{
-   return cast(std::vector< sptr< Spell > >{spell});
-}
-
-void Logic::play_spell(const sptr< Spell >& spell)
-{
-   spell->uncover();
-
-   // pay the mana cost
-
-   size_t cost = spell->mana_cost();
-   auto* mana_resource = m_state->player(spell->mutables().owner).mana();
-   // the cost that will have to be paid with normal mana
-   long leftover_cost = cost - mana_resource->floating;
-   mana_resource->floating = std::max(0L, -leftover_cost);
-   if(leftover_cost > mana_resource->common) {
-      throw std::logic_error(
-         "The moved spell costs more than the total mana of the player. An invalid action "
-         "wasn't recognized.");
-   }
-   mana_resource->common -= leftover_cost;
-
-   trigger_event< events::EventLabel::PLAY >(spell->mutables().owner, spell);
-   _trigger_daybreak_if(spell);
-   _trigger_nightfall_if(spell);
-}
-void Logic::_resolve_spell_stack(bool burst)
+void Logic::cast(bool burst)
 {
    auto* spell_stack = m_state->spell_stack();
-   if(burst) {
-      m_state->logic()->cast(spell_stack->back());
+   while(not spell_stack->empty()) {
+      auto spell = spell_stack->back();
       spell_stack->pop_back();
-   } else {
-      m_state->logic()->cast(*spell_stack);
+      trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+      if(burst) {
+         break;
+      }
    }
 }
 Status Logic::step()
 {
    _start_round();
    bool flip_initiative = false;
+   m_state->player(m_state->active_team()).flags()->has_played = false;
    while(not flip_initiative) {
-      if(auto* targ_buffer = m_state->targeting_buffer(); targ_buffer->empty()) {
-         // if no targets are currently required, then simply ask the current player for action
-         auto action = request_action();
-         flip_initiative = action.execute(*m_state);
-      } else {
-         // the targeting buffer is currently not empty so we demand targets
-         transition_action_handler< TargetModeHandler >();
-         while(not targ_buffer->empty()) {
-            auto action = request_action();
-            flip_initiative = action.execute(*m_state);
-         }
-         restore_previous_handler();
-      }
+      request_action();
+      flip_initiative = invoke_actions();
    }
-   if(m_state->requires_resolution()) {
-      _resolve_spell_stack(false);
-      _resolve_battle();
-      m_state->requires_resolution(false);
-   } else if(
-      m_state->player(Team::BLUE).flags()->pass && m_state->player(Team::RED).flags()->pass) {
+   if(m_state->player(Team::BLUE).flags()->pass && m_state->player(Team::RED).flags()->pass) {
       _end_round();
    }
    m_state->turn() += 1;
    return check_status();
 }
-void Logic::play(const sptr< FieldCard >& card, std::optional< size_t > replaces)
+void Logic::play_event_triggers(const sptr< Card >& card)
 {
-   card->uncover();
-
-   // pay the mana cost
-
-   size_t cost = card->mana_cost();
-   auto team = card->mutables().owner;
-   auto* mana_resource = m_state->player(team).mana();
-   // the cost that will have to be paid with normal mana
-   if(cost > mana_resource->common) {
-      throw std::logic_error(
-         "The played card costs more than the normal mana of the player. An invalid action "
-         "wasn't recognized.");
-   }
-   mana_resource->common -= cost;
-
-   auto& camp = *m_state->board()->camp(team);
+   trigger_event< events::EventLabel::PLAY >(card->mutables().owner, card);
+   _trigger_daybreak_if(card);
+   _trigger_nightfall_if(card);
+}
+void Logic::place_in_camp(const sptr< FieldCard >& card, const std::optional< size_t >& replaces)
+{
+   auto& camp = *m_state->board()->camp(card->mutables().owner);
    if(utils::has_value(replaces)) {
       size_t replace_idx = replaces.value();
       obliterate(camp[replace_idx]);
@@ -107,10 +59,6 @@ void Logic::play(const sptr< FieldCard >& card, std::optional< size_t > replaces
    } else {
       camp.emplace_back(card);
    }
-   // trigger play events
-   trigger_event< events::EventLabel::PLAY >(card->mutables().owner, card);
-   _trigger_daybreak_if(card);
-   _trigger_nightfall_if(card);
 }
 void Logic::_trigger_daybreak_if(const sptr< Card >& card)
 {
@@ -174,6 +122,7 @@ void Logic::draw_card(Team team)
       return;
    }
    auto card_drawn = deck->pop();
+
    trigger_event< events::EventLabel::DRAW_CARD >(team, card_drawn);
    if(auto* hand = m_state->player(team).hand();
       hand->size() < m_state->config().HAND_CARDS_LIMIT) {
@@ -214,7 +163,7 @@ void Logic::spend_mana(const sptr< Card >& card)
       // there is some mana left to pay
       if(common_mana_cost > mana_resource->common) {
          throw std::logic_error(
-            "The played card " + card->immutables().name + "costs more than the total mana of the player. An invalid action "
+            "The played spell " + card->immutables().name + "costs more than the total mana of the player. An invalid action "
             "wasn't recognized.");
       }
       mana_resource->common -= common_mana_cost;
@@ -259,18 +208,18 @@ void Logic::spend_mana(const sptr< Card >& card)
 //{
 //   // the logic of LOR for deciding how many units in the m_queue fit into the
 //   // camp goes by 2 different modes:
-//   // 1) default play mode, and
+//   // 1) default play_event_triggers mode, and
 //   // 2) battle resolution mode
 //
-//   // In 1) the card will be obliterated, if there is no space currently on the board left,
+//   // In 1) the spell will be obliterated, if there is no space currently on the board left,
 //   // after having considered all previous units in the m_queue. Otherwise, it is placed
-//   // in the camp. When a common is summoned when attack is declared (e.g. Kalista summoning
+//   // in the camp. When a unit is summoned when attack is declared (e.g. Kalista summoning
 //   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
 //   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
-//   // units are ephemeral and expected to die on strike), then that common would be placed
+//   // units are ephemeral and expected to die on strike), then that unit would be placed
 //   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
 //   // through "Death's Hand" floating removing ephemeral or the ephemeral was shadow-blocked),
-//   // then, starting from the end, any common of the battlefield, which no longer finds space
+//   // then, starting from the end, any unit of the battlefield, which no longer finds space
 //   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
 //   size_t camp_units_count = m_state->board()->count_units(team, true);
 //   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit)
@@ -313,26 +262,10 @@ Status Logic::check_status()
    m_state->m_status_checked = true;
    return m_state->m_status;
 }
-//
-// void Logic::damage_nexus(size_t amount, Team team)
-//{
-//   m_state->nexus_health(team) -= amount;
-//}
-// void Logic::heal_nexus(size_t amount, Team team)
-//{
-//   m_state->nexus_health(team) = std::min(
-//      m_state->nexus_health(team) + static_cast< long >(amount),
-//      static_cast< long >(m_state->config().START_NEXUS_HEALTH));
-//}
-// bool Logic::round_ended() const
-//{
-//   return m_state->pass_flag(Team::BLUE) && m_state->pass_flag(Team::RED);
-//}
-//
-bool Logic::pass()
+
+void Logic::pass()
 {
    m_state->player(m_state->active_team()).flags()->pass = true;
-   return round_ended();
 }
 void Logic::reset_pass(Team team)
 {
@@ -350,123 +283,22 @@ void Logic::_set_status(Status status)
       m_state->m_status = status;
    }
 }
+bool Logic::invoke_actions()
+{
+   auto* action_buffer = m_state->action_buffer();
+   bool flip_initiative = true;
+   while(not action_buffer->empty()) {
+      auto& action = action_buffer->back();
+      m_state->commit_to_history(std::make_unique< ActionRecord >(action));
+      flip_initiative = m_action_invoker->invoke(*action);
+      action_buffer->pop_back();
+   }
+   return flip_initiative;
+}
 
-
-//
-// bool Logic::_do_action(const sptr< Action >& action)
-//{
-//   auto action_type = action->action_label();
-//   bool flip_initiative = true;  // whether the other team gets to act next.
-//   if(action_type == ActionLabel::PASS) {
-//      // this case has to be handled separately to combine the pass counter
-//      // reset for all other cases
-//      bool round_ends = m_state->pass();
-//      if(round_ends) {
-//         end_round();
-//         start_round();
-//      }
-//
-//   } else {
-//      m_state->reset_pass();
-//
-//      switch(action_type) {
-//         case PLAY: {
-//            auto cast_action = std::dynamic_pointer_cast< PlayAction >(action);
-//            auto card = cast_action->card_played();
-//            if(card->immutables().card_type == CardType::SPELL) {
-//               auto spell = to_spell(card);
-//               play_spell();
-//               if(spell->has_keyword(Keyword::BURST)) {
-//                  _resolve_spell_stack(true);
-//                  flip_initiative = false;
-//               }
-//            } else {
-//               play(card, cast_action->replacement());
-//            }
-//         }
-//
-//         case PLACE_UNIT: {
-//            auto cast_action = std::dynamic_pointer_cast< PlaceUnitAction >(action);
-//            auto team = cast_action->team();
-//            auto to_bf = cast_action->to_bf();
-//
-//            auto positions_own = cast_action->get_indices_vec();
-//            auto positions_opp = cast_action->get_opp_indices_map();
-//            _move_units(positions_own, team, false);
-//            _move_units_opp(positions_opp, Team(1 - team), to_bf);
-//            flip_initiative = false;
-//         }
-//
-//         case PLACE_SPELL: {
-//            auto cast_action = std::dynamic_pointer_cast< PlaceSpellAction >(action);
-//            auto spell = cast_action->spell();
-//            if(not _move_spell(spell, cast_action->to_stack())) {
-//               // the floating was supposed to be moved to the stack, but the team cancelled
-//               _move_spell(spell, false);
-//               flip_initiative = false;
-//            } else {
-//               flip_initiative = _do_action(
-//                  std::make_shared< PlayAction >(m_state->round(), spell->mutables().owner,
-//                  spell));
-//            }
-//         }
-//
-//         case ATTACK: {
-//            auto team = action->team();
-//            _activate_battlemode(team);
-//            process_camp_queue(team);
-//         }
-//
-//         case BLOCK: {
-//            auto team = action->team();
-//            _trigger_event(events::BlockEvent(team));
-//         }
-//
-//         case ACCEPT: {
-//            if(auto& spell_prestack = m_state->spell_prestack(); spell_prestack.empty()) {
-//               _resolve_spell_stack(false);
-//            } else {
-//            }
-//            if(m_state->in_battle_mode()) {
-//               _resolve_battle();
-//               _deactivate_battlemode();
-//            }
-//         }
-//
-//         default: break;
-//      }
-//   }
-//   m_state->commit_to_history(action, BLUE);
-//   return flip_initiative;
-//}
 // void Logic::_activate_battlemode(Team attack_team)
 //{
-//   m_state->set_battle_mode(true);
-//   m_state->attacker(attack_team);
-//   auto& bf = m_state->board()->battlefield(attack_team);
-//   auto check_att_effects = [&](const sptr< Card >& unit) {
-//      if(unit->has_keyword(Keyword::ATTACK)) {
-//         _trigger_event(events::AttackEvent(attack_team, unit));
-//      }
-//   };
-//   auto check_supp_effects = [&](const sptr< Card >& unit, const sptr< Card >& next_unit) {
-//      if(unit->has_keyword(Keyword::SUPPORT)) {
-//         _trigger_event(events::SupportEvent(attack_team, unit, next_unit));
-//      }
-//   };
-//
-//   for(int i = 0; i < BATTLEFIELD_SIZE - 1; ++i) {
-//      if(has_value(bf[i])) {
-//         const auto& attack_unit = bf[i];
-//         check_att_effects(attack_unit);
-//         if(auto next_unit = bf[i + 1]; has_value(next_unit)) {
-//            check_supp_effects(attack_unit, next_unit);
-//         }
-//      }
-//   }
-//   if(auto last_att = bf[BATTLEFIELD_SIZE]; has_value(last_att)) {
-//      check_att_effects(last_att);
-//   }
+
 //
 //   // remove the attack token of the attacker, as it is now used up,
 //   // unless all units were scouts (for the first attack)
@@ -485,7 +317,7 @@ void Logic::_set_status(Status status)
 //   }
 //   if(scout_attack) {
 //      m_state->token_scout(attack_team, true);
-//      _trigger_event(events::ScoutEvent(attack_team));
+//      _trigger_event(m_subscribed_events::ScoutEvent(attack_team));
 //   } else {
 //      m_state->token_attack(false, attack_team);
 //   }
@@ -495,7 +327,7 @@ void Logic::_set_status(Status status)
 //   m_state->set_battle_mode(false);
 //   m_state->reset_attacker();
 //}
-// void Logic::_resolve_spell_stack(bool burst)
+// void Logic::cast(bool burst)
 //{
 //   auto& spell_stack = m_state->spell_stack();
 //   if(burst) {
@@ -505,119 +337,182 @@ void Logic::_set_status(Status status)
 //   } else {
 //      _cast_spellstack();
 //      if(m_state->in_battle_mode()) {
-//         _resolve_battle();
+//         resolve();
 //      }
 //   }
 //}
-// void Logic::_resolve_battle()
-//{
-//   m_state->set_battle_resolution_mode(true);
-//   auto attacker = m_state->attacker().value();
-//   auto defender = Team(1 - attacker);
-//   auto& battlefield_att = m_state->board()->battlefield(attacker);
-//   auto& battlefield_def = m_state->board()->battlefield(defender);
-//   for(auto pos = 0U; pos < m_state->board()->count_units(attacker, false); ++pos) {
-//      auto unit_att_opt = battlefield_att.at(pos);
-//
-//      if(has_value(unit_att_opt)) {
-//         // if this spot on the battlefield sees an actual common posted for
-//         // attack we need to make it strike
-//         auto unit_att = to_unit(unit_att_opt);
-//
-//         auto unit_def_opt = battlefield_def.at(pos);
-//         if(has_value(unit_def_opt)) {
-//            // if there is a defender posted on the same spot of the
-//            // attacker, it needs to battle the attacker
-//            auto unit_def = to_unit(unit_def_opt);
-//
-//            if(unit_def->unit_mutables().alive) {
-//               bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
-//               bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
-//
-//               long health_def_after = 0;
-//               long attack_power = unit_att->power();
-//
-//               if(quick_attacks || double_attacks) {
-//                  strike(unit_att, unit_def);
-//                  if(unit_def->health() > 0) {
-//                     // we cant check for the common being alive, but have to
-//                     // check via the health instead, because the common is
-//                     // only killed later on. The health is an intermediary.
-//                     if(double_attacks) {
-//                        // a double attacking common attacks again after a quick
-//                        // attack
-//                        strike(unit_att, unit_def);
-//                     }
-//                     strike(unit_def, unit_att);
-//                  }
-//
-//               } else {
-//                  strike(unit_att, unit_def);
-//                  strike(unit_def, unit_att);
-//               }
-//
-//               // check whether to kill the attacking common
-//               if(unit_att->health() == 0) {
-//                  kill_unit(defender, unit_att, unit_att);
-//               }
-//               // check whether to kill defending common
-//               if(unit_def->health() == 0) {
-//                  kill_unit(attacker, unit_def, unit_att);
-//               }
-//            }
-//         } else {
-//            // if there is no defender to block the attack, the attacker
-//            // strikes the nexus
-//            nexus_strike(defender, unit_att);
-//         }
-//      }
-//      retreat_to_camp(attacker);
-//      retreat_to_camp(defender);
-//      m_state->set_battle_mode(false);
-//   }
-//   m_state->set_battle_resolution_mode(false);
-//}
-// void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
-//{
-//   sptr< long > damage = std::make_shared< long >(unit_att->power());
-//   if(*damage > 0) {
-//      _trigger_event(events::StrikeEvent(unit_att->mutables().owner, unit_att, unit_def));
-//      damage_unit(unit_att, unit_def, damage);
-//   }
-//   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
-//      && unit_att->has_keyword(Keyword::OVERWHELM)) {
-//      nexus_strike(unit_def->mutables().owner, damage, unit_att);
-//   }
-//}
-// void Logic::damage_unit(
-//   const sptr< Card >& cause,
-//   const sptr< Unit >& unit,
-//   const sptr< long >& damage)
-//{
-//   long health_def = unit->health();
-//   trigger_event(events::UnitDamageEvent(cause->mutables().owner, cause, Target(unit), damage));
-//   unit->take_damage(*damage);
-//   // store any surplus damage in the damage ptr (e.g. for overwhelm dmg calc)
-//   *damage += -health_def;
-//}
-// void Logic::kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause)
-//{
-//   killed_unit->kill();
-//   _trigger_event(events::DieEvent(killer, Target(killed_unit), cause));
-//   if(not killed_unit->unit_mutables().alive) {
-//      // we need to check for the card being truly dead, in case it had an
-//      // e.g. last breath effect, which kept it alive or level up effect (Tryndamere)
-//      m_state->to_graveyard(killed_unit);
-//   }
-//   _remove(killed_unit);
-//}
+void Logic::resolve()
+{
+   // cast all the spells on the spell stack first
+   cast(false);
+   // then process the combat if necessary
+   if(in_combat()) {
+      auto attacker = m_state->attacker().value();
+      auto defender = Team(1 - attacker);
+      auto& bf_att = *m_state->board()->battlefield(attacker);
+      auto& bf_def = *m_state->board()->battlefield(defender);
+      for(auto pos = 0U; pos < m_state->board()->max_size_bf(); ++pos) {
+         if(pos > bf_att.size()) {
+            // we do this dynamic check incase a strike or another effect might have summoned
+            // another attacker
+            break;
+         }
+         auto unit_att = bf_att.at(pos);
+
+         auto unit_def = bf_def.at(pos);
+         if(utils::has_value(unit_def)) {
+            if(unit_def->unit_mutables().alive) {
+               bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
+               bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
+
+               long health_def_after = 0;
+               long attack_power = unit_att->power();
+
+               if(quick_attacks || double_attacks) {
+                  strike(unit_att, unit_def, false);
+                  if(unit_def->unit_mutables().alive) {
+                     if(double_attacks) {
+                        // a double attacking unit attacks again after a quick
+                        // attack
+                        strike(unit_att, unit_def, false);
+                     }
+                     strike(unit_def, unit_att, false);
+                  }
+
+               } else {
+                  strike(unit_att, unit_def, false);
+                  strike(unit_def, unit_att, false);
+               }
+
+               // check whether to kill the attacking unit
+               if(unit_att->health() == 0) {
+                  kill_unit(defender, unit_att, unit_att);
+               }
+               // check whether to kill defending unit
+               if(unit_def->health() == 0) {
+                  kill_unit(attacker, unit_def, unit_att);
+               }
+            }
+         } else {
+            // if there is no defender to block the attack, the attacker
+            // strikes the nexus
+            nexus_strike(defender, 0);
+         }
+
+         retreat_to_camp(attacker);
+         retreat_to_camp(defender);
+      }
+   }
+   transition_action_invoker< DefaultModeInvoker >();
+}
+void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool combat_strike)
+{
+   auto dmg = unit_att->power();
+   long surplus_dmg = 0;
+   if(dmg > 0) {
+      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
+      surplus_dmg = damage_unit(unit_att, unit_def, dmg);
+   }
+   if(combat_strike && unit_att->has_keyword(Keyword::OVERWHELM)
+      && m_state->attacker() == unit_att->mutables().owner) {
+      nexus_strike(unit_def->mutables().owner, 0);
+   }
+}
+
+void Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2)
+{
+   if(unit_att->power() > 0) {
+      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
+      damage_unit(unit_att, unit_def, damage);
+   }
+   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
+      && unit_att->has_keyword(Keyword::OVERWHELM)) {
+      nexus_strike(unit_def->mutables().owner, 0);
+   }
+}
+void Logic::init_attack(Team team)
+{
+   m_state->player(team).flags()->attack_token = false;
+   trigger_event< events::EventLabel::ATTACK >(team);
+
+   auto& attacker_bf = *m_state->board()->battlefield(team);
+   // Check for support effects taking place:
+   // we need to loop over all potential indices, since attack and support effects might
+   // summon further attackers onto the battlefield, which changes the battlefield container
+   // sizes (and invalidates existing iterators)
+   for(int i = 0; i < m_state->board()->max_size_bf(); ++i) {
+      if(not (i < attacker_bf.size() - 1)) {
+         // once we reach the last unit on board, we dont check for support effects anymore
+         break;
+      }
+      if(attacker_bf[i]->has_keyword(Keyword::SUPPORT)) {
+         trigger_event< events::EventLabel::SUPPORT >(team, attacker_bf[i], attacker_bf[i + 1]);
+      }
+   }
+   transition_action_invoker< CombatModeInvoker >();
+}
+void Logic::init_block(Team team)
+{
+   trigger_event< events::EventLabel::BLOCK >(team);
+}
+long Logic::damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg)
+{
+   long dmg_taken = unit->take_damage(cause, dmg);
+   trigger_event< events::EventLabel::UNIT_DAMAGE >(
+      cause->mutables().owner, cause, unit, dmg_taken);
+   return unit->health();
+}
+void Logic::kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause)
+{
+   killed_unit->kill(cause);
+   trigger_event< events::EventLabel::SLAY >(cause->mutables().owner, cause, killed_unit);
+   if(not killed_unit->unit_mutables().alive) {
+      // we need to check for the spell being truly dead, in case it had an
+      // e.g. last breath effect, which kept it alive or level up effect (Tryndamere) etc.
+      m_state->to_graveyard(killed_unit);
+   }
+   _remove(killed_unit);
+}
+void Logic::_remove(const sptr< Card >& card)
+{
+   Team team = card->mutables().owner;
+   if(card->is_fieldcard()) {
+      auto loc = card->mutables().location;
+      if(loc == Location::CAMP) {
+         auto camp = m_state->board()->camp(team);
+         camp->erase(std::next(camp->begin(), card->mutables().position));
+      }
+   }
+   unsubscribe_effects(card);
+}
+void Logic::unsubscribe_effects(const sptr< Card >& card){
+   for(auto& [_, effect_vec] : card->effects()) {
+      for(auto& effect : effect_vec) {
+         effect->disconnect();
+      }
+   }
+}
+void Logic::subscribe_effects(
+   const sptr< Card >& card,
+   EffectBase::RegistrationTime registration_time)
+{
+   for(auto& [event_label, effect_vec] : card->effects()) {
+      auto* event_to_label = m_state->event(event_label);
+      for(auto& effect : effect_vec) {
+         if(effect->registration_time() == registration_time) {
+            effect->connect(event_to_label);
+         }
+      }
+   }
+}
+void Logic::kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause) {}
 //
 // void Logic::nexus_strike(const sptr< Unit >& striking_unit)
 //{
 //   Team attacked_nexus = opponent(striking_unit->mutables().owner);
 //   sptr< long > att_power = std::make_shared< long >(striking_unit->power());
 //   if(*att_power > 0) {
-//      _trigger_event(events::NexusStrikeEvent(
+//      _trigger_event(m_subscribed_events::NexusStrikeEvent(
 //         striking_unit->mutables().owner, striking_unit, attacked_nexus, att_power));
 //      m_state->damage_nexus(*att_power, attacked_nexus);
 //      m_state->token_plunder(true, Team(1 - attacked_nexus));
@@ -648,7 +543,7 @@ void Logic::_set_status(Status status)
 //
 //   for(int p = BLUE; p != RED; ++p) {
 //      auto& curr_hand = hands.at(p);
-//      State::HandType new_hand;
+//      GameState::HandType new_hand;
 //      auto nr_cards_to_replace = 0;
 //      auto replace_for_p = m_replace.at(p);
 //      auto hand_size = curr_hand.size();
@@ -676,7 +571,8 @@ void Logic::_set_status(Status status)
 //   // first let all m_effects trigger that state an effect with the "Round End" keyword
 //   auto active_team = m_state->active_team();
 //   auto passive_team = Team(1 - active_team);
-//   _trigger_event(events::RoundEndEvent(active_team, std::make_shared< long >(m_state->round())));
+//   _trigger_event(m_subscribed_events::RoundEndEvent(active_team, std::make_shared< long
+//   >(m_state->round())));
 //
 //   SymArr< std::vector< sptr< Unit > > > regenerating_units;
 //   auto end_round_procedure = [&](Team team) {
@@ -724,7 +620,7 @@ void Logic::_set_status(Status status)
 //   Team team = unit->mutables().owner;
 //   process_camp_queue(team);
 //   m_event_listener.register_card(unit);
-//   _trigger_event(events::SummonEvent(team, unit));
+//   _trigger_event(m_subscribed_events::SummonEvent(team, unit));
 //}
 // void Logic::summon_to_battlefield(const sptr< Unit >& unit)
 //{
@@ -735,7 +631,7 @@ void Logic::_set_status(Status status)
 //      auto index_to_place = std::max(static_cast< long >(curr_unit_count - 1), 0L);
 //      bf.at(index_to_place) = unit;
 //      m_event_listener.register_card(unit);
-//      _trigger_event(events::SummonEvent(team, unit));
+//      _trigger_event(m_subscribed_events::SummonEvent(team, unit));
 //   } else {
 //      _remove(unit);
 //   }
@@ -749,7 +645,7 @@ void Logic::_set_status(Status status)
 //   process_camp_queue(team);
 //   _copy_grants(unit->all_grants(), copied_unit);
 //   m_event_listener.register_card(copied_unit);
-//   _trigger_event(events::SummonEvent(team, unit));
+//   _trigger_event(m_subscribed_events::SummonEvent(team, unit));
 //}
 //
 // std::vector< Target > Logic::filter_targets_bf(const Filter& filter, std::optional< Team >
@@ -804,9 +700,9 @@ void Logic::_set_status(Status status)
 //
 //   auto filter_lambda = [&](Team team) {
 //      auto hand = m_state->hand(team);
-//      for(const auto& card : hand) {
-//         if(filter(Target(card))) {
-//            targets.emplace_back(Target(card));
+//      for(const auto& spell : hand) {
+//         if(filter(Target(spell))) {
+//            targets.emplace_back(Target(spell));
 //         }
 //      }
 //   };
@@ -827,9 +723,9 @@ void Logic::_set_status(Status status)
 //
 //   auto filter_lambda = [&](Team team) {
 //      auto deck = m_state->deck(team);
-//      for(const auto& card : deck) {
-//         if(filter(Target(card))) {
-//            targets.emplace_back(Target(card));
+//      for(const auto& spell : deck) {
+//         if(filter(Target(spell))) {
+//            targets.emplace_back(Target(spell));
 //         }
 //      }
 //   };
@@ -879,44 +775,47 @@ void Logic::_set_status(Status status)
 //{
 //   if(amount > 0) {
 //      unit->heal(amount);
-//      _trigger_event(events::HealUnitEvent(team, unit, std::make_shared< long >(amount)));
+//      _trigger_event(m_subscribed_events::HealUnitEvent(team, unit, std::make_shared< long
+//      >(amount)));
 //   }
 //}
 // bool Logic::check_daybreak(Team team) const
 //{
 //   const auto& history = m_state->history()->at(team).at(m_state->round());
-//   // if no play action is found in the history (actions are committed to history only
+//   // if no play_event_triggers action is found in the history (actions are committed to history
+//   only
 //   // after having been processed), then daybreak is happening.
 //   return std::find_if(
 //             history.begin(),
 //             history.end(),
 //             [](const sptr< Action >& action) {
-//                return action->action_label() == ActionLabel::PLAY;
+//                return action->action_label() == ActionLabel::PLAY_FIELDCARD;
 //             })
 //          == history.end();
 //}
 // bool Logic::check_nightfall(Team team) const
 //{
 //   const auto& history = m_state->history(team)->at(m_state->round());
-//   // if any play action is found in the current history (actions are committed to history only
+//   // if any play_event_triggers action is found in the current history (actions are committed to
+//   history only
 //   // after having been processed), then nightfall is happening.
 //   return std::find_if(
 //             history.begin(),
 //             history.end(),
 //             [](const sptr< Action >& action) {
-//                return action->action_label() == ActionLabel::PLAY;
+//                return action->action_label() == ActionLabel::PLAY_FIELDCARD;
 //             })
 //          != history.end();
 //}
-// void Logic::_remove(const sptr< Card >& card)
+// void Logic::_remove(const sptr< Card >& spell)
 //{
-//   m_event_listener.unregister_card(card);
-//   if(auto loc = card->mutables().location; loc == Location::CAMP) {
-//      algo::remove_element(m_state->board()->camp(card->mutables().owner), card);
+//   m_event_listener.unregister_card(spell);
+//   if(auto loc = spell->mutables().location; loc == Location::CAMP) {
+//      algo::remove_element(m_state->board()->camp(spell->mutables().owner), card);
 //   } else if(loc == Location::BATTLEFIELD) {
-//      algo::remove_element(m_state->board()->battlefield(card->mutables().owner), card);
+//      algo::remove_element(m_state->board()->battlefield(card->mutables().owner), spell);
 //   } else if(loc == Location::HAND) {
-//      algo::remove_element(m_state->hand(card->mutables().owner), card);
+//      algo::remove_element(m_state->hand(card->mutables().owner), spell);
 //   }
 //}
 //
@@ -931,7 +830,7 @@ void Logic::_set_status(Status status)
 //   // iterate from the end, since the stack is LIFO
 //   for(auto& spell : reverse(*stack)) {
 //      if(spell->check_cast_condition(*this)) {
-//         trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+//         trigger_event< m_subscribed_events::EventLabel::CAST >(spell->mutables().owner, spell);
 //      }
 //   }
 //   stack.clear();

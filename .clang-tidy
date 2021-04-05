@@ -3,5 +3,7 @@ Checks:          '*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-modernize-use-trai
 WarningsAsErrors: '*'
 HeaderFilterRegex: ''
 FormatStyle:     none
+CheckOptions:
+  - key:             altera-struct-pack-align.No
 
 

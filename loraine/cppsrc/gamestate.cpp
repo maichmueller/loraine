@@ -1,34 +1,34 @@
 
 
-#include "core/state.h"
+#include "core/gamestate.h"
 
-#include <algorithms.h>
+#include <utils/algorithms.h>
 
 #include "core/action.h"
 #include "core/logic.h"
 #include "events/lor_events/construction.h"
 
-void State::commit_to_history(uptr< Record >&& record)
+void GameState::commit_to_history(uptr< Record >&& record)
 {
    (*m_history)[m_round].emplace_back(std::move(record));
 }
 
-void State::to_graveyard(const sptr< Card >& unit)
+void GameState::to_graveyard(const sptr< Card >& unit)
 {
    player(unit->mutables().owner).graveyard()->at(m_round).emplace_back(unit);
 }
-void State::to_tossed(const sptr< Card >& card)
+void GameState::to_tossed(const sptr< Card >& card)
 {
    player(card->mutables().owner).tossed_cards()->emplace_back(card);
 }
 
-std::array< events::LOREvent, events::n_events > State::_init_events()
+std::array< events::LOREvent, events::n_events > GameState::_init_events()
 {
    std::array< events::LOREvent, events::n_events > arr;
    events::fill_event_array< events::n_events - 1 >(arr);
    return arr;
 }
-Status State::status()
+Status GameState::status()
 {
    if(not m_status_checked) {
       m_logic->check_status();
@@ -36,7 +36,7 @@ Status State::status()
    return m_status;
 }
 
-State::State(
+GameState::GameState(
    const Config& cfg,
    SymArr< Deck > decks,
    SymArr< sptr< Controller > > controllers,
@@ -70,12 +70,12 @@ State::State(
    m_logic->state(*this);
 }
 
-State::State(
+GameState::GameState(
    const Config& cfg,
    SymArr< Deck > decks,
    SymArr< sptr< Controller > > controllers,
    random::rng_type rng)
-    : State(
+    : GameState(
        cfg,
        std::move(decks),
        std::move(controllers),
@@ -83,7 +83,7 @@ State::State(
        rng)
 {
 }
-State::State(const State& other)
+GameState::GameState(const GameState& other)
     : m_config(other.m_config),
       m_players(other.m_players),
       m_starting_team(other.m_starting_team),

@@ -4,7 +4,7 @@
 
 #include "utils/types.h"
 
-class State;
+class GameState;
 class Card;
 
 /**
@@ -19,8 +19,8 @@ class Toll: public Cloneable< Toll > {
    Toll& operator=(Toll&& other) = default;
    ~Toll() override = default;
 
-   virtual void pay(State& state, Card& card) {}  // the default tribute is no tribute at all
-   virtual bool check(State& state, Card& card) { return true; }  // per default no play condition
+   virtual void pay(GameState& state, Card& card) {}  // the default tribute is no tribute at all
+   virtual bool check(GameState& state, Card& card) { return true; }  // per default no play_event_triggers condition
 };
 
 #endif  // LORAINE_TOLL_H

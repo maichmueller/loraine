@@ -6,8 +6,8 @@
 #include <utility>
 
 #include "cards/card_defs.h"
-#include "cards/effect.h"
-#include "core/targetable.h"
+#include "core/targeting.h"
+#include "effects/effect.h"
 #include "events/event_labels.h"
 #include "events/event_listener.h"
 #include "events/eventbase.h"
