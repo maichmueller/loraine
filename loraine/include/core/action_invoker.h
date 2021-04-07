@@ -8,7 +8,6 @@
 #include "utils/types.h"
 
 class Logic;
-class EffectBase;
 class GameState;
 
 /*
@@ -35,7 +34,7 @@ class GameState;
  *          i)    mulligan the starting hand cards
  *
  */
-class ActionInvokerBase: public Cloneable< abstract_method< ActionInvokerBase > > {
+class ActionInvokerBase {
   public:
    enum Label { DEFAULT = 0, COMBAT, MULLIGAN, REPLACING, TARGET };
    explicit ActionInvokerBase(
@@ -49,8 +48,8 @@ class ActionInvokerBase: public Cloneable< abstract_method< ActionInvokerBase > 
        : m_label(label), m_logic(nullptr), m_accepted_actions(std::move(accepted_actions))
    {
    }
-   ~ActionInvokerBase() override = default;
-   ActionInvokerBase(const ActionInvokerBase& other);
+   virtual ~ActionInvokerBase() = default;
+   ActionInvokerBase(const ActionInvokerBase& other) = default;
    ActionInvokerBase(ActionInvokerBase&& other) = default;
    ActionInvokerBase& operator=(ActionInvokerBase&& other) = delete;
    ActionInvokerBase& operator=(const ActionInvokerBase& other) = delete;
@@ -66,7 +65,7 @@ class ActionInvokerBase: public Cloneable< abstract_method< ActionInvokerBase > 
 
    auto* accepted_actions() { return &m_accepted_actions; }
    [[nodiscard]] auto* accepted_actions() const { return &m_accepted_actions; }
-
+   virtual ActionInvokerBase* clone() = 0;
    [[nodiscard]] auto label() const { return m_label; }
 
   private:
@@ -76,14 +75,15 @@ class ActionInvokerBase: public Cloneable< abstract_method< ActionInvokerBase > 
 };
 
 template < typename Derived, actions::ActionLabel... AcceptedActions >
-class ActionInvoker:
-    public Cloneable<
-       abstract_method< ActionInvoker< Derived, AcceptedActions... > >,
-       inherit_constructors< ActionInvokerBase > > {
+class ActionInvoker: public ActionInvokerBase {
   public:
-   using base = Cloneable<
-      abstract_method< ActionInvoker< Derived, AcceptedActions... > >,
-      inherit_constructors< ActionInvokerBase > >;
+   using base = ActionInvokerBase;
+   using base::base;
+
+   ActionInvoker(Logic* logic = nullptr)
+       : base(Derived::invoker_label, logic, std::set< actions::ActionLabel >{AcceptedActions...})
+   {
+   }
    template < typename... Args >
    ActionInvoker(Args... args)
        : base(
@@ -92,109 +92,98 @@ class ActionInvoker:
           std::set< actions::ActionLabel >{AcceptedActions...})
    {
    }
+   inline ActionInvokerBase* clone() override
+   {
+      return new Derived(static_cast< Derived& >(*this));
+   }
 };
 
 class DefaultModeInvoker:
-    public Cloneable<
+    public ActionInvoker<
        DefaultModeInvoker,
-       inherit_constructors< ActionInvoker<
-          DefaultModeInvoker,
-          actions::ActionLabel::ACCEPT,
-          actions::ActionLabel::PLAY_FIELDCARD,
-          actions::ActionLabel::DRAG_ENEMY,
-          actions::ActionLabel::PLACE_UNIT,
-          actions::ActionLabel::PLACE_SPELL > > > {
+       actions::ActionLabel::ACCEPT,
+       actions::ActionLabel::PLAY_FIELDCARD,
+       actions::ActionLabel::DRAG_ENEMY,
+       actions::ActionLabel::PLACE_UNIT,
+       actions::ActionLabel::PLACE_SPELL > {
   public:
-   using base = Cloneable<
+   using base = ActionInvoker<
       DefaultModeInvoker,
-      inherit_constructors< ActionInvoker<
-         DefaultModeInvoker,
-         actions::ActionLabel::ACCEPT,
-         actions::ActionLabel::PLAY_FIELDCARD,
-         actions::ActionLabel::DRAG_ENEMY,
-         actions::ActionLabel::PLACE_UNIT,
-         actions::ActionLabel::PLACE_SPELL > > >;
+      actions::ActionLabel::ACCEPT,
+      actions::ActionLabel::PLAY_FIELDCARD,
+      actions::ActionLabel::DRAG_ENEMY,
+      actions::ActionLabel::PLACE_UNIT,
+      actions::ActionLabel::PLACE_SPELL >;
    using base::base;
+
    constexpr static Label invoker_label = Label::DEFAULT;
    bool is_valid(const actions::Action& action) const override;
+
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
 };
 
 class CombatModeInvoker:
-    public Cloneable<
+    public ActionInvoker<
        CombatModeInvoker,
-       inherit_constructors< ActionInvoker<
-          CombatModeInvoker,
-          actions::ActionLabel::ACCEPT,
-          actions::ActionLabel::PLACE_SPELL > > > {
+       actions::ActionLabel::ACCEPT,
+       actions::ActionLabel::PLACE_SPELL > {
   public:
-   using base = Cloneable<
+   using base = ActionInvoker<
       CombatModeInvoker,
-      inherit_constructors< ActionInvoker<
-         CombatModeInvoker,
-         actions::ActionLabel::ACCEPT,
-         actions::ActionLabel::PLACE_SPELL > > >;
+      actions::ActionLabel::ACCEPT,
+      actions::ActionLabel::PLACE_SPELL >;
    using base::base;
+
    constexpr static Label invoker_label = Label::COMBAT;
    bool is_valid(const actions::Action& action) const override;
+
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
 };
 
 class TargetModeInvoker:
-    public Cloneable<
+    public ActionInvoker<
        TargetModeInvoker,
-       inherit_constructors< ActionInvoker<
-          TargetModeInvoker,
-          actions::ActionLabel::ACCEPT,
-          actions::ActionLabel::TARGETING > > > {
+       actions::ActionLabel::ACCEPT,
+       actions::ActionLabel::TARGETING > {
   public:
-   using base = Cloneable<
+   using base = ActionInvoker<
       TargetModeInvoker,
-      inherit_constructors< ActionInvoker<
-         TargetModeInvoker,
-         actions::ActionLabel::ACCEPT,
-         actions::ActionLabel::TARGETING > > >;
+      actions::ActionLabel::ACCEPT,
+      actions::ActionLabel::TARGETING >;
    using base::base;
 
    constexpr static Label invoker_label = Label::TARGET;
    [[nodiscard]] actions::Action request_action(const GameState& state) const override;
    bool is_valid(const actions::Action& action) const override;
+
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
 };
 
 class ReplacingModeInvoker:
-    public Cloneable<
+    public ActionInvoker<
        ReplacingModeInvoker,
-       inherit_constructors< ActionInvoker<
-          ReplacingModeInvoker,
-          actions::ActionLabel::CANCEL,
-          actions::ActionLabel::REPLACE_FIELDCARD > > > {
+       actions::ActionLabel::CANCEL,
+       actions::ActionLabel::REPLACE_FIELDCARD > {
   public:
-   using base = Cloneable<
+   using base = ActionInvoker<
       ReplacingModeInvoker,
-      inherit_constructors< ActionInvoker<
-         ReplacingModeInvoker,
-         actions::ActionLabel::CANCEL,
-         actions::ActionLabel::REPLACE_FIELDCARD > > >;
+      actions::ActionLabel::CANCEL,
+      actions::ActionLabel::REPLACE_FIELDCARD >;
    using base::base;
 
    constexpr static Label invoker_label = Label::REPLACING;
    [[nodiscard]] actions::Action request_action(const GameState& state) const override;
    bool is_valid(const actions::Action& action) const override;
+
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
 };
 
 class MulliganModeInvoker:
-    public Cloneable<
-       MulliganModeInvoker,
-       inherit_constructors<
-          ActionInvoker< MulliganModeInvoker, actions::ActionLabel::MULLIGAN > > > {
+    public ActionInvoker< MulliganModeInvoker, actions::ActionLabel::MULLIGAN > {
   public:
-   using base = Cloneable<
-      MulliganModeInvoker,
-      inherit_constructors<
-         ActionInvoker< MulliganModeInvoker, actions::ActionLabel::MULLIGAN > > >;
+   using base = ActionInvoker< MulliganModeInvoker, actions::ActionLabel::MULLIGAN >;
    using base::base;
+
    constexpr static Label invoker_label = Label::MULLIGAN;
    bool is_valid(const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const GameState& action) const override;

@@ -386,17 +386,17 @@ void Logic::resolve()
 
                // check whether to kill the attacking unit
                if(unit_att->health() == 0) {
-                  kill_unit(defender, unit_att, unit_att);
+                  kill_unit(unit_att, unit_att);
                }
                // check whether to kill defending unit
                if(unit_def->health() == 0) {
-                  kill_unit(attacker, unit_def, unit_att);
+                  kill_unit(unit_def, unit_att);
                }
             }
          } else {
             // if there is no defender to block the attack, the attacker
             // strikes the nexus
-            nexus_strike(defender, 0);
+            nexus_strike(unit_att, 0);
          }
 
          retreat_to_camp(attacker);
@@ -413,23 +413,23 @@ void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool co
       trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
       surplus_dmg = damage_unit(unit_att, unit_def, dmg);
    }
-   if(combat_strike && unit_att->has_keyword(Keyword::OVERWHELM)
+   if(surplus_dmg > 0 && combat_strike && unit_att->has_keyword(Keyword::OVERWHELM)
       && m_state->attacker() == unit_att->mutables().owner) {
-      nexus_strike(unit_def->mutables().owner, 0);
+      nexus_strike(unit_att, surplus_dmg);
    }
 }
 
-void Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2)
-{
-   if(unit_att->power() > 0) {
-      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
-      damage_unit(unit_att, unit_def, damage);
-   }
-   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
-      && unit_att->has_keyword(Keyword::OVERWHELM)) {
-      nexus_strike(unit_def->mutables().owner, 0);
-   }
-}
+// void Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2)
+//{
+//   if(unit_att->power() > 0) {
+//      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
+//      damage_unit(unit_att, unit_def, damage);
+//   }
+//   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
+//      && unit_att->has_keyword(Keyword::OVERWHELM)) {
+//      nexus_strike(unit_def->mutables().owner, 0);
+//   }
+//}
 void Logic::init_attack(Team team)
 {
    m_state->player(team).flags()->attack_token = false;
@@ -485,27 +485,21 @@ void Logic::_remove(const sptr< Card >& card)
    }
    unsubscribe_effects(card);
 }
-void Logic::unsubscribe_effects(const sptr< Card >& card){
-   for(auto& [_, effect_vec] : card->effects()) {
-      for(auto& effect : effect_vec) {
-         effect->disconnect();
-      }
-   }
+void Logic::unsubscribe_effects(const sptr< Card >& card)
+{
+   unsubscribe_effects_impl< events::n_events - 1 >(card);
 }
 void Logic::subscribe_effects(
    const sptr< Card >& card,
    EffectBase::RegistrationTime registration_time)
 {
-   for(auto& [event_label, effect_vec] : card->effects()) {
-      auto* event_to_label = m_state->event(event_label);
-      for(auto& effect : effect_vec) {
-         if(effect->registration_time() == registration_time) {
-            effect->connect(event_to_label);
-         }
-      }
+   subscribe_effects_impl< events::n_events - 1 >(card, registration_time);
+}
+void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg) {
+   if(dmg > 0) {
+      m_state->player(striking_unit->mutables().owner).nexus()->add_health(striking_unit, dmg);
    }
 }
-void Logic::kill_unit(Team killer, const sptr< Unit >& killed_unit, const sptr< Card >& cause) {}
 //
 // void Logic::nexus_strike(const sptr< Unit >& striking_unit)
 //{

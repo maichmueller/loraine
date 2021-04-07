@@ -22,12 +22,6 @@ void GameState::to_tossed(const sptr< Card >& card)
    player(card->mutables().owner).tossed_cards()->emplace_back(card);
 }
 
-std::array< events::LOREvent, events::n_events > GameState::_init_events()
-{
-   std::array< events::LOREvent, events::n_events > arr;
-   events::fill_event_array< events::n_events - 1 >(arr);
-   return arr;
-}
 Status GameState::status()
 {
    if(not m_status_checked) {
@@ -62,7 +56,7 @@ GameState::GameState(
       m_board(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE),
       m_logic(std::make_shared< Logic >()),
       m_attacker(starting_team),
-      m_events(_init_events()),
+      m_events(events::build_event_array()),
       m_turn(starting_team),
       m_spell_stack(),
       m_rng(rng)
@@ -86,9 +80,11 @@ GameState::GameState(
 GameState::GameState(const GameState& other)
     : m_config(other.m_config),
       m_players(other.m_players),
+      m_events(events::build_event_array()),
       m_starting_team(other.m_starting_team),
       m_board(other.m_board),
       m_logic(other.m_logic->clone()),
       m_round(other.m_round)
 {
+   // TODO: this needs to fully reconnect all cloned event listeners with the correct events
 }

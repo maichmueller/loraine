@@ -18,7 +18,7 @@ TEST(CardTest, Basics)
    EXPECT_EQ(unit3->power(), 3);
    EXPECT_EQ(unit2->health(), 5);
 
-   unit2->take_damage(< #initializer # >, 2);
+   unit2->take_damage(unit3, 2);
    EXPECT_EQ(unit2->unit_mutables().damage, 2);
    EXPECT_EQ(unit2->health(), 3);
    EXPECT_EQ(unit2->unit_mutables().health_delta, 0);
@@ -49,7 +49,7 @@ TEST(CardTest, Basics)
    EXPECT_EQ(unit2->health(), 5);
 
    unit2->add_health(10, false);
-   unit2->take_damage(< #initializer # >, 10);
+   unit2->take_damage(unit3, 10);
    EXPECT_EQ(unit2->unit_mutables().health_base, 5);
    EXPECT_EQ(unit2->unit_mutables().health_delta, 10);
    EXPECT_EQ(unit2->unit_mutables().damage, 10);

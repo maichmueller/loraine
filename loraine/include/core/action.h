@@ -64,10 +64,10 @@ class ActionBase: public utils::CRTP< ActionBase, Derived, ActionT > {
 
    explicit ActionBase(Team team) noexcept : m_team(team) {}
 
-   [[nodiscard]] auto team() const { return m_team; }
+   [[nodiscard]] inline auto team() const { return m_team; }
    inline void mark_complete() { m_completed = true; }
 
-   bool execute(GameState& state) { return this->derived()->execute_impl(state); }
+   inline bool execute(GameState& state) { return this->derived()->execute_impl(state); }
 
   private:
    Team m_team;
@@ -375,12 +375,12 @@ class Action {
    explicit Action(ActionVariant action) noexcept : m_action_detail(std::move(action)) {}
 
    template < typename DetailType >
-   [[nodiscard]] inline auto detail() const
+   [[nodiscard]] inline auto& detail() const
    {
       return std::get< DetailType >(m_action_detail);
    }
    // default for not providing any template type and therefore simply getting the entire variant
-   [[nodiscard]] inline auto detail() const { return m_action_detail; }
+   [[nodiscard]] inline auto& detail() const { return m_action_detail; }
 
    [[nodiscard]] inline auto team() const
    {

@@ -7,24 +7,32 @@
 
 namespace events {
 
+namespace detail {
+
 template < EventLabel event_label >
 constexpr auto create_event()
 {
-   return label_to_event_helper_t< event_label >();
+   return helpers::label_to_event_t< event_label >();
 }
 
 template < size_t e >
-inline void fill_event_array(std::array< events::LOREvent, n_events >& arr)
+constexpr auto create_event()
 {
-   arr[e] = create_event< static_cast< EventLabel >(e) >();
-   fill_event_array< e - 1 >(arr);
+   return helpers::label_to_event_t< static_cast< events::EventLabel >(e) >();
 }
 
-template <>
-inline void fill_event_array< 0 >(std::array< events::LOREvent, n_events >& arr)
+template < size_t... I >
+std::array< events::LOREvent, events::n_events > build_event_array_impl(std::index_sequence<I...> )
 {
-   arr[0] = create_event< static_cast< EventLabel >(0) >();
+   return {events::LOREvent(create_event<I>())...};
 }
 
-}  // namespace m_subscribed_events
+}  // namespace detail
+
+inline std::array< events::LOREvent, events::n_events > build_event_array()
+{
+   return detail::build_event_array_impl(std::make_index_sequence< events::n_events >{});
+}
+
+}  // namespace events
 #endif  // LORAINE_CONSTRUCTION_H

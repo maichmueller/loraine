@@ -180,4 +180,17 @@ std::vector< sptr<Card>> Deck::pop_by_index(std::initializer_list<IntType> indic
    return pop_by_index<std::vector<IntType>>(indices);
 }
 
+template < typename RNG >
+void Deck::shuffle_into(const sptr< Card >& card, RNG&& rng, size_t top_n)
+{
+   auto deck_size = m_cards.size();
+   if(top_n > deck_size) {
+      top_n = deck_size;
+   }
+   auto max = std::min(top_n, deck_size);
+   std::uniform_int_distribution< size_t > dist(0, max);
+   auto pos = m_cards.begin() + (deck_size - dist(std::forward< RNG >(rng)));
+   m_cards.insert(pos, card);
+}
+
 #endif  // LORAINE_DECK_H

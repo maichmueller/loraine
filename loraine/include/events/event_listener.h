@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-#include "events/eventbase.h"
+#include "events/lor_events/event_types.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
@@ -13,7 +13,7 @@
 // struct MyListener : EventListener<MyListener> (i.e. CRTP)
 template < class Derived >
 class EventListener: public utils::CRTP< EventListener, Derived > {
-   /// SFINAE to check whether the Derived Event has a 'disconnect' method.
+   /// SFINAE to check whether the Derived listener has a 'disconnect' method.
 
    template < class, class = void >
    struct has_disconnect_method: std::false_type {
@@ -25,11 +25,11 @@ class EventListener: public utils::CRTP< EventListener, Derived > {
    };
 
   public:
-   template < typename SpecificEventType >
-   void connect(SpecificEventType* event)
+   template < typename ConcreteEventType >
+   void connect(events::LOREvent& event)
    {
-      event->subscribe(this->derived());
-      m_subscribed_events.push_back(event);
+      event.subscribe<ConcreteEventType>(dynamic_cast<typename ConcreteEventType::SubscriberType*>(this->derived()));
+      m_subscribed_events.push_back(&event);
    }
 
    inline void disconnect()
@@ -47,11 +47,11 @@ class EventListener: public utils::CRTP< EventListener, Derived > {
    // when the listener dies, we must notify the m_subscribed_events to remove subscription
    ~EventListener() { disconnect(); }
 
-   [[nodiscard]] auto* subscribed_events() { return &m_subscribed_events;}
-   [[nodiscard]] auto& subscribed_events() const { return &m_subscribed_events;}
+   [[nodiscard]] auto* subscribed_events() { return &m_subscribed_events; }
+   [[nodiscard]] auto& subscribed_events() const { return &m_subscribed_events; }
 
   private:
-   std::vector< EventBase* > m_subscribed_events{};
+   std::vector< events::LOREvent* > m_subscribed_events{};
 };
 
 #endif  // LORAINE_EVENT_LISTENER_H

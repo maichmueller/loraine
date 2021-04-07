@@ -12,7 +12,7 @@ bool EffectBase::operator!=(const EffectBase& effect) const
 }
 EffectBase::EffectBase(const EffectBase& effect)
     : Targeting(effect),
-      m_effect_type(effect.m_effect_type),
+      m_effect_label(effect.m_effect_label),
       m_consumed(effect.m_consumed),
       m_assoc_card(effect.m_assoc_card),
       m_uuid(utils::new_uuid())

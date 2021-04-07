@@ -74,8 +74,8 @@ class Logic: public Cloneable< Logic > {
    void init_attack(Team team);
    void init_block(Team team);
    void resolve();
-   void unsubscribe_effects(const sptr<Card>& card);
-   void subscribe_effects(const sptr<Card>& card, EffectBase::RegistrationTime registration_time);
+   void unsubscribe_effects(const sptr< Card >& card);
+   void subscribe_effects(const sptr< Card >& card, EffectBase::RegistrationTime registration_time);
    /**
     * Cast the given spells. This does not check whether the spell is also played.
     */
@@ -211,8 +211,8 @@ class Logic: public Cloneable< Logic > {
       std::optional< Team > opt_team);
 
    /*
-    * An api for triggering an event externally. Which m_subscribed_events is supposed to be triggered
-    * needs to be known at compile time.
+    * An api for triggering an event externally. Which m_subscribed_events is supposed to be
+    * triggered needs to be known at compile time.
     */
    template < events::EventLabel event_type, typename... Params >
    inline void trigger_event(Params&&... params);
@@ -248,7 +248,6 @@ class Logic: public Cloneable< Logic > {
    std::unique_ptr< ActionInvokerBase > m_prev_action_invoker = nullptr;
    /// private logic helpers
 
-
    /// The member declarations
    void _start_round();
    void _end_round();
@@ -265,6 +264,14 @@ class Logic: public Cloneable< Logic > {
       const std::shared_ptr< Unit >& unit);
    void refill_mana(Team team, bool normal_mana);
    void _set_status(Status status);
+
+   template < size_t E >
+   void subscribe_effects_impl(
+      const sptr< Card >& card,
+      EffectBase::RegistrationTime registration_time);
+
+   template < size_t E >
+   void unsubscribe_effects_impl(const sptr< Card >& card);
 };
 
 template < Location range >
@@ -320,11 +327,47 @@ template < events::EventLabel event_label, typename... Params >
 void Logic::trigger_event(Params&&... params)
 {
    auto& event = m_state->event(event_label);
-//   dynamic_cast< events::label_to_event_helper_t< event_label >* >(event)->trigger(
-//      *state(), std::forward< Params >(params)...);
-   std::get< events::label_to_event_helper_t< event_label > >(event).trigger(
+   event.detail< helpers::label_to_event_t< event_label > >().trigger(
       *state(), std::forward< Params >(params)...);
 }
+
+template < size_t E >
+void Logic::subscribe_effects_impl(
+   const sptr< Card >& card,
+   EffectBase::RegistrationTime registration_time)
+{
+   const auto elabel = static_cast< events::EventLabel >(E);
+   if(card->has_effect(elabel)) {
+      auto& event = m_state->event(elabel);
+      for(auto& effect : card->effects(elabel)) {
+         using EventType = helpers::label_to_event_t< elabel >;
+         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
+         if(effect->registration_time() == registration_time) {
+            dynamic_cast< EffectType& >(*effect).template connect< EventType >(event);
+         }
+      }
+   }
+   if constexpr(E > 0) {
+      subscribe_effects_impl< E - 1 >(card, registration_time);
+   }
+}
+
+template < size_t E >
+void Logic::unsubscribe_effects_impl(const sptr< Card >& card)
+{
+   const auto elabel = static_cast< events::EventLabel >(E);
+   if(card->has_effect(elabel)) {
+      auto& event = m_state->event(elabel);
+      for(auto& effect : card->effects(elabel)) {
+         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
+         dynamic_cast< EffectType& >(*effect).disconnect();
+      }
+   }
+   if constexpr(E > 0) {
+      unsubscribe_effects_impl< E - 1 >(card);
+   }
+}
+
 
 template < typename NewInvokerType, typename... Args >
 void Logic::transition_action_invoker(Args&&... args)

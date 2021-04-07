@@ -134,10 +134,7 @@
 //}
 //}  // namespace actions
 
-ActionInvokerBase::ActionInvokerBase(const ActionInvokerBase& other)
-    : m_label(other.m_label), m_logic(other.m_logic), m_accepted_actions(other.m_accepted_actions)
-{
-}
+
 bool ActionInvokerBase::invoke(actions::Action& action)
 {
    return action.execute(*m_logic->state());
@@ -183,4 +180,48 @@ actions::Action TargetModeInvoker::request_action(const GameState& state) const
          return actions::Action(actions::CancelAction(state.active_team()));
       }
    }
+}
+bool TargetModeInvoker::is_valid(const actions::Action& action) const
+{
+   return false;
+}
+std::vector< actions::Action > TargetModeInvoker::valid_actions(const GameState& action) const
+{
+   return std::vector< actions::Action >();
+}
+bool DefaultModeInvoker::is_valid(const actions::Action& action) const
+{
+   return false;
+}
+std::vector< actions::Action > DefaultModeInvoker::valid_actions(const GameState& action) const
+{
+   return std::vector< actions::Action >();
+}
+bool CombatModeInvoker::is_valid(const actions::Action& action) const
+{
+   return false;
+}
+std::vector< actions::Action > CombatModeInvoker::valid_actions(const GameState& action) const
+{
+   return std::vector< actions::Action >();
+}
+actions::Action ReplacingModeInvoker::request_action(const GameState& state) const
+{
+   return ActionInvokerBase::request_action(state);
+}
+bool ReplacingModeInvoker::is_valid(const actions::Action& action) const
+{
+   return false;
+}
+std::vector< actions::Action > ReplacingModeInvoker::valid_actions(const GameState& action) const
+{
+   return std::vector< actions::Action >();
+}
+bool MulliganModeInvoker::is_valid(const actions::Action& action) const
+{
+   return false;
+}
+std::vector< actions::Action > MulliganModeInvoker::valid_actions(const GameState& action) const
+{
+   return std::vector< actions::Action >();
 }

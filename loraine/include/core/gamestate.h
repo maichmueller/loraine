@@ -112,7 +112,7 @@ class GameState {
    Team m_starting_team;
    Board m_board;
    sptr< Logic > m_logic;
-   const std::array< events::LOREvent, events::n_events > m_events;
+   std::array< events::LOREvent, events::n_events > m_events;
 
    std::tuple<
       std::optional< sptr< FieldCard > >,  // play buffer
@@ -133,7 +133,7 @@ class GameState {
    uptr< HistoryType > m_history = {};
    random::rng_type m_rng;
 
-   static std::array< events::LOREvent, events::n_events > _init_events();
+//   static std::array< events::LOREvent, events::n_events > _init_events();
 };
 
 #endif  // LORAINE_GAMESTATE_H

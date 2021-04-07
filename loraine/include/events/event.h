@@ -20,17 +20,17 @@
 class GameState;
 
 template < class Derived, class EventT, class... Args >
-class Event: public EventBase {
+class Event {
   public:
    using SignatureTuple = std::tuple< EventT&, Args... >;
-   // classes inheriting from EventCallInterface are the actual subscribers,
+   // classes inheriting from EventSubscriberInterface are the actual subscribers,
    // but we only need the crude interface
    using SelfType = Event< Derived, EventT, Args... >;
-   using Subscriber = EventCallInterface< SelfType >;
-   using SubVector = std::vector< Subscriber* >;
+   using SubscriberType = EventSubscriberInterface< SelfType >;
+   using SubVectorType = std::vector< SubscriberType* >;
 
   private:
-   SubVector subs;
+   SubVectorType subs;
    EventT event_ref;
 
    /// SFINAE to check whether the Derived Event has an 'order' method of correct signature.
@@ -43,18 +43,18 @@ class Event: public EventBase {
    struct has_order_method<
       T,
       std::void_t<
-         decltype(std::declval< SubVector& >() = std::declval< T >().order(std::declval< Args >()...)) > >:
+         decltype(std::declval< SubVectorType& >() = std::declval< T >().order(std::declval< Args >()...)) > >:
        std::true_type {
    };
 
   protected:
-   void _notify(Subscriber* subscriber, GameState& state, Args... args) {
+   void _notify(SubscriberType* subscriber, GameState& state, Args... args) {
       // passing in the event_ref is needed to distinguish among the event_call overloads
       subscriber->event_call(state, SignatureTuple(event_ref, args...));
    }
 
   public:
-   constexpr static auto event_type() { return EventT::value; }
+   constexpr static auto label() { return EventT::value; }
    const auto& subscribers() const { return subs; }
 
    void trigger(GameState& state, Args... args)
@@ -72,11 +72,12 @@ class Event: public EventBase {
       }
    }
 
-   void subscribe(Subscriber* t) { subs.emplace_back(t); }
 
-   void unsubscribe(void* t) final
+   void subscribe(SubscriberType* t) { subs.emplace_back(t); }
+
+   void unsubscribe(void* t)
    {
-      subs.erase(std::find(subs.begin(), subs.end(), static_cast< Subscriber* >(t)));
+      subs.erase(std::find(subs.begin(), subs.end(), static_cast< SubscriberType* >(t)));
    }
 };
 

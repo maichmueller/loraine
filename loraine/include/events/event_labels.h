@@ -37,7 +37,7 @@ enum class EventLabel {
 
 template <events::EventLabel event_type>
 struct EventLabelType {
-   events::EventLabel value = event_type;
+   constexpr static events::EventLabel value = event_type;
 };
 
 constexpr const size_t n_events = static_cast< size_t >(EventLabel::UNIT_DAMAGE) + 1;
