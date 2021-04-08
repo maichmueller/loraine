@@ -495,7 +495,8 @@ void Logic::subscribe_effects(
 {
    subscribe_effects_impl< events::n_events - 1 >(card, registration_time);
 }
-void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg) {
+void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg)
+{
    if(dmg > 0) {
       m_state->player(striking_unit->mutables().owner).nexus()->add_health(striking_unit, dmg);
    }
@@ -560,53 +561,86 @@ void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg) {
 //      m_state->hand(new_hand, Team(p));
 //   }
 //}
-// void Logic::_end_round()
-//{
-//   // first let all m_effects trigger that state an effect with the "Round End" keyword
-//   auto active_team = m_state->active_team();
-//   auto passive_team = Team(1 - active_team);
-//   _trigger_event(m_subscribed_events::RoundEndEvent(active_team, std::make_shared< long
-//   >(m_state->round())));
-//
-//   SymArr< std::vector< sptr< Unit > > > regenerating_units;
-//   auto end_round_procedure = [&](Team team) {
-//      // kill ephemeral units
-//      for(auto& unit : m_state->board()->camp(team)) {
-//         if(unit->has_keyword(Keyword::EPHEMERAL)) {
-//            kill_unit(team, to_unit(unit));
-//         }
-//         // remove temporary grants
-//         // undo temporary buffs/nerfs and possibly heal the units if applicable
-//         auto temp_grants = unit->mutables().grants_temp;
-//         for(auto&& grant : temp_grants) {
-//            grant->undo();
-//         }
-//         temp_grants.clear();
-//
-//         // REGENERATION units will regenerate after removing grants etc.
-//         if(unit->has_keyword(Keyword::REGENERATION)) {
-//            regenerating_units[team].emplace_back(to_unit(unit));
-//         }
-//      }
-//
-//      // float floating mana if available
-//      m_state->floating_mana(m_state->floating_mana(team) + m_state->mana(team), team);
-//   };
-//
-//   auto regenerate_units = [&](Team team) {
-//      // regenerate the units with regeneration
-//      for(auto& unit : regenerating_units[team]) {
-//         if(unit->unit_mutables().alive) {
-//            heal(unit->mutables().owner, unit, unit->unit_mutables().damage);
-//         }
-//      }
-//   };
-//   end_round_procedure(active_team);
-//   end_round_procedure(passive_team);
-//
-//   regenerate_units(active_team);
-//   regenerate_units(passive_team);
-//}
+void Logic::_end_round()
+{
+   // first let all m_effects trigger that state an effect with the "Round End" keyword
+   auto active_team = m_state->active_team();
+   auto passive_team = opponent(active_team);
+   trigger_event< events::EventLabel::ROUND_END >(active_team, m_state->round());
+
+   SymArr< std::vector< sptr< Unit > > > regenerating_units;
+   auto end_round_proc = [&](Team team) {
+      // kill ephemeral units
+      for(auto& unit : *m_state->board()->camp(team)) {
+         if(unit->has_keyword(Keyword::EPHEMERAL)) {
+            kill_unit(to_unit(unit), unit);
+            continue;
+         }
+         // remove temporary grants
+         // undo temporary buffs/nerfs and possibly heal the units if applicable
+         auto temp_grants = unit->mutables().grants_temp;
+         for(auto&& grant : temp_grants) {
+            grant->undo();
+         }
+         temp_grants.clear();
+
+         // REGENERATION units will regenerate after removing grants etc.
+         if(unit->has_keyword(Keyword::REGENERATION)) {
+            regenerating_units[team].emplace_back(to_unit(unit));
+         }
+      }
+      // store floating mana if available
+      auto* mana = m_state->player(team).mana();
+      mana->floating += mana->common;
+   };
+
+   auto regen_proc = [&](Team team) {
+      // regenerate the units with regeneration
+      for(auto& unit : regenerating_units[team]) {
+         if(unit->unit_mutables().alive) {
+            heal(to_unit(unit), unit, unit->unit_mutables().damage);
+         }
+      }
+   };
+
+   for(const auto& procedure :
+       std::initializer_list< std::function< void(Team) > >{end_round_proc, regen_proc}) {
+      procedure(active_team);
+      procedure(passive_team);
+   }
+}
+void Logic::heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amount)
+{
+   auto true_amount = unit->heal(amount);
+   trigger_event< events::EventLabel::HEAL_UNIT >(
+      cause->mutables().owner, unit, cause, true_amount);
+}
+void Logic::retreat_to_camp(Team team)
+{
+   auto& bf = *m_state->board()->battlefield(team);
+   auto& camp = *m_state->board()->camp(team);
+   std::decay_t< decltype(bf) > bf_stack_buffer;
+   bf_stack_buffer.reserve(bf.size());
+   // we reverse the bf container, because popping from the end of a vector is performant, while
+   // popping from the beginning is not, and we need to loop over the bf from the beginning, since
+   // the units return to camp from left to right
+   for(const auto& unit : utils::reverse(bf)) {
+      bf.emplace_back(unit);
+   }
+   bf.clear();
+
+   while(not bf_stack_buffer.empty()) {
+      auto unit = bf_stack_buffer.back();
+      bf_stack_buffer.pop_back();
+      if(camp.size() >= m_state->config().CAMP_SIZE) {
+         // no space left in camp (due to meddling during combat resolution, e.g. removal of an
+         // ephemeral keyword), so the unit is obliterated
+         obliterate(unit);
+      } else {
+         camp.emplace_back(unit);
+      }
+   }
+}
 
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
@@ -773,59 +807,10 @@ void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg) {
 //      >(amount)));
 //   }
 //}
-// bool Logic::check_daybreak(Team team) const
-//{
-//   const auto& history = m_state->history()->at(team).at(m_state->round());
-//   // if no play_event_triggers action is found in the history (actions are committed to history
-//   only
-//   // after having been processed), then daybreak is happening.
-//   return std::find_if(
-//             history.begin(),
-//             history.end(),
-//             [](const sptr< Action >& action) {
-//                return action->action_label() == ActionLabel::PLAY_FIELDCARD;
-//             })
-//          == history.end();
-//}
-// bool Logic::check_nightfall(Team team) const
-//{
-//   const auto& history = m_state->history(team)->at(m_state->round());
-//   // if any play_event_triggers action is found in the current history (actions are committed to
-//   history only
-//   // after having been processed), then nightfall is happening.
-//   return std::find_if(
-//             history.begin(),
-//             history.end(),
-//             [](const sptr< Action >& action) {
-//                return action->action_label() == ActionLabel::PLAY_FIELDCARD;
-//             })
-//          != history.end();
-//}
-// void Logic::_remove(const sptr< Card >& spell)
-//{
-//   m_event_listener.unregister_card(spell);
-//   if(auto loc = spell->mutables().location; loc == Location::CAMP) {
-//      algo::remove_element(m_state->board()->camp(spell->mutables().owner), card);
-//   } else if(loc == Location::BATTLEFIELD) {
-//      algo::remove_element(m_state->board()->battlefield(card->mutables().owner), spell);
-//   } else if(loc == Location::HAND) {
-//      algo::remove_element(m_state->hand(card->mutables().owner), spell);
-//   }
-//}
+
 //
 // void Logic::_copy_grants(
 //   const std::vector< sptr< Grant > >& grants,
 //   const std::shared_ptr< Unit >& unit)
 //{
-//}
-// void Logic::_cast_spellstack()
-//{
-//   auto stack = m_state->spell_stack();
-//   // iterate from the end, since the stack is LIFO
-//   for(auto& spell : reverse(*stack)) {
-//      if(spell->check_cast_condition(*this)) {
-//         trigger_event< m_subscribed_events::EventLabel::CAST >(spell->mutables().owner, spell);
-//      }
-//   }
-//   stack.clear();
 //}

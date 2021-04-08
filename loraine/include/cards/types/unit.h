@@ -50,7 +50,7 @@ class Unit: public Cloneable< Unit, inherit_constructors< FieldCard > > {
    void add_health(long int amount, bool permanent);
    long take_damage(const sptr< Card >& damaging_card, long amount);
    void kill(const sptr< Card >& cause);
-   void heal(size_t amount);
+   size_t heal(size_t amount);
 
    Unit(
       ConstState const_state,

@@ -55,9 +55,11 @@ void Unit::kill(const sptr< Card >& cause)
       m_unit_mutables.alive = false;
    }
 }
-void Unit::heal(size_t amount)
+size_t Unit::heal(size_t amount)
 {
+   auto before = m_unit_mutables.damage;
    m_unit_mutables.damage -= std::min(m_unit_mutables.damage, amount);
+   return before - m_unit_mutables.damage;
 }
 long Unit::health_raw() const
 {

@@ -86,8 +86,10 @@ class GameState {
    [[nodiscard]] inline auto* spell_buffer() const { return &std::get< 2 >(m_buffers); }
    [[nodiscard]] inline auto* targeting_buffer() { return &std::get< 3 >(m_buffers); }
    [[nodiscard]] inline auto* targeting_buffer() const { return &std::get< 3 >(m_buffers); }
-   [[nodiscard]] inline auto* action_buffer() { return &std::get< 4 >(m_buffers); }
-   [[nodiscard]] inline auto* action_buffer() const { return &std::get< 4 >(m_buffers); }
+   [[nodiscard]] inline auto* choice_buffer() { return &std::get< 4 >(m_buffers); }
+   [[nodiscard]] inline auto* choice_buffer() const { return &std::get< 4 >(m_buffers); }
+   [[nodiscard]] inline auto* action_buffer() { return &std::get< 5 >(m_buffers); }
+   [[nodiscard]] inline auto* action_buffer() const { return &std::get< 5 >(m_buffers); }
 
    [[nodiscard]] inline auto* grantfactory(Team team) { return &m_grant_factory[team]; }
    [[nodiscard]] inline auto* grantfactory(Team team) const { return &m_grant_factory[team]; }
@@ -119,6 +121,7 @@ class GameState {
       std::vector< sptr< Unit > >,  // battlefield buffer
       std::vector< sptr< Spell > >,  // spell stack buffer
       std::vector< sptr< EffectBase > >,  // targeting buffer
+      std::vector< sptr< Card > >,  // choice buffer
       std::vector< sptr< actions::Action > > >  // command buffer
       m_buffers = {};
 

@@ -140,7 +140,7 @@ class Logic: public Cloneable< Logic > {
     */
    void nexus_strike(const sptr< Unit >& striking_unit, long dmg);
    void nexus_damage(const sptr< Card >& damaging_card, bool simultaneous);
-   void heal(Team team, const sptr< Unit >& unit, long amount);
+   void heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amount);
 
    long damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg);
    void start_game();

@@ -292,3 +292,12 @@ bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
    state.logic()->play_event_triggers(field_card);
    return true;
 }
+
+bool actions::ChoiceAction::execute_impl(GameState& state)
+{
+   // put choice at first place of the vector buffer
+   auto* buffer = state.choice_buffer();
+   buffer->begin()->swap(*std::next(buffer->begin(), m_choice));
+   buffer->erase(std::next(buffer->begin(), 1), buffer->end());
+   return false;
+}
