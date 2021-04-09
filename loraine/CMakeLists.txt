@@ -14,7 +14,6 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/record.cpp
 
         ${LORAINE_SRC_DIR}/gamemode.cpp
-        ${LORAINE_SRC_DIR}/gamedefs.cpp
         ${LORAINE_SRC_DIR}/logic.cpp
         ${LORAINE_SRC_DIR}/board.cpp
         ${LORAINE_SRC_DIR}/specific_effects.cpp

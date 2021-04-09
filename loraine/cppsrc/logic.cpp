@@ -12,7 +12,7 @@ Logic::Logic(const Logic& other)
 
 void Logic::request_action() const
 {
-   m_state->action_buffer()->emplace_back(
+   m_state->buffer()->action.emplace_back(
       std::make_shared< actions::Action >(std::move(m_action_invoker->request_action(*state()))));
 }
 
@@ -259,7 +259,6 @@ Status Logic::check_status()
       _set_status(Status::BLUE_WINS_NEXUS);
    }
    _set_status(Status::ONGOING);
-   m_state->m_status_checked = true;
    return m_state->m_status;
 }
 
@@ -282,16 +281,17 @@ void Logic::_set_status(Status status)
       // once the status is set to anything but ongoing, it is frozen
       m_state->m_status = status;
    }
+   m_state->status().mark_checked();
 }
 bool Logic::invoke_actions()
 {
-   auto* action_buffer = m_state->action_buffer();
+   auto& action_buffer = m_state->buffer()->action;
    bool flip_initiative = true;
-   while(not action_buffer->empty()) {
-      auto& action = action_buffer->back();
+   while(not action_buffer.empty()) {
+      auto& action = action_buffer.back();
       m_state->commit_to_history(std::make_unique< ActionRecord >(action));
       flip_initiative = m_action_invoker->invoke(*action);
-      action_buffer->pop_back();
+      action_buffer.pop_back();
    }
    return flip_initiative;
 }
@@ -465,35 +465,53 @@ long Logic::damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, lon
 void Logic::kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 {
    killed_unit->kill(cause);
-   trigger_event< events::EventLabel::SLAY >(cause->mutables().owner, cause, killed_unit);
    if(not killed_unit->unit_mutables().alive) {
-      // we need to check for the spell being truly dead, in case it had an
-      // e.g. last breath effect, which kept it alive or level up effect (Tryndamere) etc.
-      m_state->to_graveyard(killed_unit);
+      // we need to check for the unit being truly dead, in case it had an
+      // e.g. last breath effect (The Immortal Fire), which kept it alive, or a level up effect
+      // (Tryndamere) etc.
+      trigger_event< events::EventLabel::SLAY >(cause->mutables().owner, cause, killed_unit);
+      m_state->send_to_graveyard(killed_unit);
+      _remove(killed_unit);
    }
-   _remove(killed_unit);
 }
 void Logic::_remove(const sptr< Card >& card)
 {
    Team team = card->mutables().owner;
+   unsubscribe_effects(card);
+   // remove the unit from camp
    if(card->is_fieldcard()) {
       auto loc = card->mutables().location;
       if(loc == Location::CAMP) {
          auto camp = m_state->board()->camp(team);
          camp->erase(std::next(camp->begin(), card->mutables().position));
       }
+      // if it is on the battlefield, then we let the retreat to camp method clean up dead units
    }
-   unsubscribe_effects(card);
 }
 void Logic::unsubscribe_effects(const sptr< Card >& card)
 {
-   unsubscribe_effects_impl< events::n_events - 1 >(card);
+   //   unsubscribe_effects_impl< events::n_events - 1 >(card);
+
+   for(auto& [label, effect_vec] : card->effects()) {
+      for(auto& effect : effect_vec) {
+         auto& event = m_state->event(label);
+         effect->disconnect();
+      }
+   }
 }
 void Logic::subscribe_effects(
    const sptr< Card >& card,
    EffectBase::RegistrationTime registration_time)
 {
-   subscribe_effects_impl< events::n_events - 1 >(card, registration_time);
+   //   subscribe_effects_impl< events::n_events - 1 >(card, registration_time);
+   for(auto& [label, effect_vec] : card->effects()) {
+      auto& event = m_state->event(label);
+      for(auto& effect : effect_vec) {
+         if(effect->registration_time() == registration_time) {
+            effect->connect(event);
+         }
+      }
+   }
 }
 void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg)
 {
@@ -625,7 +643,12 @@ void Logic::retreat_to_camp(Team team)
    // popping from the beginning is not, and we need to loop over the bf from the beginning, since
    // the units return to camp from left to right
    for(const auto& unit : utils::reverse(bf)) {
-      bf.emplace_back(unit);
+      if(unit->unit_mutables().alive) {
+         bf.emplace_back(unit);
+      }
+      // if it isn't alive, then the kill_unit method should have already sent it to the graveyard
+      // and unsubscribed its effects. The pointer on the battlefield was only kept for
+      // deciding striking mechanisms during combat resolution
    }
    bf.clear();
 

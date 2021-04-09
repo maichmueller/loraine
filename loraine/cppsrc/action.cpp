@@ -16,11 +16,11 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
    auto spell = to_spell(hand->at(m_hand_index));
    auto& effects_to_cast = spell->effects(events::EventLabel::CAST);
    auto* spell_stack = state.spell_stack();
-   auto* spell_buffer = state.spell_buffer();
+   auto& s_buffer = state.buffer()->spell;
    if(m_to_stack) {
       // add the spell to the stack and the buffer, this would allow the
       // opponent to also see that a spell might be played
-      spell_buffer->emplace_back(spell);
+      s_buffer.emplace_back(spell);
       spell_stack->emplace_back(spell);
       spell->move(Location::SPELLSTACK, spell_stack->size() - 1);
       // check the effect targets of this spell
@@ -31,26 +31,26 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
                // meet the criteria
                targeter(state, team());
             } else {
-               state.targeting_buffer()->emplace_back(effect);
+               state.buffer()->targeting.emplace_back(effect);
             }
          }
       }
 
-      if(state.targeting_buffer()->empty()) {
+      if(state.buffer()->targeting.empty()) {
          // we remove the spell from the hand only once the targeting is cleared. Since in this case
          // there is no manual targeting required, we can immediately delete it from hand. Otherwise
          // the TargetAction is going to take care of this
          hand->erase(std::find(hand->begin(), hand->end(), spell));
          // a burst or focus spell is played immediately if no targeting is required
          if(spell->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
-            state.action_buffer()->emplace_back(
+            state.buffer()->action.emplace_back(
                std::make_shared< Action >(PlaySpellFinishAction(team(), true)));
          }
       }
    } else {
       reset_targets(effects_to_cast);
-      spell_buffer->erase(
-         std::remove(spell_buffer->begin(), spell_buffer->end(), spell), spell_buffer->end());
+      s_buffer.erase(
+         std::remove(s_buffer.begin(), s_buffer.end(), spell), s_buffer.end());
       spell_stack->erase(
          std::remove(spell_stack->begin(), spell_stack->end(), spell), spell_stack->end());
       hand->emplace_back(spell);
@@ -67,7 +67,7 @@ bool actions::PlaceUnitAction::execute_impl(GameState& state)
       for(auto idx : m_indices_vec) {
          const auto& field_card = camp[idx];
          bf.emplace_back(to_unit(field_card));
-         state.bf_buffer()->emplace_back(to_unit(field_card));
+         state.buffer()->bf.emplace_back(to_unit(field_card));
          field_card->move(Location::BATTLEFIELD, bf.size() - 1);
       }
       // removing the units from the camp from the end of the vector. This method should be fast
@@ -77,8 +77,8 @@ bool actions::PlaceUnitAction::execute_impl(GameState& state)
       for(auto idx : m_indices_vec) {
          auto unit = bf[idx];
          camp.emplace_back(bf[idx]);
-         auto* bf_buffer = state.bf_buffer();
-         bf_buffer->erase(std::find(bf_buffer->begin(), bf_buffer->end(), unit));
+         auto& bf_buffer = state.buffer()->bf;
+         bf_buffer.erase(std::find(bf_buffer.begin(), bf_buffer.end(), unit));
          unit->move(Location::CAMP, camp.size() - 1);
       }
       // removing the units from the camp from the end of the vector. This method should be fast
@@ -136,51 +136,51 @@ bool actions::CancelAction::execute_impl(GameState& state)
    // the scenario of having a field spell in the play_event_triggers buffer and a spell in the
    // spell buffer is logically not possible by the rules of the game. This would imply an
    // implementation error
-   auto* play_buffer = state.play_buffer();
-   auto* spell_buffer = state.spell_buffer();
-   if(not spell_buffer->empty() && utils::has_value(*play_buffer)) {
+   auto& p_buffer = state.buffer()->play;
+   auto& s_buffer = state.buffer()->spell;
+   if(not s_buffer.empty() && utils::has_value(*p_buffer)) {
       throw std::logic_error(
          "Both buffers for spells and fieldcards hold values. This should not occur.");
    }
 
-   if(utils::has_value(*play_buffer)) {
+   if(utils::has_value(*p_buffer)) {
       // the player cancelled playing this field spell so undo all targeting for its effects
-      reset_targets(play_buffer->value()->effects(events::EventLabel::PLAY));
-      play_buffer->reset();
-   } else if(not spell_buffer->empty()) {
+      reset_targets(p_buffer.value()->effects(events::EventLabel::PLAY));
+      p_buffer->reset();
+   } else if(not s_buffer.empty()) {
       // a spell to play with targeting was cancelled so cancel its targets
-      reset_targets(spell_buffer->back()->effects(events::EventLabel::CAST));
-      spell_buffer->pop_back();
+      reset_targets(s_buffer.back()->effects(events::EventLabel::CAST));
+      s_buffer.pop_back();
    }
 
    return false;  // initiative stays with current player
 }
 bool actions::TargetingAction::execute_impl(GameState& state)
 {
-   // only set the chosen targets to the last element on the targeting targeting_buffer, which is
+   // only set the chosen targets to the last element on the targeting t_buffer, which is
    // the one that requested targets
-   auto* targeting_buffer = state.targeting_buffer();
-   targeting_buffer->back()->targets(m_targets);
-   auto assoc_card = targeting_buffer->back()->associated_card();
-   if(targeting_buffer->size() == 1) {  // effect to choose targets for is last in buffer
+   auto& t_buffer = state.buffer()->targeting;
+   t_buffer.back()->targets(m_targets);
+   auto assoc_card = t_buffer.back()->associated_card();
+   if(t_buffer.size() == 1) {  // effect to choose targets for is last in buffer
       if(assoc_card->is_spell() &&  // effect belongs to a spell
          assoc_card->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
-         // if the effect to target is the last one in the targeting_buffer, and the effects belong
+         // if the effect to target is the last one in the t_buffer, and the effects belong
          // to a BURST or FOCUS spell, then a placing with subsequent targeting also triggers
          // playing it
-         state.action_buffer()->emplace_back(
+         state.buffer()->action.emplace_back(
             std::make_shared< Action >(PlaySpellFinishAction(team(), true)));
       } else if(assoc_card->is_fieldcard()) {
-         if(not state.action_buffer()->back()->is_play_finish()) {
+         if(not state.buffer()->action.back()->is_play_finish()) {
             // if no replace action has occured before, then we have to place a PlayFinishAction
-            state.action_buffer()->emplace_back(std::make_shared< Action >(
+            state.buffer()->action.emplace_back(std::make_shared< Action >(
                PlayFieldCardFinishAction(team(), state.board()->camp(team())->size())));
          }
       }
    }
-   // remove the last effect from the targeting targeting_buffer, since we just chose its targets
-   targeting_buffer->pop_back();
-   if(targeting_buffer->empty()) {
+   // remove the last effect from the targeting t_buffer, since we just chose its targets
+   t_buffer.pop_back();
+   if(t_buffer.empty()) {
       state.logic()->restore_previous_invoker();
    }
    auto* hand = state.player(team()).hand();
@@ -192,8 +192,8 @@ bool actions::AcceptAction::execute_impl(GameState& state)
 {
    // check if units have been placed on the battlefield and thus an attack or block was
    // commenced
-   if(auto* bf_buffer = state.bf_buffer(); not bf_buffer->empty()) {
-      bf_buffer->clear();
+   if(auto& bf_buffer = state.buffer()->bf; not bf_buffer.empty()) {
+      bf_buffer.clear();
       auto& attack_token = state.player(team()).flags()->attack_token;
       if(attack_token && not state.logic()->in_combat()) {
          // if the game is not already in combat mode and the player holds an attack token, then
@@ -231,14 +231,14 @@ bool actions::PlayAction::execute_impl(GameState& state)
 bool actions::PlayRequestAction::execute_impl(GameState& state)
 {
    auto field_card = to_fieldcard(state.player(team()).hand()->at(m_hand_index));
-   state.play_buffer()->emplace(field_card);
+   state.buffer()->play.emplace(field_card);
    auto* camp = state.board()->camp(team());
    if(camp->size() == state.board()->max_size_camp()) {
       // we need to choose the unit we want to replace, since the camp is full
       state.logic()->transition_action_invoker< ReplacingModeInvoker >();
       return false;
    }
-   state.action_buffer()->emplace_back(
+   state.buffer()->action.emplace_back(
       std::make_shared< Action >(PlayFieldCardFinishAction(team(), camp->size())));
 
    if(field_card->has_effect(events::EventLabel::PLAY)) {
@@ -246,10 +246,10 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
          if(auto& targeter = *effect->targeter(); targeter.is_automatic()) {
             targeter(state, team());
          } else {
-            state.targeting_buffer()->emplace_back(effect);
+            state.buffer()->targeting.emplace_back(effect);
          }
       }
-      if(not state.targeting_buffer()->empty()) {
+      if(not state.buffer()->targeting.empty()) {
          // set the next invoker to be a target mode invoker so that targets are chosen for the
          // effects in the buffer
          state.logic()->transition_action_invoker< TargetModeInvoker >();
@@ -260,12 +260,12 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
 }
 bool actions::PlaySpellFinishAction::execute_impl(GameState& state)
 {
-   auto* spell_buffer = state.spell_buffer();
+   auto& s_buffer = state.buffer()->spell;
    // remove the spell to play from the spell buffer stack
    state.player(team()).flags()->has_played = true;
-   while(not spell_buffer->empty()) {
-      auto spell = spell_buffer->back();
-      spell_buffer->pop_back();
+   while(not s_buffer.empty()) {
+      auto spell = s_buffer.back();
+      s_buffer.pop_back();
 
       spell->uncover();
       state.logic()->spend_mana(spell);
@@ -282,8 +282,8 @@ bool actions::PlaySpellFinishAction::execute_impl(GameState& state)
 }
 bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
 {
-   auto field_card = state.play_buffer()->value();
-   state.play_buffer()->reset();
+   auto field_card = state.buffer()->play.value();
+   state.buffer()->play->reset();
    state.player(team()).flags()->has_played = true;
 
    field_card->uncover();
@@ -296,8 +296,8 @@ bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
 bool actions::ChoiceAction::execute_impl(GameState& state)
 {
    // put choice at first place of the vector buffer
-   auto* buffer = state.choice_buffer();
-   buffer->begin()->swap(*std::next(buffer->begin(), m_choice));
-   buffer->erase(std::next(buffer->begin(), 1), buffer->end());
+   auto& buffer = state.buffer()->choice;
+   buffer.begin()->swap(*std::next(buffer.begin(), m_choice));
+   buffer.erase(std::next(buffer.begin(), 1), buffer.end());
    return false;
 }

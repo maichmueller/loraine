@@ -167,7 +167,7 @@ actions::Action TargetModeInvoker::request_action(const GameState& state) const
    while(true) {
       auto action = state.player(state.active_team())
                        .controller()
-                       ->choose_targets(state, state.targeting_buffer()->back());
+                       ->choose_targets(state, state.buffer()->targeting.back());
       ;
 
       if(is_valid(action)) {

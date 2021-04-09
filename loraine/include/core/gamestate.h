@@ -13,8 +13,8 @@
 #include "action_invoker.h"
 #include "board.h"
 #include "config.h"
-#include "events/event_labels.h"
-#include "events/eventbase.h"
+#include "events/event_subscriber.h"
+#include "events/lor_events/event_labels.h"
 #include "gamedefs.h"
 #include "nexus.h"
 #include "player.h"
@@ -24,8 +24,18 @@
 
 class Card;
 
+
 class GameState {
    friend Logic;
+
+   struct Buffer {
+      std::optional< sptr< FieldCard > > play;  // play buffer
+      std::vector< sptr< Unit > > bf;  // battlefield buffer
+      std::vector< sptr< Spell > > spell;  // spell stack buffer
+      std::vector< sptr< EffectBase > > targeting;  // targeting buffer
+      std::vector< sptr< Card > > choice;  // choice buffer
+      std::vector< sptr< actions::Action > > action;  // command buffer
+   };
 
   public:
    using SpellStackType = std::vector< sptr< Spell > >;
@@ -77,20 +87,8 @@ class GameState {
    [[nodiscard]] inline auto& player(Team team) const { return m_players[team]; }
    [[nodiscard]] inline auto* spell_stack() { return &m_spell_stack; }
    [[nodiscard]] inline auto* spell_stack() const { return &m_spell_stack; }
-
-   [[nodiscard]] inline auto* play_buffer() { return &std::get< 0 >(m_buffers); }
-   [[nodiscard]] inline auto* play_buffer() const { return &std::get< 0 >(m_buffers); }
-   [[nodiscard]] inline auto* bf_buffer() { return &std::get< 1 >(m_buffers); }
-   [[nodiscard]] inline auto* bf_buffer() const { return &std::get< 1 >(m_buffers); }
-   [[nodiscard]] inline auto* spell_buffer() { return &std::get< 2 >(m_buffers); }
-   [[nodiscard]] inline auto* spell_buffer() const { return &std::get< 2 >(m_buffers); }
-   [[nodiscard]] inline auto* targeting_buffer() { return &std::get< 3 >(m_buffers); }
-   [[nodiscard]] inline auto* targeting_buffer() const { return &std::get< 3 >(m_buffers); }
-   [[nodiscard]] inline auto* choice_buffer() { return &std::get< 4 >(m_buffers); }
-   [[nodiscard]] inline auto* choice_buffer() const { return &std::get< 4 >(m_buffers); }
-   [[nodiscard]] inline auto* action_buffer() { return &std::get< 5 >(m_buffers); }
-   [[nodiscard]] inline auto* action_buffer() const { return &std::get< 5 >(m_buffers); }
-
+   [[nodiscard]] inline auto* buffer() { return &m_buffer; }
+   [[nodiscard]] inline auto* buffer() const { return &m_buffer; }
    [[nodiscard]] inline auto* grantfactory(Team team) { return &m_grant_factory[team]; }
    [[nodiscard]] inline auto* grantfactory(Team team) const { return &m_grant_factory[team]; }
    [[nodiscard]] inline auto history() { return &m_history; }
@@ -105,8 +103,9 @@ class GameState {
              && m_board.battlefield(Team::RED)->empty();
    }
    void commit_to_history(uptr< Record >&& record);
-   void to_graveyard(const sptr< Card >& unit);
-   void to_tossed(const sptr< Card >& card);
+   void send_to_graveyard(const sptr< FieldCard >& unit);
+   void send_to_spellyard(const sptr< Spell >& unit);
+   void send_to_tossed(const sptr< Card >& card);
 
   private:
    Config m_config;
@@ -115,28 +114,16 @@ class GameState {
    Board m_board;
    sptr< Logic > m_logic;
    std::array< events::LOREvent, events::n_events > m_events;
-
-   std::tuple<
-      std::optional< sptr< FieldCard > >,  // play buffer
-      std::vector< sptr< Unit > >,  // battlefield buffer
-      std::vector< sptr< Spell > >,  // spell stack buffer
-      std::vector< sptr< EffectBase > >,  // targeting buffer
-      std::vector< sptr< Card > >,  // choice buffer
-      std::vector< sptr< actions::Action > > >  // command buffer
-      m_buffers = {};
-
+   Buffer m_buffer = {};
    std::optional< Team > m_attacker;
    size_t m_turn;
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
-   bool m_status_checked = false;
 
    SpellStackType m_spell_stack{};
    SymArr< GrantFactory > m_grant_factory = {};
    uptr< HistoryType > m_history = {};
    random::rng_type m_rng;
-
-//   static std::array< events::LOREvent, events::n_events > _init_events();
 };
 
 #endif  // LORAINE_GAMESTATE_H

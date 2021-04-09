@@ -129,6 +129,12 @@ struct getter {
 template < size_t N, typename T >
 using getter_t = getter< N, T >;
 
+template < typename IntType, typename = std::enable_if_t< std::is_integral_v< IntType > > >
+inline IntType clamp(IntType value, IntType min, IntType max)
+{
+   return std::max(min, std::min(max, value));
+}
+
 template < typename T >
 inline bool has_value(const sptr< T >& ptr)
 {
@@ -189,7 +195,6 @@ reversion_wrapper< T > reverse(T&& iterable)
    return {iterable};
 }
 
-
 /*
  * Get the address of the function pointer.
  *
@@ -218,7 +223,6 @@ typename Container::iterator remove_constness(Container& c, ConstIterator it)
 {
    return c.erase(it, it);
 }
-
 
 }  // namespace utils
 

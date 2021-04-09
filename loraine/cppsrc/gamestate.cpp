@@ -13,18 +13,22 @@ void GameState::commit_to_history(uptr< Record >&& record)
    (*m_history)[m_round].emplace_back(std::move(record));
 }
 
-void GameState::to_graveyard(const sptr< Card >& unit)
+void GameState::send_to_graveyard(const sptr< FieldCard >& unit)
 {
    player(unit->mutables().owner).graveyard()->at(m_round).emplace_back(unit);
 }
-void GameState::to_tossed(const sptr< Card >& card)
+void GameState::send_to_spellyard(const sptr< Spell >& unit)
+{
+   player(unit->mutables().owner).spellyard()->at(m_round).emplace_back(unit);
+}
+void GameState::send_to_tossed(const sptr< Card >& card)
 {
    player(card->mutables().owner).tossed_cards()->emplace_back(card);
 }
 
 Status GameState::status()
 {
-   if(not m_status_checked) {
+   if(not m_status.is_checked()) {
       m_logic->check_status();
    }
    return m_status;
@@ -88,3 +92,4 @@ GameState::GameState(const GameState& other)
 {
    // TODO: this needs to fully reconnect all cloned event listeners with the correct events
 }
+

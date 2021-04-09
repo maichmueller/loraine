@@ -8,21 +8,14 @@
 #include "cards/card_defs.h"
 #include "core/targeting.h"
 #include "effects/effect.h"
-#include "events/event_labels.h"
 #include "events/event_listener.h"
-#include "events/eventbase.h"
+#include "events/event_subscriber.h"
+#include "events/lor_events/event_labels.h"
 #include "gamedefs.h"
 
 class Nexus: public EventListener< Nexus >, public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
-
-   struct MutableState {
-      long m_health;
-      KeywordMap m_keywords;
-      EffectMap m_effects;
-      std::vector< std::function< void(Card&, long) > > m_damage_modifiers{};
-   };
 
    Nexus(Team team, long health, EffectMap emap = {}, KeywordMap kwordmap = {})
        : m_team(team), m_health(health), m_keywords(kwordmap), m_effects(std::move(emap))

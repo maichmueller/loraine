@@ -62,18 +62,21 @@ class Player {
 
    [[nodiscard]] inline auto* graveyard() { return &m_graveyard; }
    [[nodiscard]] inline auto* graveyard() const { return &m_graveyard; }
+   [[nodiscard]] inline auto* spellyard() { return &m_spellyard; }
+   [[nodiscard]] inline auto* spellyard() const { return &m_spellyard; }
    [[nodiscard]] inline auto* tossed_cards() { return &m_tossed_cards; }
    [[nodiscard]] inline auto* tossed_cards() const { return &m_tossed_cards; }
 
   private:
+   Team m_team;
    Nexus m_nexus;
    sptr< Controller > m_controller;
    HandType m_hand;
    Deck m_deck;
-   Team m_team;
    Mana m_mana;
    Flags m_flags;
-   std::map< size_t, std::vector< sptr< Card > > > m_graveyard = {};
+   std::map< size_t, std::vector< sptr< FieldCard > > > m_graveyard = {};
+   std::map< size_t, std::vector< sptr< Spell > > > m_spellyard = {};
    std::vector< sptr< Card > > m_tossed_cards = {};
 };
 

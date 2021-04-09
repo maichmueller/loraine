@@ -25,18 +25,16 @@ class EventListener: public utils::CRTP< EventListener, Derived > {
 //   };
 
   public:
-   template < typename ConcreteEventType >
    void connect(events::LOREvent& event)
    {
-      event.subscribe< ConcreteEventType >(
-         dynamic_cast< typename ConcreteEventType::SubscriberType* >(this->derived()));
+      event.subscribe(this->derived());
       m_subscribed_events.push_back(&event);
    }
 
    inline void disconnect()
    {
       for(auto& event : m_subscribed_events) {
-         event->unsubscribe(static_cast< void* >(this));
+         event->unsubscribe(this->derived());
       }
       m_subscribed_events.clear();
    }

@@ -12,8 +12,8 @@
 
 #include "core/gamedefs.h"
 #include "core/targeting.h"
-#include "event_labels.h"
-#include "eventbase.h"
+#include "event_subscriber.h"
+#include "events/lor_events/event_labels.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
@@ -22,16 +22,14 @@ class GameState;
 template < class Derived, class EventT, class... Args >
 class Event {
   public:
-   using SignatureTuple = std::tuple< EventT&, Args... >;
-   // classes inheriting from EventSubscriberInterface are the actual subscribers,
+   using SignatureTuple = std::tuple< EventT, Args... >;
+   // classes inheriting from IEventSubscriber are the actual subscribers,
    // but we only need the crude interface
-   using SelfType = Event< Derived, EventT, Args... >;
-   using SubscriberType = EventSubscriberInterface< SelfType >;
+   using SubscriberType = IEventSubscriber< Derived >;
    using SubVectorType = std::vector< SubscriberType* >;
 
   private:
    SubVectorType subs;
-   EventT event_ref;
 
    /// SFINAE to check whether the Derived Event has an 'order' method of correct signature.
 
@@ -49,8 +47,8 @@ class Event {
 
   protected:
    void _notify(SubscriberType* subscriber, GameState& state, Args... args) {
-      // passing in the event_ref is needed to distinguish among the event_call overloads
-      subscriber->event_call(state, SignatureTuple(event_ref, args...));
+      // passing in the EventT is needed to distinguish among ambiguous event_call overloads
+      subscriber->event_call(state, SignatureTuple(EventT{}, args...));
    }
 
   public:
@@ -75,9 +73,9 @@ class Event {
 
    void subscribe(SubscriberType* t) { subs.emplace_back(t); }
 
-   void unsubscribe(void* t)
+   void unsubscribe(SubscriberType* sub)
    {
-      subs.erase(std::find(subs.begin(), subs.end(), static_cast< SubscriberType* >(t)));
+      subs.erase(std::find(subs.begin(), subs.end(), sub));
    }
 };
 

@@ -9,8 +9,8 @@
 #include <array>
 
 #include "action_invoker.h"
-#include "events/event_labels.h"
-#include "events/eventbase.h"
+#include "events/event_subscriber.h"
+#include "events/lor_events/event_labels.h"
 
 // forward declare
 class GameState;
@@ -163,7 +163,6 @@ class Logic: public Cloneable< Logic > {
    template < bool floating_mana = false >
    void clamp_mana();
 
-   [[nodiscard]] bool round_ended() const;
    void pass();
 
    void reset_pass(Team team);
@@ -183,34 +182,6 @@ class Logic: public Cloneable< Logic > {
    }
 
    /*
-    * The optional team parameter decides whose cards are to be filtered. If
-    * left as empty, then both teams' cards are filtered
-    */
-   std::vector< sptr< Targetable > > filter_targets_bf(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   std::vector< sptr< Targetable > > filter_targets_camp(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   std::vector< sptr< Targetable > > filter_targets_board(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   std::vector< sptr< Targetable > > filter_targets_hand(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   std::vector< sptr< Targetable > > filter_targets_deck(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   std::vector< sptr< Targetable > > filter_targets_everywhere(
-      const Filter& filter,
-      std::optional< Team > opt_team);
-
-   /*
     * An api for triggering an event externally. Which m_subscribed_events is supposed to be
     * triggered needs to be known at compile time.
     */
@@ -226,9 +197,6 @@ class Logic: public Cloneable< Logic > {
    void process_camp_queue(Team team);
 
    void spend_mana(const sptr< Card >& card);
-   // inline methods
-
-   void shuffle_card_into_deck(const sptr< Card >& card, Team team, size_t top_n);
 
    inline void obliterate(const sptr< Card >& card)
    {
@@ -264,35 +232,7 @@ class Logic: public Cloneable< Logic > {
       const std::shared_ptr< Unit >& unit);
    void refill_mana(Team team, bool normal_mana);
    void _set_status(Status status);
-
-   template < size_t E >
-   void subscribe_effects_impl(
-      const sptr< Card >& card,
-      EffectBase::RegistrationTime registration_time);
-
-   template < size_t E >
-   void unsubscribe_effects_impl(const sptr< Card >& card);
 };
-
-template < Location range >
-std::vector< sptr< Targetable > > Logic::filter_targets(
-   const Filter& filter,
-   std::optional< Team > opt_team)
-{
-   if constexpr(range == Location::BATTLEFIELD) {
-      return filter_targets_bf(filter, opt_team);
-   } else if constexpr(range == Location::CAMP) {
-      return filter_targets_camp(filter, opt_team);
-   } else if constexpr(range == Location::BOARD) {
-      return filter_targets_board(filter, opt_team);
-   } else if constexpr(range == Location::HAND) {
-      return filter_targets_hand(filter, opt_team);
-   } else if constexpr(range == Location::DECK) {
-      return filter_targets_deck(filter, opt_team);
-   } else {
-      return filter_targets_everywhere(filter, opt_team);
-   }
-}
 
 #include "gamestate.h"
 
@@ -301,24 +241,14 @@ void Logic::clamp_mana()
 {
    for(int p = 0; p < n_teams; ++p) {
       Team team = static_cast< Team >(p);
+      auto* mana = state()->player(team).mana();
       if(floating_mana) {
-         auto clamped_floating_mana = std::max(
-            std::min(
-               static_cast< size_t >(state()->config().MAX_FLOATING_MANA),
-               state()->player(team).mana()->floating),
-            size_t(0));
-         state()->player(team).mana()->floating += clamped_floating_mana;
+         auto clamped_mana = utils::clamp(
+            mana->floating, 0UL, state()->config().MAX_FLOATING_MANA);
+         mana->floating += clamped_mana;
       } else {
-         auto clamped_mana = std::max(
-            std::min(
-               std::min(
-                  // MIN(max mana possible, current managems of team)
-                  state()->config().MAX_MANA,
-                  state()->player(team).mana()->gems),
-               // MIN(previous val, current mana of team)
-               state()->player(team).mana()->common),
-            size_t(0));
-         state()->player(team).mana()->common += clamped_mana;
+         auto clamped_mana = utils::clamp(mana->common, 0UL, mana->gems);
+         mana->common += clamped_mana;
       }
    }
 }
@@ -330,44 +260,43 @@ void Logic::trigger_event(Params&&... params)
    event.detail< helpers::label_to_event_t< event_label > >().trigger(
       *state(), std::forward< Params >(params)...);
 }
+//
+// template < size_t E >
+// void Logic::subscribe_effects_impl(
+//   const sptr< Card >& card,
+//   EffectBase::RegistrationTime registration_time)
+//{
+//   const auto elabel = static_cast< events::EventLabel >(E);
+//   if(card->has_effect(elabel)) {
+//      auto& event = m_state->event(elabel);
+//      for(auto& effect : card->effects(elabel)) {
+//         using EventType = helpers::label_to_event_t< elabel >;
+//         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
+//         if(effect->registration_time() == registration_time) {
+//            dynamic_cast< EffectType& >(*effect).template connect< EventType >(event);
+//         }
+//      }
+//   }
+//   if constexpr(E > 0) {
+//      subscribe_effects_impl< E - 1 >(card, registration_time);
+//   }
+//}
 
-template < size_t E >
-void Logic::subscribe_effects_impl(
-   const sptr< Card >& card,
-   EffectBase::RegistrationTime registration_time)
-{
-   const auto elabel = static_cast< events::EventLabel >(E);
-   if(card->has_effect(elabel)) {
-      auto& event = m_state->event(elabel);
-      for(auto& effect : card->effects(elabel)) {
-         using EventType = helpers::label_to_event_t< elabel >;
-         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
-         if(effect->registration_time() == registration_time) {
-            dynamic_cast< EffectType& >(*effect).template connect< EventType >(event);
-         }
-      }
-   }
-   if constexpr(E > 0) {
-      subscribe_effects_impl< E - 1 >(card, registration_time);
-   }
-}
-
-template < size_t E >
-void Logic::unsubscribe_effects_impl(const sptr< Card >& card)
-{
-   const auto elabel = static_cast< events::EventLabel >(E);
-   if(card->has_effect(elabel)) {
-      auto& event = m_state->event(elabel);
-      for(auto& effect : card->effects(elabel)) {
-         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
-         dynamic_cast< EffectType& >(*effect).disconnect();
-      }
-   }
-   if constexpr(E > 0) {
-      unsubscribe_effects_impl< E - 1 >(card);
-   }
-}
-
+// template < size_t E >
+// void Logic::unsubscribe_effects_impl(const sptr< Card >& card)
+//{
+//    const auto elabel = static_cast< events::EventLabel >(E);
+//    if(card->has_effect(elabel)) {
+//       auto& event = m_state->event(elabel);
+//       for(auto& effect : card->effects(elabel)) {
+//          using EffectType = helpers::eventlabel_to_effect_t< elabel >;
+//          dynamic_cast< EffectType& >(*effect).disconnect();
+//       }
+//    }
+//    if constexpr(E > 0) {
+//       unsubscribe_effects_impl< E - 1 >(card);
+//    }
+// }
 
 template < typename NewInvokerType, typename... Args >
 void Logic::transition_action_invoker(Args&&... args)

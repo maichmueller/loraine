@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "events/event.h"
+#include "events/event_subscriber.h"
 
 // forward-declare
 class Card;
@@ -273,6 +274,162 @@ class UnitDamageEvent:
        long > {
 };
 
+}  // namespace events
+
+namespace helpers {
+
+template < events::EventLabel label >
+struct label_to_event;
+
+template <>
+struct label_to_event< events::EventLabel::ATTACK > {
+   using type = events::AttackEvent;
+   using label_type = events::EventLabelType< events::EventLabel::ATTACK >;
+};
+template <>
+struct label_to_event< events::EventLabel::BEHOLD > {
+   using type = events::BeholdEvent;
+   using label_type = events::EventLabelType< events::EventLabel::BEHOLD >;
+};
+template <>
+struct label_to_event< events::EventLabel::BLOCK > {
+   using type = events::BlockEvent;
+   using label_type = events::EventLabelType< events::EventLabel::BLOCK >;
+};
+template <>
+struct label_to_event< events::EventLabel::CAPTURE > {
+   using type = events::CaptureEvent;
+   using label_type = events::EventLabelType< events::EventLabel::CAPTURE >;
+};
+template <>
+struct label_to_event< events::EventLabel::CAST > {
+   using type = events::CastEvent;
+   using label_type = events::EventLabelType< events::EventLabel::CAST >;
+};
+template <>
+struct label_to_event< events::EventLabel::DAYBREAK > {
+   using type = events::DaybreakEvent;
+   using label_type = events::EventLabelType< events::EventLabel::DAYBREAK >;
+};
+
+template <>
+struct label_to_event< events::EventLabel::DISCARD > {
+   using type = events::DiscardEvent;
+   using label_type = events::EventLabelType< events::EventLabel::DISCARD >;
+};
+template <>
+struct label_to_event< events::EventLabel::DRAW_CARD > {
+   using type = events::DrawCardEvent;
+   using label_type = events::EventLabelType< events::EventLabel::DRAW_CARD >;
+};
+template <>
+struct label_to_event< events::EventLabel::ENLIGHTENMENT > {
+   using type = events::EnlightenmentEvent;
+   using label_type = events::EventLabelType< events::EventLabel::ENLIGHTENMENT >;
+};
+template <>
+struct label_to_event< events::EventLabel::GAIN_MANAGEM > {
+   using type = events::GainManagemEvent;
+   using label_type = events::EventLabelType< events::EventLabel::GAIN_MANAGEM >;
+};
+template <>
+struct label_to_event< events::EventLabel::HEAL_UNIT > {
+   using type = events::HealUnitEvent;
+   using label_type = events::EventLabelType< events::EventLabel::HEAL_UNIT >;
+};
+template <>
+struct label_to_event< events::EventLabel::LEVEL_UP > {
+   using type = events::LevelUpEvent;
+   using label_type = events::EventLabelType< events::EventLabel::LEVEL_UP >;
+};
+template <>
+struct label_to_event< events::EventLabel::NEXUS_DAMAGE > {
+   using type = events::NexusDamageEvent;
+   using label_type = events::EventLabelType< events::EventLabel::NEXUS_DAMAGE >;
+};
+template <>
+struct label_to_event< events::EventLabel::NEXUS_STRIKE > {
+   using type = events::NexusStrikeEvent;
+   using label_type = events::EventLabelType< events::EventLabel::NEXUS_STRIKE >;
+};
+template <>
+struct label_to_event< events::EventLabel::NIGHTFALL > {
+   using type = events::NightfallEvent;
+   using label_type = events::EventLabelType< events::EventLabel::NIGHTFALL >;
+};
+template <>
+struct label_to_event< events::EventLabel::PLAY > {
+   using type = events::PlayEvent;
+   using label_type = events::EventLabelType< events::EventLabel::PLAY >;
+};
+template <>
+struct label_to_event< events::EventLabel::RECALL > {
+   using type = events::RecallEvent;
+   using label_type = events::EventLabelType< events::EventLabel::RECALL >;
+};
+template <>
+struct label_to_event< events::EventLabel::ROUND_END > {
+   using type = events::RoundEndEvent;
+   using label_type = events::EventLabelType< events::EventLabel::ROUND_END >;
+};
+template <>
+struct label_to_event< events::EventLabel::ROUND_START > {
+   using type = events::RoundStartEvent;
+   using label_type = events::EventLabelType< events::EventLabel::ROUND_START >;
+};
+template <>
+struct label_to_event< events::EventLabel::SCOUT > {
+   using type = events::ScoutEvent;
+   using label_type = events::EventLabelType< events::EventLabel::SCOUT >;
+};
+template <>
+struct label_to_event< events::EventLabel::SLAY > {
+   using type = events::SlayEvent;
+   using label_type = events::EventLabelType< events::EventLabel::SLAY >;
+};
+template <>
+struct label_to_event< events::EventLabel::STRIKE > {
+   using type = events::StrikeEvent;
+   using label_type = events::EventLabelType< events::EventLabel::STRIKE >;
+};
+template <>
+struct label_to_event< events::EventLabel::SUMMON > {
+   using type = events::SummonEvent;
+   using label_type = events::EventLabelType< events::EventLabel::SUMMON >;
+};
+template <>
+struct label_to_event< events::EventLabel::STUN > {
+   using type = events::StunEvent;
+   using label_type = events::EventLabelType< events::EventLabel::STUN >;
+};
+template <>
+struct label_to_event< events::EventLabel::SUPPORT > {
+   using type = events::SupportEvent;
+   using label_type = events::EventLabelType< events::EventLabel::SUPPORT >;
+};
+template <>
+struct label_to_event< events::EventLabel::TARGET > {
+   using type = events::TargetEvent;
+   using label_type = events::EventLabelType< events::EventLabel::TARGET >;
+};
+template <>
+struct label_to_event< events::EventLabel::UNIT_DAMAGE > {
+   using type = events::UnitDamageEvent;
+   using label_type = events::EventLabelType< events::EventLabel::UNIT_DAMAGE >;
+};
+
+template < events::EventLabel elabel >
+using label_to_event_t = typename label_to_event< elabel >::type;
+
+template < size_t... Ints >
+IEventSubscriber< label_to_event_t< static_cast< events::EventLabel >(Ints) >... >
+   make_event_interface(std::index_sequence< Ints... >);
+
+}  // namespace helpers
+
+namespace events {
+using IAllEventSubscriber = std::decay_t< decltype(helpers::make_event_interface(
+   std::declval< std::make_index_sequence< events::n_events > >())) >;
 
 class LOREvent {
   public:
@@ -326,16 +483,16 @@ class LOREvent {
    }
    /**
     * This method can only be used if the caller knows precisely which Event this class is holding
-    * @tparam ConcreteEventType, the exact event type present
+    * @tparam UniversalSubscriberType, the exact event type present
     * @param sub, the subscriber pointer, whose type must match the ConcreteEventType's required
     * Subscriber type
     */
-   template < typename ConcreteEventType >
-   inline void subscribe(typename ConcreteEventType::SubscriberType* sub)
+   inline void subscribe(IAllEventSubscriber* sub)
    {
-      return detail< ConcreteEventType >().subscribe(sub);
+      return std::visit([&](auto& event) { return event.subscribe(sub); }, m_event_detail);
+      //      return detail< ConcreteEventType >().subscribe(sub);
    }
-   inline void unsubscribe(void* sub)
+   inline void unsubscribe(IAllEventSubscriber* sub)
    {
       std::visit([&](auto& event) { return event.unsubscribe(sub); }, m_event_detail);
    }
@@ -345,152 +502,5 @@ class LOREvent {
 };
 
 }  // namespace events
-
-
-
-namespace helpers {
-template < events::EventLabel label >
-struct label_to_event;
-
-template <>
-struct label_to_event< events::EventLabel::ATTACK > {
-   using type = events::AttackEvent;
-   using label_type = events::EventLabelType< events::EventLabel::ATTACK >;
-};
-template <>
-struct label_to_event< events::EventLabel::BEHOLD > {
-   using type =events::BeholdEvent;
-   using label_type = events::EventLabelType< events::EventLabel::BEHOLD >;
-};
-template <>
-struct label_to_event< events::EventLabel::BLOCK > {
-   using type =events::BlockEvent;
-   using label_type = events::EventLabelType< events::EventLabel::BLOCK >;
-};
-template <>
-struct label_to_event< events::EventLabel::CAPTURE > {
-   using type =events::CaptureEvent;
-   using label_type = events::EventLabelType< events::EventLabel::CAPTURE >;
-};
-template <>
-struct label_to_event< events::EventLabel::CAST > {
-   using type =events::CastEvent;
-   using label_type = events::EventLabelType< events::EventLabel::CAST >;
-};
-template <>
-struct label_to_event< events::EventLabel::DAYBREAK > {
-   using type =events::DaybreakEvent;
-   using label_type = events::EventLabelType< events::EventLabel::DAYBREAK >;
-};
-
-template <>
-struct label_to_event< events::EventLabel::DISCARD > {
-   using type =events::DiscardEvent;
-   using label_type = events::EventLabelType< events::EventLabel::DISCARD >;
-};
-template <>
-struct label_to_event< events::EventLabel::DRAW_CARD > {
-   using type =events::DrawCardEvent;
-   using label_type = events::EventLabelType< events::EventLabel::DRAW_CARD >;
-};
-template <>
-struct label_to_event< events::EventLabel::ENLIGHTENMENT > {
-   using type =events::EnlightenmentEvent;
-   using label_type = events::EventLabelType< events::EventLabel::ENLIGHTENMENT >;
-};
-template <>
-struct label_to_event< events::EventLabel::GAIN_MANAGEM > {
-   using type =events::GainManagemEvent;
-   using label_type = events::EventLabelType< events::EventLabel::GAIN_MANAGEM >;
-};
-template <>
-struct label_to_event< events::EventLabel::HEAL_UNIT > {
-   using type =events::HealUnitEvent;
-   using label_type = events::EventLabelType< events::EventLabel::HEAL_UNIT >;
-};
-template <>
-struct label_to_event< events::EventLabel::LEVEL_UP > {
-   using type =events::LevelUpEvent;
-   using label_type = events::EventLabelType< events::EventLabel::LEVEL_UP >;
-};
-template <>
-struct label_to_event< events::EventLabel::NEXUS_DAMAGE > {
-   using type =events::NexusDamageEvent;
-   using label_type = events::EventLabelType< events::EventLabel::NEXUS_DAMAGE >;
-};
-template <>
-struct label_to_event< events::EventLabel::NEXUS_STRIKE > {
-   using type =events::NexusStrikeEvent;
-   using label_type = events::EventLabelType< events::EventLabel::NEXUS_STRIKE >;
-};
-template <>
-struct label_to_event< events::EventLabel::NIGHTFALL > {
-   using type =events::NightfallEvent;
-   using label_type = events::EventLabelType< events::EventLabel::NIGHTFALL >;
-};
-template <>
-struct label_to_event< events::EventLabel::PLAY > {
-   using type =events::PlayEvent;
-   using label_type = events::EventLabelType< events::EventLabel::PLAY >;
-};
-template <>
-struct label_to_event< events::EventLabel::RECALL > {
-   using type =events::RecallEvent;
-   using label_type = events::EventLabelType< events::EventLabel::RECALL >;
-};
-template <>
-struct label_to_event< events::EventLabel::ROUND_END > {
-   using type =events::RoundEndEvent;
-   using label_type = events::EventLabelType< events::EventLabel::ROUND_END >;
-};
-template <>
-struct label_to_event< events::EventLabel::ROUND_START > {
-   using type =events::RoundStartEvent;
-   using label_type = events::EventLabelType< events::EventLabel::ROUND_START >;
-};
-template <>
-struct label_to_event< events::EventLabel::SCOUT > {
-   using type =events::ScoutEvent;
-   using label_type = events::EventLabelType< events::EventLabel::SCOUT >;
-};
-template <>
-struct label_to_event< events::EventLabel::SLAY > {
-   using type =events::SlayEvent;
-   using label_type = events::EventLabelType< events::EventLabel::SLAY >;
-};
-template <>
-struct label_to_event< events::EventLabel::STRIKE > {
-   using type =events::StrikeEvent;
-   using label_type = events::EventLabelType< events::EventLabel::STRIKE >;
-};
-template <>
-struct label_to_event< events::EventLabel::SUMMON > {
-   using type =events::SummonEvent;
-   using label_type = events::EventLabelType< events::EventLabel::SUMMON >;
-};
-template <>
-struct label_to_event< events::EventLabel::STUN > {
-   using type = events::StunEvent;
-   using label_type = events::EventLabelType< events::EventLabel::STUN >;
-};
-template <>
-struct label_to_event< events::EventLabel::SUPPORT > {
-   using type = events::SupportEvent;
-   using label_type = events::EventLabelType< events::EventLabel::SUPPORT >;
-};
-template <>
-struct label_to_event< events::EventLabel::TARGET > {
-   using type = events::TargetEvent;
-   using label_type = events::EventLabelType< events::EventLabel::TARGET >;
-};
-template <>
-struct label_to_event< events::EventLabel::UNIT_DAMAGE > {
-   using type = events::UnitDamageEvent;
-   using label_type = events::EventLabelType< events::EventLabel::UNIT_DAMAGE >;
-};
-
-template < events::EventLabel elabel >
-using label_to_event_t = typename label_to_event< elabel >::type;
-}
 
 #endif  // LORAINE_EVENT_TYPES_H

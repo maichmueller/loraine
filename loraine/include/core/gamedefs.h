@@ -15,11 +15,10 @@ constexpr const size_t n_teams = static_cast< size_t >(Team::RED) + 1;
 
 
 /**
- * Effectively an Enum class with a wrapper around it to provide some class bound methods
+ * Effectively an Enum class with a wrapper around it to provide some class utils
  */
 struct Status {
-  private:
-   enum class Value {
+   enum Value {
       TIE = 0,
       ONGOING,
       BLUE_WINS_NEXUS,
@@ -27,20 +26,13 @@ struct Status {
       RED_WINS_NEXUS,
       RED_WINS_DRAW,
    };
-   explicit Status(Value v) : value(v) {}
+   Status() = default;
+   Status(Value v) : value(v), m_checked(v == ONGOING ? false : true) {}
 
-  public:
-   static const Status TIE;
-   static const Status ONGOING;
-   static const Status BLUE_WINS_NEXUS;
-   static const Status BLUE_WINS_DRAW;
-   static const Status RED_WINS_NEXUS;
-   static const Status RED_WINS_DRAW;
+   constexpr static const size_t n_status = static_cast< size_t >(RED_WINS_DRAW) + 1;
 
-   constexpr static const size_t n_status = static_cast< size_t >(Value::RED_WINS_DRAW) + 1;
-
-   inline explicit operator int() const { return static_cast< int >(value); }
-   inline explicit operator size_t() const { return static_cast< size_t >(value); }
+   template<typename IntType, typename = std::enable_if_t<std::is_integral_v<IntType>>>
+   inline explicit operator IntType() const { return static_cast< IntType >(value); }
 
    static inline Status win(Team team, bool nexus)
    {
@@ -50,10 +42,19 @@ struct Status {
       return nexus ? Status::RED_WINS_NEXUS : Status::RED_WINS_DRAW;
    }
 
+   inline auto is_checked() const { return m_checked;}
+   inline void mark_checked() { m_checked = true;}
+   inline void uncheck() { m_checked = false;}
+
    bool operator==(const Status& other) const { return value == other.value; }
    bool operator!=(const Status& other) const { return value != other.value; }
+   bool operator==(const Value& other) const { return value == other; }
+   bool operator!=(const Value& other) const { return value != other; }
 
-   Value value;
+  public:
+   Value value = ONGOING;
+  private:
+   bool m_checked = false;
 };
 
 enum class Location {
