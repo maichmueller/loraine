@@ -396,7 +396,7 @@ void Logic::resolve()
          } else {
             // if there is no defender to block the attack, the attacker
             // strikes the nexus
-            nexus_strike(unit_att, 0);
+            strike_nexus(unit_att, 0);
          }
 
          retreat_to_camp(attacker);
@@ -415,7 +415,7 @@ void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool co
    }
    if(surplus_dmg > 0 && combat_strike && unit_att->has_keyword(Keyword::OVERWHELM)
       && m_state->attacker() == unit_att->mutables().owner) {
-      nexus_strike(unit_att, surplus_dmg);
+      strike_nexus(unit_att, surplus_dmg);
    }
 }
 
@@ -427,7 +427,7 @@ void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool co
 //   }
 //   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
 //      && unit_att->has_keyword(Keyword::OVERWHELM)) {
-//      nexus_strike(unit_def->mutables().owner, 0);
+//      strike_nexus(unit_def->mutables().owner, 0);
 //   }
 //}
 void Logic::init_attack(Team team)
@@ -513,14 +513,14 @@ void Logic::subscribe_effects(
       }
    }
 }
-void Logic::nexus_strike(const sptr< Unit >& striking_unit, long dmg)
+void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 {
    if(dmg > 0) {
       m_state->player(striking_unit->mutables().owner).nexus()->add_health(striking_unit, dmg);
    }
 }
 //
-// void Logic::nexus_strike(const sptr< Unit >& striking_unit)
+// void Logic::strike_nexus(const sptr< Unit >& striking_unit)
 //{
 //   Team attacked_nexus = opponent(striking_unit->mutables().owner);
 //   sptr< long > att_power = std::make_shared< long >(striking_unit->power());

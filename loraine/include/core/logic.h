@@ -131,6 +131,8 @@ class Logic: public Cloneable< Logic > {
     */
    void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool combat_strike);
    void strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2);
+   long damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg);
+   void heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amount);
    /**
     * Let a unit strike another.
     * @param unit_att: shared_ptr<Unit>,
@@ -138,11 +140,10 @@ class Logic: public Cloneable< Logic > {
     * @param unit_def: shared_ptr<Unit>,
     *   the struck unit.
     */
-   void nexus_strike(const sptr< Unit >& striking_unit, long dmg);
-   void nexus_damage(const sptr< Card >& damaging_card, bool simultaneous);
-   void heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amount);
+   void strike_nexus(const sptr< Unit >& striking_unit, long dmg);
+   void damage_nexus(const sptr< Card >& damaging_card, long dmg);
+   void damage_nexus_simultan(const sptr< Card >& damaging_card, SymArr<long> dmgs);
 
-   long damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg);
    void start_game();
 
    template < typename NewInvokerType, typename... Args >
@@ -156,9 +157,6 @@ class Logic: public Cloneable< Logic > {
    }
 
    void kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause);
-   void damage_nexus(size_t amount, Team team);
-
-   void heal_nexus(size_t amount, Team team);
 
    template < bool floating_mana = false >
    void clamp_mana();
@@ -167,6 +165,8 @@ class Logic: public Cloneable< Logic > {
 
    void reset_pass(Team team);
    void reset_pass();
+
+   void refill_mana(Team team, bool normal_mana);
 
    template < GrantType grant_type, typename... Params >
    inline void grant(
@@ -226,11 +226,9 @@ class Logic: public Cloneable< Logic > {
    void _remove(const sptr< Card >& card);
 
    void _check_enlightenment(Team team);
-   void _play_event_triggers(const sptr< Card >& card, const Team& team);
    void _copy_grants(
       const std::vector< sptr< Grant > >& grants,
       const std::shared_ptr< Unit >& unit);
-   void refill_mana(Team team, bool normal_mana);
    void _set_status(Status status);
 };
 

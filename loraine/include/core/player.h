@@ -20,7 +20,7 @@ class Player {
    };
    struct Mana {
       size_t gems = 0;
-      size_t common = 0;  // common mana to play_event_triggers fieldcards with
+      size_t common = 0;  // common mana to play fieldcards with
       size_t floating = 0;  // mana exclusively for spells
    };
    using HandType = std::vector< sptr< Card > >;
