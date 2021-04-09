@@ -346,6 +346,13 @@ void Logic::resolve()
    // cast all the spells on the spell stack first
    cast(false);
    // then process the combat if necessary
+   auto overwhelm = [&](sptr< Unit > unit_att, long dmg) {
+      if(dmg > 0 && unit_att->has_keyword(Keyword::OVERWHELM)
+         && m_state->attacker() == unit_att->mutables().owner) {
+         strike_nexus(unit_att, dmg);
+      }
+   };
+
    if(in_combat()) {
       auto attacker = m_state->attacker().value();
       auto defender = Team(1 - attacker);
@@ -369,19 +376,20 @@ void Logic::resolve()
                long attack_power = unit_att->power();
 
                if(quick_attacks || double_attacks) {
-                  strike(unit_att, unit_def, false);
+                  // first the attacker hits the defender, any surplus is potential overwhelm dmg
+                  overwhelm(unit_att, strike(unit_att, unit_def));
                   if(unit_def->unit_mutables().alive) {
                      if(double_attacks) {
-                        // a double attacking unit attacks again after a quick
-                        // attack
-                        strike(unit_att, unit_def, false);
+                        // a double attacking unit attacks again after a quick attack
+                        auto surplus_dmgs = strike_mutually(unit_att, unit_def);
+                        overwhelm(unit_att, surplus_dmgs[0]);
                      }
-                     strike(unit_def, unit_att, false);
+                     strike(unit_def, unit_att);
                   }
 
                } else {
-                  strike(unit_att, unit_def, false);
-                  strike(unit_def, unit_att, false);
+                  strike(unit_att, unit_def);
+                  strike(unit_def, unit_att);
                }
 
                // check whether to kill the attacking unit
@@ -405,31 +413,47 @@ void Logic::resolve()
    }
    transition_action_invoker< DefaultModeInvoker >();
 }
-void Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool combat_strike)
+long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
    auto dmg = unit_att->power();
    long surplus_dmg = 0;
    if(dmg > 0) {
       trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
-      surplus_dmg = damage_unit(unit_att, unit_def, dmg);
+      surplus_dmg = dmg - damage_unit(unit_def, unit_att, dmg);
    }
-   if(surplus_dmg > 0 && combat_strike && unit_att->has_keyword(Keyword::OVERWHELM)
-      && m_state->attacker() == unit_att->mutables().owner) {
-      strike_nexus(unit_att, surplus_dmg);
-   }
+   return surplus_dmg;
 }
+SymArr< long > Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2)
+{
+   SymArr< long > dmg_taken{0, 0};
+   SymArr< long > surplus_dmg{0, 0};
+   std::function< void() > trigger_strike_1 = [&]() {
+      trigger_event< events::EventLabel::STRIKE >(unit1->mutables().owner, unit1, unit2);
+   };
+   std::function< void() > trigger_strike_2 = [&]() {
+      trigger_event< events::EventLabel::STRIKE >(unit2->mutables().owner, unit2, unit1);
+   };
+   if(auto dmg = unit1->power(); dmg > 0) {
+      dmg_taken[1] = unit2->take_damage(unit1, dmg);
+   } else {
+      trigger_strike_1 = []() {};
+   }
+   if(auto dmg = unit2->power(); dmg > 0) {
+      dmg_taken[0] = unit1->take_damage(unit2, dmg);
+   } else {
+      trigger_strike_2 = []() {};
+   }
+   trigger_strike_1();
+   trigger_strike_2();
 
-// void Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2)
-//{
-//   if(unit_att->power() > 0) {
-//      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
-//      damage_unit(unit_att, unit_def, damage);
-//   }
-//   if(m_state->in_battle_mode() && m_state->attacker() == unit_att->mutables().owner
-//      && unit_att->has_keyword(Keyword::OVERWHELM)) {
-//      strike_nexus(unit_def->mutables().owner, 0);
-//   }
-//}
+   if(auto dmg = dmg_taken[1]; dmg > 0) {
+      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit1->mutables().owner, unit1, unit2, dmg);
+   }
+   if(auto dmg = dmg_taken[2]; dmg > 0) {
+      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit2->mutables().owner, unit2, unit1, dmg);
+   }
+   return dmg_taken;
+}
 void Logic::init_attack(Team team)
 {
    m_state->player(team).flags()->attack_token = false;
@@ -455,12 +479,12 @@ void Logic::init_block(Team team)
 {
    trigger_event< events::EventLabel::BLOCK >(team);
 }
-long Logic::damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg)
+long Logic::damage_unit(const sptr< Unit >& unit, const sptr< Card >& cause, long dmg)
 {
    long dmg_taken = unit->take_damage(cause, dmg);
    trigger_event< events::EventLabel::UNIT_DAMAGE >(
       cause->mutables().owner, cause, unit, dmg_taken);
-   return unit->health();
+   return dmg_taken;
 }
 void Logic::kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause)
 {
@@ -663,6 +687,13 @@ void Logic::retreat_to_camp(Team team)
          camp.emplace_back(unit);
       }
    }
+}
+void Logic::restore_previous_invoker()
+{
+   utils::throw_if_no_value(
+      m_prev_action_invoker, "Previous action invoker pointer holds no value.");
+   m_action_invoker = std::move(m_prev_action_invoker);
+   m_prev_action_invoker = nullptr;
 }
 
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)

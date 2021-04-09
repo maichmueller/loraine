@@ -37,15 +37,16 @@ void Unit::power(size_t power, bool as_delta)
 }
 long Unit::take_damage(const sptr< Card >& damaging_card, long amount)
 {
-   auto dmg_before = m_unit_mutables.damage;
    if(has_keyword(Keyword::TOUGH)) {
       --amount;
    }
    for(auto& dmg_modifier : m_unit_mutables.dmg_modifiers) {
       dmg_modifier(*damaging_card, amount);
    }
+   auto health_before = health();
    m_unit_mutables.damage += amount;
-   return m_unit_mutables.damage - dmg_before;
+   // the damage taken by the unit is returned: health_before - health_after
+   return health_before - health();
 }
 void Unit::kill(const sptr< Card >& cause)
 {

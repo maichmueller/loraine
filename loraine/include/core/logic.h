@@ -35,25 +35,16 @@ class Logic: public Cloneable< Logic > {
 
    // Beginning of LoR logic implementations
 
-   // methods to handle in the specific action invoker mode of the state.
-   [[nodiscard]] inline bool is_valid(const actions::Action& action) const
-   {
-      return m_action_invoker->is_valid(action);
-   }
+   ActionInvokerBase* action_invoker() { return &*m_action_invoker; }
+   ActionInvokerBase* action_invoker() const { return &*m_action_invoker; }
+
    [[nodiscard]] bool in_combat() const
    {
-      auto combat_label = ActionInvokerBase::Label::COMBAT;
-      return m_action_invoker->label() == combat_label
-             || m_prev_action_invoker->label() == combat_label;
+      return m_action_invoker->label() == ActionInvokerBase::Label::COMBAT
+             || (m_action_invoker->label() != ActionInvokerBase::Label::DEFAULT
+                 && m_prev_action_invoker->label() == ActionInvokerBase::Label::COMBAT);
    };
-   inline std::set< actions::ActionLabel > accepted_action_labels()
-   {
-      return *(m_action_invoker->accepted_actions());
-   }
-   inline std::vector< actions::Action > valid_actions(const GameState& state)
-   {
-      return m_action_invoker->valid_actions(state);
-   }
+
    void request_action() const;
    bool invoke_actions();
 
@@ -129,9 +120,9 @@ class Logic: public Cloneable< Logic > {
     * @param unit_def: shared_ptr<Unit>,
     *   the struck common.
     */
-   void strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def, bool combat_strike);
-   void strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2);
-   long damage_unit(const sptr< Card >& cause, const sptr< Unit >& unit, long dmg);
+   long strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def);
+   SymArr< long > strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& unit2);
+   long damage_unit(const sptr< Unit >& unit, const sptr< Card >& cause, long dmg);
    void heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amount);
    /**
     * Let a unit strike another.
@@ -142,19 +133,13 @@ class Logic: public Cloneable< Logic > {
     */
    void strike_nexus(const sptr< Unit >& striking_unit, long dmg);
    void damage_nexus(const sptr< Card >& damaging_card, long dmg);
-   void damage_nexus_simultan(const sptr< Card >& damaging_card, SymArr<long> dmgs);
+   void damage_nexus_simultan(const sptr< Card >& damaging_card, SymArr< long > dmgs);
 
    void start_game();
 
    template < typename NewInvokerType, typename... Args >
    inline void transition_action_invoker(Args&&... args);
-   inline void restore_previous_invoker()
-   {
-      utils::throw_if_no_value(
-         m_prev_action_invoker, "Previous action invoker pointer holds no value.");
-      m_action_invoker = std::move(m_prev_action_invoker);
-      m_prev_action_invoker = nullptr;
-   }
+   void restore_previous_invoker();
 
    void kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause);
 
@@ -241,8 +226,7 @@ void Logic::clamp_mana()
       Team team = static_cast< Team >(p);
       auto* mana = state()->player(team).mana();
       if(floating_mana) {
-         auto clamped_mana = utils::clamp(
-            mana->floating, 0UL, state()->config().MAX_FLOATING_MANA);
+         auto clamped_mana = utils::clamp(mana->floating, 0UL, state()->config().MAX_FLOATING_MANA);
          mana->floating += clamped_mana;
       } else {
          auto clamped_mana = utils::clamp(mana->common, 0UL, mana->gems);
