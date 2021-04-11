@@ -30,7 +30,7 @@ size_t Board::count_units(
    }
    return sum;
 }
-size_t Board::count_units(Team team, bool in_camp) const
+size_t Board::count_occupied_spots(Team team, bool in_camp) const
 {
    return in_camp ? m_camp[team].size()
                   : count_units(team, false, [](const auto& /*unused*/) { return true; });

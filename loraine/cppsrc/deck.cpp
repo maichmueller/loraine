@@ -24,7 +24,7 @@ auto Deck::_pop_cards(const FilterFunc& filter) -> std::vector< sptr< Card > >
 {
    std::vector< sptr< Card > > popped_cards;
    auto indices = _find_indices(filter);
-   // reserve the memory so that emplace_back doesn't trigger repeated memory relocation
+   // reserve the memory so that emplace_back doesn't fire repeated memory relocation
    popped_cards.reserve(indices.size());
    // with every pop we need to calculate the new filtered indices as per
    // shift by 1
@@ -41,7 +41,7 @@ auto Deck::_find_cards(const FilterFunc& filter) const -> std::vector< sptr< Car
 {
    std::vector< sptr< Card > > cards;
    auto indices = _find_indices(filter);
-   // reserve the memory so that emplace_back doesn't trigger repeated memory relocation
+   // reserve the memory so that emplace_back doesn't fire repeated memory relocation
    cards.reserve(indices.size());
 
    for(const auto& idx : indices) {

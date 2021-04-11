@@ -65,8 +65,8 @@ class GameState {
       return m_events.at(static_cast< size_t >(label));
    }
 
-   [[nodiscard]] inline auto* board() { return &m_board; }
-   [[nodiscard]] inline auto* board() const { return &m_board; }
+   [[nodiscard]] inline auto& board() { return m_board; }
+   [[nodiscard]] inline auto& board() const { return m_board; }
 
    [[nodiscard]] inline auto& round() { return m_round; }
    [[nodiscard]] inline auto round() const { return m_round; }
@@ -85,22 +85,22 @@ class GameState {
    [[nodiscard]] inline auto starting_team() const { return m_starting_team; }
    [[nodiscard]] inline auto& player(Team team) { return m_players[team]; }
    [[nodiscard]] inline auto& player(Team team) const { return m_players[team]; }
-   [[nodiscard]] inline auto* spell_stack() { return &m_spell_stack; }
-   [[nodiscard]] inline auto* spell_stack() const { return &m_spell_stack; }
-   [[nodiscard]] inline auto* buffer() { return &m_buffer; }
-   [[nodiscard]] inline auto* buffer() const { return &m_buffer; }
-   [[nodiscard]] inline auto* grantfactory(Team team) { return &m_grant_factory[team]; }
-   [[nodiscard]] inline auto* grantfactory(Team team) const { return &m_grant_factory[team]; }
-   [[nodiscard]] inline auto history() { return &m_history; }
-   [[nodiscard]] inline auto history() const { return &m_history; }
+   [[nodiscard]] inline auto& spell_stack() { return m_spell_stack; }
+   [[nodiscard]] inline auto& spell_stack() const { return m_spell_stack; }
+   [[nodiscard]] inline auto& buffer() { return m_buffer; }
+   [[nodiscard]] inline auto& buffer() const { return m_buffer; }
+   [[nodiscard]] inline auto& grantfactory(Team team) { return m_grant_factory[team]; }
+   [[nodiscard]] inline auto& grantfactory(Team team) const { return m_grant_factory[team]; }
+   [[nodiscard]] inline auto& history() { return m_history; }
+   [[nodiscard]] inline auto& history() const { return m_history; }
    [[nodiscard]] inline auto& rng() { return m_rng; }
    [[nodiscard]] inline auto& rng() const { return m_rng; }
 
    Status status();
    inline bool is_resolved() const
    {
-      return m_spell_stack.empty() && m_board.battlefield(Team::BLUE)->empty()
-             && m_board.battlefield(Team::RED)->empty();
+      return m_spell_stack.empty() && m_board.battlefield(Team::BLUE).empty()
+             && m_board.battlefield(Team::RED).empty();
    }
    void commit_to_history(uptr< Record >&& record);
    void send_to_graveyard(const sptr< FieldCard >& unit);

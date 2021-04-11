@@ -63,8 +63,8 @@ class ActionInvokerBase {
    void logic(Logic* logic) { m_logic = logic; }
    auto logic() { return m_logic; }
 
-   auto* accepted_actions() { return &m_accepted_actions; }
-   [[nodiscard]] auto* accepted_actions() const { return &m_accepted_actions; }
+   auto& accepted_actions() { return m_accepted_actions; }
+   [[nodiscard]] auto& accepted_actions() const { return m_accepted_actions; }
    virtual ActionInvokerBase* clone() = 0;
    [[nodiscard]] auto label() const { return m_label; }
 

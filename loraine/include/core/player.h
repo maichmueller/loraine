@@ -38,34 +38,34 @@ class Player {
    Player& operator=(const Player& other) = delete;
    Player& operator=(Player&& other) = delete;
 
-   inline auto* nexus() { return &m_nexus; }
-   [[nodiscard]] inline auto* nexus() const { return &m_nexus; }
+   inline auto& nexus() { return m_nexus; }
+   [[nodiscard]] inline auto& nexus() const { return m_nexus; }
    [[nodiscard]] inline auto team() const { return m_team; }
 
    [[nodiscard]] inline auto controller() { return m_controller; }
    [[nodiscard]] inline auto controller() const { return m_controller; }
 
-   inline auto* flags() { return &m_flags; }
-   [[nodiscard]] inline auto* flags() const { return &m_flags; }
+   inline auto& flags() { return m_flags; }
+   [[nodiscard]] inline auto& flags() const { return m_flags; }
 
    inline void hand(HandType hand) { m_hand = std::move(hand); }
-   [[nodiscard]] inline auto* hand() const { return &m_hand; }
-   [[nodiscard]] inline auto* hand() { return &m_hand; }
+   [[nodiscard]] inline auto& hand() const { return m_hand; }
+   [[nodiscard]] inline auto& hand() { return m_hand; }
 
    inline void deck(Deck deck) { m_deck = std::move(deck); }
-   [[nodiscard]] inline auto* deck() const { return &m_deck; }
-   [[nodiscard]] inline auto* deck() { return &m_deck; }
+   [[nodiscard]] inline auto& deck() const { return m_deck; }
+   [[nodiscard]] inline auto& deck() { return m_deck; }
 
    inline void mana(Mana mana) { m_mana = mana; }
-   [[nodiscard]] inline auto* mana() { return &m_mana; }
-   [[nodiscard]] inline auto* mana() const { return &m_mana; }
+   [[nodiscard]] inline auto& mana() { return m_mana; }
+   [[nodiscard]] inline auto& mana() const { return m_mana; }
 
-   [[nodiscard]] inline auto* graveyard() { return &m_graveyard; }
-   [[nodiscard]] inline auto* graveyard() const { return &m_graveyard; }
-   [[nodiscard]] inline auto* spellyard() { return &m_spellyard; }
-   [[nodiscard]] inline auto* spellyard() const { return &m_spellyard; }
-   [[nodiscard]] inline auto* tossed_cards() { return &m_tossed_cards; }
-   [[nodiscard]] inline auto* tossed_cards() const { return &m_tossed_cards; }
+   [[nodiscard]] inline auto& graveyard() { return m_graveyard; }
+   [[nodiscard]] inline auto& graveyard() const { return m_graveyard; }
+   [[nodiscard]] inline auto& spellyard() { return m_spellyard; }
+   [[nodiscard]] inline auto& spellyard() const { return m_spellyard; }
+   [[nodiscard]] inline auto& tossed_cards() { return m_tossed_cards; }
+   [[nodiscard]] inline auto& tossed_cards() const { return m_tossed_cards; }
 
   private:
    Team m_team;

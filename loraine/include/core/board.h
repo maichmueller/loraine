@@ -66,17 +66,18 @@ class Board {
       Team team,
       bool in_camp,
       const std::function< bool(const sptr< FieldCard >&) >& filter) const;
-   [[nodiscard]] size_t count_units(Team team, bool in_camp) const;
+   [[nodiscard]] size_t count_occupied_spots(Team team, bool in_camp) const;
 
    [[nodiscard]] auto max_size_bf() const { return m_bf_size_max; }
    [[nodiscard]] auto max_size_camp() const { return m_camp_size_max; }
-   auto* battlefield(Team team) { return &m_bf[team]; }
-   [[nodiscard]] auto* battlefield(Team team) const { return &m_bf[team]; }
-   auto* camp(Team team) { return &m_camp[team]; }
-   [[nodiscard]] auto* camp(Team team) const { return &m_camp[team]; }
+   auto& battlefield(Team team) { return m_bf[team]; }
+   [[nodiscard]] auto& battlefield(Team team) const { return m_bf[team]; }
+   auto& camp(Team team) { return m_camp[team]; }
+   [[nodiscard]] auto& camp(Team team) const { return m_camp[team]; }
+   auto& camp_queue(Team team) { return m_camp_queue[team]; }
+   [[nodiscard]] auto& camp_queue(Team team) const { return m_camp_queue[team]; }
+
    [[nodiscard]] std::vector< sptr< Unit > > camp_units(Team team) const;
-   auto& camp_queue(Team team) { return m_camp_queue.at(team); }
-   [[nodiscard]] auto& camp_queue(Team team) const { return m_camp_queue.at(team); }
 
    void add_to_bf(const sptr< Unit >& card, size_t idx);
    void add_to_bf(const sptr< Unit >& card);

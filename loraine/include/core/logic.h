@@ -35,8 +35,8 @@ class Logic: public Cloneable< Logic > {
 
    // Beginning of LoR logic implementations
 
-   ActionInvokerBase* action_invoker() { return &*m_action_invoker; }
-   ActionInvokerBase* action_invoker() const { return &*m_action_invoker; }
+   ActionInvokerBase& action_invoker() { return *m_action_invoker; }
+   ActionInvokerBase& action_invoker() const { return *m_action_invoker; }
 
    [[nodiscard]] bool in_combat() const
    {
@@ -78,7 +78,7 @@ class Logic: public Cloneable< Logic > {
     * @param: to_bf: boolean,
     *    to decide whether to summon it to the camp or battlefield.
     */
-   void summon(const sptr< Unit >& unit, bool to_bf);
+   void summon(const sptr< Unit >& unit, bool to_bf, bool is_play);
    /**
     * Increase/Decrease the managems of the given team.
     * @param: team: The team whose managems are changed.
@@ -138,7 +138,7 @@ class Logic: public Cloneable< Logic > {
    void start_game();
 
    template < typename NewInvokerType, typename... Args >
-   inline void transition_action_invoker(Args&&... args);
+   inline void transition(Args&&... args);
    void restore_previous_invoker();
 
    void kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause);
@@ -224,13 +224,13 @@ void Logic::clamp_mana()
 {
    for(int p = 0; p < n_teams; ++p) {
       Team team = static_cast< Team >(p);
-      auto* mana = state()->player(team).mana();
+      auto& mana = state()->player(team).mana();
       if(floating_mana) {
-         auto clamped_mana = utils::clamp(mana->floating, 0UL, state()->config().MAX_FLOATING_MANA);
-         mana->floating += clamped_mana;
+         auto clamped_mana = utils::clamp(mana.floating, 0UL, state()->config().MAX_FLOATING_MANA);
+         mana.floating += clamped_mana;
       } else {
-         auto clamped_mana = utils::clamp(mana->common, 0UL, mana->gems);
-         mana->common += clamped_mana;
+         auto clamped_mana = utils::clamp(mana.common, 0UL, mana.gems);
+         mana.common += clamped_mana;
       }
    }
 }
@@ -239,7 +239,7 @@ template < events::EventLabel event_label, typename... Params >
 void Logic::trigger_event(Params&&... params)
 {
    auto& event = m_state->event(event_label);
-   event.detail< helpers::label_to_event_t< event_label > >().trigger(
+   event.detail< helpers::label_to_event_t< event_label > >().fire(
       *state(), std::forward< Params >(params)...);
 }
 //
@@ -281,7 +281,7 @@ void Logic::trigger_event(Params&&... params)
 // }
 
 template < typename NewInvokerType, typename... Args >
-void Logic::transition_action_invoker(Args&&... args)
+void Logic::transition(Args&&... args)
 {
    // assert the chosen invoker type is any of the ones we have. It is not directly necessary to
    // do, but would improve the error message

@@ -16,21 +16,21 @@ class GameState;
 
 namespace events {
 
-class AttackEvent: public Event< AttackEvent, EventLabelType< EventLabel::ATTACK >, Team > {
+class AttackEvent: public EventBus< AttackEvent, EventLabelType< EventLabel::ATTACK >, Team > {
 };
 /*
  * 1st Arg: const sptr<Card>& = Beholder.
  * 1st Arg: const sptr<Card>& = Beholden.
  */
 class BeholdEvent:
-    public Event<
+    public EventBus<
        BeholdEvent,
        EventLabelType< EventLabel::BEHOLD >,
        Team,
        const sptr< Card >&,
        const sptr< Card >& > {
 };
-class BlockEvent: public Event< BlockEvent, EventLabelType< EventLabel::BLOCK >, Team > {
+class BlockEvent: public EventBus< BlockEvent, EventLabelType< EventLabel::BLOCK >, Team > {
 };
 /*
  * 1st Arg: const sptr<Card>& = Card which triggered the capture
@@ -38,7 +38,7 @@ class BlockEvent: public Event< BlockEvent, EventLabelType< EventLabel::BLOCK >,
  * 3rd Arg: const sptr<Unit>& = Captee
  */
 class CaptureEvent:
-    public Event<
+    public EventBus<
        CaptureEvent,
        EventLabelType< EventLabel::CAPTURE >,
        Team,
@@ -50,13 +50,13 @@ class CaptureEvent:
  * 1st Arg: const sptr<Card>& = The casted floating
  */
 class CastEvent:
-    public Event< CastEvent, EventLabelType< EventLabel::CAST >, Team, const sptr< Card >& > {
+    public EventBus< CastEvent, EventLabelType< EventLabel::CAST >, Team, const sptr< Card >& > {
 };
 /*
  * 1st ARg: const sptr<Card>&: The daybreak causing spell
  */
 class DaybreakEvent:
-    public Event<
+    public EventBus<
        DaybreakEvent,
        EventLabelType< EventLabel::DAYBREAK >,
        Team,
@@ -68,7 +68,7 @@ class DaybreakEvent:
  * 2nd Arg: const sptr<Card>& = The discarded spell
  */
 class DiscardEvent:
-    public Event<
+    public EventBus<
        DiscardEvent,
        EventLabelType< EventLabel::DISCARD >,
        Team,
@@ -79,7 +79,7 @@ class DiscardEvent:
  * 1st Arg: const sptr<Card>& = The drawn spell
  */
 class DrawCardEvent:
-    public Event<
+    public EventBus<
        DrawCardEvent,
        EventLabelType< EventLabel::DRAW_CARD >,
        Team,
@@ -87,13 +87,13 @@ class DrawCardEvent:
 };
 
 class EnlightenmentEvent:
-    public Event< EnlightenmentEvent, EventLabelType< EventLabel::ENLIGHTENMENT >, Team > {
+    public EventBus< EnlightenmentEvent, EventLabelType< EventLabel::ENLIGHTENMENT >, Team > {
 };
 /*
  * 1st Arg: long = The amount of gems gained
  */
 class GainManagemEvent:
-    public Event< GainManagemEvent, EventLabelType< EventLabel::GAIN_MANAGEM >, Team, long > {
+    public EventBus< GainManagemEvent, EventLabelType< EventLabel::GAIN_MANAGEM >, Team, long > {
 };
 /*
  * 1st Arg: const sptr<Card>& = The healing card
@@ -101,7 +101,7 @@ class GainManagemEvent:
  * 3rd Arg: long = The amount healed
  */
 class HealUnitEvent:
-    public Event<
+    public EventBus<
        HealUnitEvent,
        EventLabelType< EventLabel::HEAL_UNIT >,
        Team,
@@ -113,7 +113,7 @@ class HealUnitEvent:
  * 1st Arg: const sptr<Card>& = The leveling champion spell
  */
 class LevelUpEvent:
-    public Event<
+    public EventBus<
        LevelUpEvent,
        EventLabelType< EventLabel::LEVEL_UP >,
        Team,
@@ -125,7 +125,7 @@ class LevelUpEvent:
  * 2nd Arg: long = The damage
  */
 class NexusDamageEvent:
-    public Event<
+    public EventBus<
        NexusDamageEvent,
        EventLabelType< EventLabel::NEXUS_DAMAGE >,
        Team,
@@ -138,7 +138,7 @@ class NexusDamageEvent:
  * 2nd Arg: long = The damage
  */
 class NexusStrikeEvent:
-    public Event<
+    public EventBus<
        NexusStrikeEvent,
        EventLabelType< EventLabel::NEXUS_STRIKE >,
        Team,
@@ -150,7 +150,7 @@ class NexusStrikeEvent:
  * 1st Arg: const sptr<Card>& = The nightfall causing spell
  */
 class NightfallEvent:
-    public Event<
+    public EventBus<
        NightfallEvent,
        EventLabelType< EventLabel::NIGHTFALL >,
        Team,
@@ -160,14 +160,14 @@ class NightfallEvent:
  * 1st Arg: const sptr<Card>& = The played spell
  */
 class PlayEvent:
-    public Event< PlayEvent, EventLabelType< EventLabel::ATTACK >, Team, const sptr< Card >& > {
+    public EventBus< PlayEvent, EventLabelType< EventLabel::ATTACK >, Team, const sptr< Card >& > {
 };
 /*
  * 1st Arg: const sptr<Card>& = The recalling spell
  * 2nd Arg: const sptr<Card>& = The recalled card
  */
 class RecallEvent:
-    public Event<
+    public EventBus<
        RecallEvent,
        EventLabelType< EventLabel::RECALL >,
        Team,
@@ -178,23 +178,23 @@ class RecallEvent:
  * 1st Arg: long = The round number
  */
 class RoundEndEvent:
-    public Event< RoundEndEvent, EventLabelType< EventLabel::ROUND_END >, Team, long > {
+    public EventBus< RoundEndEvent, EventLabelType< EventLabel::ROUND_END >, Team, long > {
 };
 /*
  * 1st Arg: long = The round number
  */
 class RoundStartEvent:
-    public Event< RoundStartEvent, EventLabelType< EventLabel::ROUND_START >, Team, long > {
+    public EventBus< RoundStartEvent, EventLabelType< EventLabel::ROUND_START >, Team, long > {
 };
 
-class ScoutEvent: public Event< ScoutEvent, EventLabelType< EventLabel::SCOUT >, Team > {
+class ScoutEvent: public EventBus< ScoutEvent, EventLabelType< EventLabel::SCOUT >, Team > {
 };
 /*
  * 1st Arg: const sptr<Card>& = The killing card
  * 2nd Arg:const sptr<Unit>& = The killed unit
  */
 class SlayEvent:
-    public Event<
+    public EventBus<
        SlayEvent,
        EventLabelType< EventLabel::SLAY >,
        Team,
@@ -206,7 +206,7 @@ class SlayEvent:
  * 2nd Arg: const sptr<Unit>& = The struck unit
  */
 class StrikeEvent:
-    public Event<
+    public EventBus<
        StrikeEvent,
        EventLabelType< EventLabel::STRIKE >,
        Team,
@@ -218,7 +218,7 @@ class StrikeEvent:
  * 2nd Arg: const sptr<Unit>& = The stunned unit
  */
 class StunEvent:
-    public Event<
+    public EventBus<
        StunEvent,
        EventLabelType< EventLabel::STUN >,
        Team,
@@ -229,7 +229,7 @@ class StunEvent:
  * 1st Arg: const sptr<FieldCard>& = The summoned fieldcard
  */
 class SummonEvent:
-    public Event<
+    public EventBus<
        SummonEvent,
        EventLabelType< EventLabel::SUMMON >,
        Team,
@@ -240,7 +240,7 @@ class SummonEvent:
  * 2nd Arg: const sptr<Unit>& = The supported unit
  */
 class SupportEvent:
-    public Event<
+    public EventBus<
        SupportEvent,
        EventLabelType< EventLabel::SUPPORT >,
        Team,
@@ -252,7 +252,7 @@ class SupportEvent:
  * 2nd Arg: const sptr<Unit>& = The targeted unit
  */
 class TargetEvent:
-    public Event<
+    public EventBus<
        TargetEvent,
        EventLabelType< EventLabel::TARGET >,
        Team,
@@ -265,7 +265,7 @@ class TargetEvent:
  * 3rd Arg: long = The damage amount
  */
 class UnitDamageEvent:
-    public Event<
+    public EventBus<
        UnitDamageEvent,
        EventLabelType< EventLabel::UNIT_DAMAGE >,
        Team,
@@ -482,7 +482,7 @@ class LOREvent {
       return std::visit([&](const auto& event) { return event.label(); }, m_event_detail);
    }
    /**
-    * This method can only be used if the caller knows precisely which Event this class is holding
+    * This method can only be used if the caller knows precisely which EventBus this class is holding
     * @tparam UniversalSubscriberType, the exact event type present
     * @param sub, the subscriber pointer, whose type must match the ConcreteEventType's required
     * Subscriber type

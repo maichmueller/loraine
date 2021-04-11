@@ -11,11 +11,11 @@
 //   auto spell = action.spell();
 //   bool to_stack = action.to_stack();
 //
-//   auto* state = m_logic->state();
-//   auto* hand = state->player(spell->mutables().owner).hand();
+//   auto& state = m_logic->state();
+//   auto& hand = state->player(spell->mutables().owner).hand();
 //   auto& effects_to_cast = spell->effects(m_subscribed_events::EventLabel::CAST);
-//   auto* spell_stack = state->spell_stack();
-//   auto* spell_buffer = state->spell_buffer();
+//   auto& spell_stack = state->spell_stack();
+//   auto& spell_buffer = state->spell_buffer();
 //   if(to_stack) {
 //      hand->erase(std::find(hand->begin(), hand->end(), spell));
 //      // add the spell to the stack and the buffer (this would theoretically allow the
@@ -38,7 +38,7 @@
 //      }
 //      if(not state->targeting_buffer()->empty()) {
 //         // for a manual targeter we need to ask the controller to make the decision
-//         m_logic->transition_action_invoker(
+//         m_logic->transition(
 //            std::make_unique< TargetModeHandler >(m_logic, this->clone()));
 //         auto targeting_action = m_logic->request_action(100);
 //      }
@@ -87,12 +87,12 @@
 // bool DefaultModeHandler::_handle(const PlayAction& action)
 //{
 //   auto spell = action.card_played();
-//   auto* state = logic()->state();
+//   auto& state = logic()->state();
 //
 //   *(state->play_buffer()) = spell;
 //   if(state->board()->camp(action.team()).size() == state->config().CAMP_SIZE) {
 //      // the camp is actually full, ask for the spell that should be removed for this fieldcard
-//      logic()->transition_action_invoker(
+//      logic()->transition(
 //         std::make_unique< TargetModeHandler >(logic(), this->clone()));
 //   }
 //   for(auto& effect : spell->effects(m_subscribed_events::EventLabel::PLAY_FIELDCARD)) {
@@ -106,7 +106,7 @@
 //}
 // bool DefaultModeHandler::_handle(const AcceptAction& action)
 //{
-//   auto* state = logic()->state();
+//   auto& state = logic()->state();
 //   auto team = action.team();
 //   if(not utils::has_value(*state->play_buffer())) {
 //      if(state->spell_buffer()->empty()) {
@@ -128,7 +128,7 @@
 //      state->player(team).flags()->attack_token = false;
 //
 //      // change the handler as we are now in combat mode
-//      logic()->transition_action_invoker(std::make_unique< CombatModeHandler >(logic()));
+//      logic()->transition(std::make_unique< CombatModeHandler >(logic()));
 //   }
 //   return true;
 //}
@@ -167,7 +167,7 @@ actions::Action TargetModeInvoker::request_action(const GameState& state) const
    while(true) {
       auto action = state.player(state.active_team())
                        .controller()
-                       ->choose_targets(state, state.buffer()->targeting.back());
+                       ->choose_targets(state, state.buffer().targeting.back());
       ;
 
       if(is_valid(action)) {

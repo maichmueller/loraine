@@ -20,18 +20,18 @@
 class GameState;
 
 template < class Derived, class EventT, class... Args >
-class Event {
+class EventBus: utils::CRTP< EventBus, Derived, Args...> {
   public:
-   using SignatureTuple = std::tuple< EventT, Args... >;
+   using EventData = std::tuple< EventT, Args... >;
    // classes inheriting from IEventSubscriber are the actual subscribers,
    // but we only need the crude interface
    using SubscriberType = IEventSubscriber< Derived >;
    using SubVectorType = std::vector< SubscriberType* >;
 
   private:
-   SubVectorType subs;
+   SubVectorType subs{};
 
-   /// SFINAE to check whether the Derived Event has an 'order' method of correct signature.
+   /// SFINAE to check whether the Derived EventBus has an 'order' method of correct signature.
 
    template < class, class = void >
    struct has_order_method: std::false_type {
@@ -47,20 +47,20 @@ class Event {
 
   protected:
    void _notify(SubscriberType* subscriber, GameState& state, Args... args) {
-      // passing in the EventT is needed to distinguish among ambiguous event_call overloads
-      subscriber->event_call(state, SignatureTuple(EventT{}, args...));
+      // passing in the EventT is needed to distinguish among ambiguous on_event overloads
+      subscriber->on_event(state, EventData(EventT{}, args...));
    }
 
   public:
    constexpr static auto label() { return EventT::value; }
    const auto& subscribers() const { return subs; }
 
-   void trigger(GameState& state, Args... args)
+   void fire(GameState& state, Args... args)
    {
       // resort the subscribers according to whether the specific EventSpecialization has an
       // order method or not
       if constexpr(has_order_method< Derived >::value) {
-         for(auto& sub : this->self()->order(subs, args...)) {
+         for(auto& sub : this->derived()->order(subs, args...)) {
             _notify(sub, state, args...);
          }
       } else {

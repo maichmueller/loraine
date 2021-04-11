@@ -12,16 +12,16 @@ Logic::Logic(const Logic& other)
 
 void Logic::request_action() const
 {
-   m_state->buffer()->action.emplace_back(
+   m_state->buffer().action.emplace_back(
       std::make_shared< actions::Action >(std::move(m_action_invoker->request_action(*state()))));
 }
 
 void Logic::cast(bool burst)
 {
-   auto* spell_stack = m_state->spell_stack();
-   while(not spell_stack->empty()) {
-      auto spell = spell_stack->back();
-      spell_stack->pop_back();
+   auto& spell_stack = m_state->spell_stack();
+   while(not spell_stack.empty()) {
+      auto spell = spell_stack.back();
+      spell_stack.pop_back();
       trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
       if(burst) {
          break;
@@ -32,12 +32,12 @@ Status Logic::step()
 {
    _start_round();
    bool flip_initiative = false;
-   m_state->player(m_state->active_team()).flags()->has_played = false;
+   m_state->player(m_state->active_team()).flags().has_played = false;
    while(not flip_initiative) {
       request_action();
       flip_initiative = invoke_actions();
    }
-   if(m_state->player(Team::BLUE).flags()->pass && m_state->player(Team::RED).flags()->pass) {
+   if(m_state->player(Team::BLUE).flags().pass && m_state->player(Team::RED).flags().pass) {
       _end_round();
    }
    m_state->turn() += 1;
@@ -51,7 +51,7 @@ void Logic::play_event_triggers(const sptr< Card >& card)
 }
 void Logic::place_in_camp(const sptr< FieldCard >& card, const std::optional< size_t >& replaces)
 {
-   auto& camp = *m_state->board()->camp(card->mutables().owner);
+   auto& camp = m_state->board().camp(card->mutables().owner);
    if(utils::has_value(replaces)) {
       size_t replace_idx = replaces.value();
       obliterate(camp[replace_idx]);
@@ -63,8 +63,8 @@ void Logic::place_in_camp(const sptr< FieldCard >& card, const std::optional< si
 void Logic::_trigger_daybreak_if(const sptr< Card >& card)
 {
    Team team = card->mutables().owner;
-   auto daybreak = m_state->player(team).flags()->is_daybreak;  // copy before overwriting
-   m_state->player(team).flags()->is_daybreak = false;  // if there was daybreak, there is none now
+   auto daybreak = m_state->player(team).flags().is_daybreak;  // copy before overwriting
+   m_state->player(team).flags().is_daybreak = false;  // if there was daybreak, there is none now
    if(daybreak && card->has_effect(events::EventLabel::DAYBREAK)) {
       trigger_event< events::EventLabel::DAYBREAK >(team, card);
    }
@@ -72,8 +72,8 @@ void Logic::_trigger_daybreak_if(const sptr< Card >& card)
 void Logic::_trigger_nightfall_if(const sptr< Card >& card)
 {
    Team team = card->mutables().owner;
-   auto nightfall = m_state->player(team).flags()->is_nightfall;  // copy before overwriting
-   m_state->player(team).flags()->is_nightfall = true;  // from now on there is certainly nightfall
+   auto nightfall = m_state->player(team).flags().is_nightfall;  // copy before overwriting
+   m_state->player(team).flags().is_nightfall = true;  // from now on there is certainly nightfall
    if(nightfall && card->has_effect(events::EventLabel::NIGHTFALL)) {
       trigger_event< events::EventLabel::NIGHTFALL >(team, card);
    }
@@ -84,14 +84,14 @@ void Logic::_start_round()
    auto& round = m_state->round();
    round += 1;
    for(Team team : {Team::RED, Team::BLUE}) {
-      auto& flags = *m_state->player(team).flags();
+      auto& flags = m_state->player(team).flags();
       flags.plunder_token = false;
       flags.is_daybreak = true;
       flags.is_nightfall = false;
       flags.attack_token = false;
       flags.scout_token = false;
       reset_pass(team);
-      auto& mana = *m_state->player(team).mana();
+      auto& mana = m_state->player(team).mana();
       give_managems(Team(team));
       refill_mana(BLUE, false);
    }
@@ -106,7 +106,7 @@ void Logic::_start_round()
 }
 void Logic::refill_mana(Team team, bool normal_mana)
 {
-   auto& mana = *m_state->player(team).mana();
+   auto& mana = m_state->player(team).mana();
    if(normal_mana) {
       mana.common = mana.gems;
    } else {
@@ -116,17 +116,17 @@ void Logic::refill_mana(Team team, bool normal_mana)
 
 void Logic::draw_card(Team team)
 {
-   auto* deck = m_state->player(team).deck();
-   if(deck->empty()) {
+   auto& deck = m_state->player(team).deck();
+   if(deck.empty()) {
       _set_status(Status::win(opponent(team), false));
       return;
    }
-   auto card_drawn = deck->pop();
+   auto card_drawn = deck.pop();
 
    trigger_event< events::EventLabel::DRAW_CARD >(team, card_drawn);
-   if(auto* hand = m_state->player(team).hand();
-      hand->size() < m_state->config().HAND_CARDS_LIMIT) {
-      hand->emplace_back(card_drawn);
+   if(auto& hand = m_state->player(team).hand();
+      hand.size() < m_state->config().HAND_CARDS_LIMIT) {
+      hand.emplace_back(card_drawn);
    } else {
       obliterate(card_drawn);
    }
@@ -134,16 +134,16 @@ void Logic::draw_card(Team team)
 
 void Logic::give_managems(Team team, long amount)
 {
-   m_state->player(team).mana()->gems += amount;
+   m_state->player(team).mana().gems += amount;
    trigger_event< events::EventLabel::GAIN_MANAGEM >(team, amount);
    _check_enlightenment(team);
 }
 void Logic::_check_enlightenment(Team team)
 {
    auto& player = m_state->player(team);
-   if(not player.flags()->enlightened
-      && player.mana()->gems >= m_state->config().ENLIGHTENMENT_THRESHOLD) {
-      player.flags()->enlightened = true;
+   if(not player.flags().enlightened
+      && player.mana().gems >= m_state->config().ENLIGHTENMENT_THRESHOLD) {
+      player.flags().enlightened = true;
       trigger_event< events::EventLabel::ENLIGHTENMENT >(team);
    }
 }
@@ -151,97 +151,66 @@ void Logic::_check_enlightenment(Team team)
 void Logic::spend_mana(const sptr< Card >& card)
 {
    long common_mana_cost = card->mana_cost();
-   auto* mana_resource = m_state->player(card->mutables().owner).mana();
+   auto& mana_resource = m_state->player(card->mutables().owner).mana();
 
    if(card->is_spell()) {
-      common_mana_cost = static_cast< size_t >(card->mana_cost() - mana_resource->floating);
+      common_mana_cost = static_cast< size_t >(card->mana_cost() - mana_resource.floating);
       // we have either spent all spell mana and thus reach 0, or there will be leftovers, which
       // will see `-common_mana_cost` > 0
-      mana_resource->floating = std::max(0L, -common_mana_cost);
+      mana_resource.floating = std::max(0L, -common_mana_cost);
    }
    if(common_mana_cost > 0) {
       // there is some mana left to pay
-      if(common_mana_cost > mana_resource->common) {
+      if(common_mana_cost > mana_resource.common) {
          throw std::logic_error(
             "The played spell " + card->immutables().name + "costs more than the total mana of the player. An invalid action "
             "wasn't recognized.");
       }
-      mana_resource->common -= common_mana_cost;
+      mana_resource.common -= common_mana_cost;
    }
 }
 
-// void Logic::retreat_to_camp(Team team)
-//{
-//   process_camp_queue(team);
-//
-//   size_t camp_units_count = m_state->board()->count_units(team, true);
-//   size_t bf_units_count = m_state->board()->count_units(team, false);
-//   // obliterate any battling units which won't find space on the board
-//   auto& bf = m_state->board()->battlefield(team);
-//   if(auto nr_units_to_obliterate = bf_units_count + camp_units_count - CAMP_SIZE;
-//      nr_units_to_obliterate > 0) {
-//      size_t last_deleted_idx = BATTLEFIELD_SIZE;
-//      for(size_t i = 0; i < nr_units_to_obliterate; ++i) {
-//         for(size_t idx = last_deleted_idx - 1; idx > 0; --idx) {
-//            if(auto opt_unit = bf.at(idx); has_value(opt_unit)) {
-//               auto unit_to_obliterate = opt_unit;
-//               obliterate(unit_to_obliterate);
-//               reset(opt_unit);
-//               last_deleted_idx = idx;
-//            }
-//         }
-//      }
-//   }
-//   // now move back the battlefield units
-//   size_t curr_idx = camp_units_count - 1;
-//   auto& camp = m_state->board()->camp(team);
-//   for(auto& opt_unit : bf) {
-//      if(has_value(opt_unit)) {
-//         camp.at(curr_idx) = opt_unit;
-//         reset(opt_unit);
-//      }
-//      curr_idx += 1;
-//   }
-//}
+void Logic::process_camp_queue(Team team)
+{
+   // the logic of LOR for deciding how many units in the m_queue fit into the
+   // camp goes by 2 different modes:
+   // 1) default play mode, and
+   // 2) battle resolution mode
 
-// void Logic::process_camp_queue(Team team)
-//{
-//   // the logic of LOR for deciding how many units in the m_queue fit into the
-//   // camp goes by 2 different modes:
-//   // 1) default play_event_triggers mode, and
-//   // 2) battle resolution mode
-//
-//   // In 1) the spell will be obliterated, if there is no space currently on the board left,
-//   // after having considered all previous units in the m_queue. Otherwise, it is placed
-//   // in the camp. When a unit is summoned when attack is declared (e.g. Kalista summoning
-//   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
-//   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
-//   // units are ephemeral and expected to die on strike), then that unit would be placed
-//   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
-//   // through "Death's Hand" floating removing ephemeral or the ephemeral was shadow-blocked),
-//   // then, starting from the end, any unit of the battlefield, which no longer finds space
-//   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
-//   size_t camp_units_count = m_state->board()->count_units(team, true);
-//   size_t bf_units_count = m_state->board()->count_units(team, false, [](const sptr< Card >& unit)
-//   {
-//      return not unit->has_keyword(Keyword::EPHEMERAL);
-//   });
-//   auto& queue = m_state->board()->camp_queue(team);
-//   size_t units_in_queue = queue.size();
-//   auto& camp = m_state->board()->camp(team);
-//   if(auto rem_slots = CAMP_SIZE - camp_units_count - bf_units_count; rem_slots > 0) {
-//      size_t curr_idx = camp_units_count - 1;
-//      for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots); ++counter) {
-//         camp.at(curr_idx) = queue.front();
-//         queue.pop();
-//         curr_idx += 1;
-//      }
-//   }
-//}
+   // In 1) the card will be obliterated, if there is no space currently on the board left,
+   // after having considered all previous units in the m_queue. Otherwise, it is placed
+   // in the camp. When a unit is summoned when attack is declared (e.g. Kalista summoning
+   // Rekindler, who in turn summons another Kalista again) and the EXPECTED number of
+   // surviving units is less than MAX_NR_CAMP_SLOTS (e.g. because some of the attacking
+   // units are ephemeral and expected to die on strike), then that unit would be placed
+   // in camp immediately. If contrary to expectation, some units manage to survive (e.g.
+   // through "Death's Hand" floating removing ephemeral or the ephemeral was shadow-blocked),
+   // then, starting from the end, any unit of the battlefield, which no longer finds space
+   // in the camp, is obliterated (this is handled in the method 'retreat_to_camp').
+   auto& board = m_state->board();
+   auto& queue = board.camp_queue(team);
+   if(queue.empty()) {
+      return;
+   }
 
-//
+   size_t camp_units_count = board.count_occupied_spots(team, true);
+   size_t bf_units_count = board.count_units(team, false, [](const sptr< Card >& unit) {
+      // ephemerals are expected to be gone after striking, which is why they are excluded from
+      // counting as 'camp returning' units (at least this has been observed in the actual gameplay)
+      return not unit->has_keyword(Keyword::EPHEMERAL);
+   });
+   size_t units_in_queue = queue.size();
+   auto& camp = board.camp(team);
+   if(auto rem_slots = board.max_size_camp() - camp_units_count - bf_units_count; rem_slots > 0) {
+      size_t curr_idx = camp_units_count - 1;
+      for(size_t counter = 0; counter < std::min(units_in_queue, rem_slots); ++counter) {
+         camp.at(curr_idx) = queue.front();
+         queue.pop();
+         curr_idx += 1;
+      }
+   }
+}
 
-//
 Status Logic::check_status()
 {
    const auto& cfg = m_state->config();
@@ -250,12 +219,12 @@ Status Logic::check_status()
    }
    auto& player_blue = m_state->player(Team::BLUE);
    auto& player_red = m_state->player(Team::RED);
-   if(player_blue.nexus()->health() < 1) {
-      if(player_red.nexus()->health() < 1) {
+   if(player_blue.nexus().health() < 1) {
+      if(player_red.nexus().health() < 1) {
          _set_status(Status::TIE);
       }
       _set_status(Status::RED_WINS_NEXUS);
-   } else if(player_red.nexus()->health() < 1) {
+   } else if(player_red.nexus().health() < 1) {
       _set_status(Status::BLUE_WINS_NEXUS);
    }
    _set_status(Status::ONGOING);
@@ -264,16 +233,16 @@ Status Logic::check_status()
 
 void Logic::pass()
 {
-   m_state->player(m_state->active_team()).flags()->pass = true;
+   m_state->player(m_state->active_team()).flags().pass = true;
 }
 void Logic::reset_pass(Team team)
 {
-   m_state->player(team).flags()->pass = false;
+   m_state->player(team).flags().pass = false;
 }
 
 void Logic::reset_pass()
 {
-   m_state->player(m_state->active_team()).flags()->pass = false;
+   m_state->player(m_state->active_team()).flags().pass = false;
 }
 void Logic::_set_status(Status status)
 {
@@ -285,7 +254,7 @@ void Logic::_set_status(Status status)
 }
 bool Logic::invoke_actions()
 {
-   auto& action_buffer = m_state->buffer()->action;
+   auto& action_buffer = m_state->buffer().action;
    bool flip_initiative = true;
    while(not action_buffer.empty()) {
       auto& action = action_buffer.back();
@@ -296,57 +265,12 @@ bool Logic::invoke_actions()
    return flip_initiative;
 }
 
-// void Logic::_activate_battlemode(Team attack_team)
-//{
-
-//
-//   // remove the attack token of the attacker, as it is now used up,
-//   // unless all units were scouts (for the first attack)
-//   bool scout_attack = true;
-//   if(! m_state->token_scout(attack_team)) {
-//      for(auto opt_unit : m_state->board()->battlefield(attack_team)) {
-//         if(has_value(opt_unit)) {
-//            if(not opt_unit->has_keyword(Keyword::SCOUT)) {
-//               scout_attack = false;
-//               break;
-//            }
-//         }
-//      }
-//   } else {
-//      scout_attack = false;
-//   }
-//   if(scout_attack) {
-//      m_state->token_scout(attack_team, true);
-//      _trigger_event(m_subscribed_events::ScoutEvent(attack_team));
-//   } else {
-//      m_state->token_attack(false, attack_team);
-//   }
-//}
-// void Logic::_deactivate_battlemode()
-//{
-//   m_state->set_battle_mode(false);
-//   m_state->reset_attacker();
-//}
-// void Logic::cast(bool burst)
-//{
-//   auto& spell_stack = m_state->spell_stack();
-//   if(burst) {
-//      auto last_spell = spell_stack.back();
-//      spell_stack.pop_back();
-//      cast(last_spell);
-//   } else {
-//      _cast_spellstack();
-//      if(m_state->in_battle_mode()) {
-//         resolve();
-//      }
-//   }
-//}
 void Logic::resolve()
 {
    // cast all the spells on the spell stack first
    cast(false);
    // then process the combat if necessary
-   auto overwhelm = [&](sptr< Unit > unit_att, long dmg) {
+   auto overwhelm_if = [&](sptr< Unit > unit_att, long dmg) {
       if(dmg > 0 && unit_att->has_keyword(Keyword::OVERWHELM)
          && m_state->attacker() == unit_att->mutables().owner) {
          strike_nexus(unit_att, dmg);
@@ -356,40 +280,40 @@ void Logic::resolve()
    if(in_combat()) {
       auto attacker = m_state->attacker().value();
       auto defender = Team(1 - attacker);
-      auto& bf_att = *m_state->board()->battlefield(attacker);
-      auto& bf_def = *m_state->board()->battlefield(defender);
-      for(auto pos = 0U; pos < m_state->board()->max_size_bf(); ++pos) {
-         if(pos > bf_att.size()) {
+      auto& bf_att = m_state->board().battlefield(attacker);
+      auto& bf_def = m_state->board().battlefield(defender);
+      for(auto pos = 0U; pos < m_state->board().max_size_bf(); ++pos) {
+         if(pos >= bf_att.size()) {
             // we do this dynamic check incase a strike or another effect might have summoned
             // another attacker
             break;
          }
          auto unit_att = bf_att.at(pos);
-
          auto unit_def = bf_def.at(pos);
+
          if(utils::has_value(unit_def)) {
             if(unit_def->unit_mutables().alive) {
                bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
                bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
 
-               long health_def_after = 0;
-               long attack_power = unit_att->power();
-
                if(quick_attacks || double_attacks) {
-                  // first the attacker hits the defender, any surplus is potential overwhelm dmg
-                  overwhelm(unit_att, strike(unit_att, unit_def));
+                  // first the attacker hits the defender, any surplus is potential overwhelm_if dmg
+                  overwhelm_if(unit_att, strike(unit_att, unit_def));
+                  // check whether to kill defending unit
+                  if(unit_def->health() == 0) {
+                     kill_unit(unit_def, unit_att);
+                  }
                   if(unit_def->unit_mutables().alive) {
                      if(double_attacks) {
                         // a double attacking unit attacks again after a quick attack
-                        auto surplus_dmgs = strike_mutually(unit_att, unit_def);
-                        overwhelm(unit_att, surplus_dmgs[0]);
+                        overwhelm_if(unit_att, strike_mutually(unit_att, unit_def)[0]);
                      }
+                     // now the defender strikes back
                      strike(unit_def, unit_att);
                   }
 
                } else {
-                  strike(unit_att, unit_def);
-                  strike(unit_def, unit_att);
+                  overwhelm_if(unit_att, strike_mutually(unit_att, unit_def)[0]);
                }
 
                // check whether to kill the attacking unit
@@ -400,18 +324,21 @@ void Logic::resolve()
                if(unit_def->health() == 0) {
                   kill_unit(unit_def, unit_att);
                }
+            } else {
+               // if the blocking unit is already dead, the attacker could still overwhelm
+               overwhelm_if(unit_att, unit_att->power());
             }
          } else {
             // if there is no defender to block the attack, the attacker
             // strikes the nexus
-            strike_nexus(unit_att, 0);
+            strike_nexus(unit_att, unit_att->power());
          }
 
          retreat_to_camp(attacker);
          retreat_to_camp(defender);
       }
    }
-   transition_action_invoker< DefaultModeInvoker >();
+   transition< DefaultModeInvoker >();
 }
 long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
@@ -434,37 +361,39 @@ SymArr< long > Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& u
       trigger_event< events::EventLabel::STRIKE >(unit2->mutables().owner, unit2, unit1);
    };
    if(auto dmg = unit1->power(); dmg > 0) {
-      dmg_taken[1] = unit2->take_damage(unit1, dmg);
+      dmg_taken[0] = unit2->take_damage(unit1, dmg);
+      surplus_dmg[0] = dmg - dmg_taken[0];
    } else {
       trigger_strike_1 = []() {};
    }
    if(auto dmg = unit2->power(); dmg > 0) {
-      dmg_taken[0] = unit1->take_damage(unit2, dmg);
+      dmg_taken[1] = unit1->take_damage(unit2, dmg);
+      surplus_dmg[1] = dmg - dmg_taken[1];
    } else {
       trigger_strike_2 = []() {};
    }
    trigger_strike_1();
    trigger_strike_2();
 
-   if(auto dmg = dmg_taken[1]; dmg > 0) {
+   if(auto dmg = dmg_taken[0]; dmg > 0) {
       trigger_event< events::EventLabel::UNIT_DAMAGE >(unit1->mutables().owner, unit1, unit2, dmg);
    }
-   if(auto dmg = dmg_taken[2]; dmg > 0) {
+   if(auto dmg = dmg_taken[1]; dmg > 0) {
       trigger_event< events::EventLabel::UNIT_DAMAGE >(unit2->mutables().owner, unit2, unit1, dmg);
    }
-   return dmg_taken;
+   return surplus_dmg;
 }
 void Logic::init_attack(Team team)
 {
-   m_state->player(team).flags()->attack_token = false;
+   m_state->player(team).flags().attack_token = false;
    trigger_event< events::EventLabel::ATTACK >(team);
 
-   auto& attacker_bf = *m_state->board()->battlefield(team);
+   auto& attacker_bf = m_state->board().battlefield(team);
    // Check for support effects taking place:
    // we need to loop over all potential indices, since attack and support effects might
    // summon further attackers onto the battlefield, which changes the battlefield container
    // sizes (and invalidates existing iterators)
-   for(int i = 0; i < m_state->board()->max_size_bf(); ++i) {
+   for(int i = 0; i < m_state->board().max_size_bf(); ++i) {
       if(not (i < attacker_bf.size() - 1)) {
          // once we reach the last unit on board, we dont check for support effects anymore
          break;
@@ -473,7 +402,7 @@ void Logic::init_attack(Team team)
          trigger_event< events::EventLabel::SUPPORT >(team, attacker_bf[i], attacker_bf[i + 1]);
       }
    }
-   transition_action_invoker< CombatModeInvoker >();
+   transition< CombatModeInvoker >();
 }
 void Logic::init_block(Team team)
 {
@@ -506,8 +435,8 @@ void Logic::_remove(const sptr< Card >& card)
    if(card->is_fieldcard()) {
       auto loc = card->mutables().location;
       if(loc == Location::CAMP) {
-         auto camp = m_state->board()->camp(team);
-         camp->erase(std::next(camp->begin(), card->mutables().position));
+         auto camp = m_state->board().camp(team);
+         camp.erase(std::next(camp.begin(), card->mutables().position));
       }
       // if it is on the battlefield, then we let the retreat to camp method clean up dead units
    }
@@ -540,22 +469,10 @@ void Logic::subscribe_effects(
 void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 {
    if(dmg > 0) {
-      m_state->player(striking_unit->mutables().owner).nexus()->add_health(striking_unit, dmg);
+      m_state->player(striking_unit->mutables().owner).nexus().add_health(striking_unit, dmg);
    }
 }
-//
-// void Logic::strike_nexus(const sptr< Unit >& striking_unit)
-//{
-//   Team attacked_nexus = opponent(striking_unit->mutables().owner);
-//   sptr< long > att_power = std::make_shared< long >(striking_unit->power());
-//   if(*att_power > 0) {
-//      _trigger_event(m_subscribed_events::NexusStrikeEvent(
-//         striking_unit->mutables().owner, striking_unit, attacked_nexus, att_power));
-//      m_state->damage_nexus(*att_power, attacked_nexus);
-//      m_state->token_plunder(true, Team(1 - attacked_nexus));
-//   }
-//}
-//
+
 // std::vector< sptr< Card > > Logic::_draw_n_cards(Team team, int n)
 //{
 //   std::vector< sptr< Card > > hand(n);
@@ -605,7 +522,7 @@ void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 //}
 void Logic::_end_round()
 {
-   // first let all m_effects trigger that state an effect with the "Round End" keyword
+   // first let all m_effects fire that state an effect with the "Round End" keyword
    auto active_team = m_state->active_team();
    auto passive_team = opponent(active_team);
    trigger_event< events::EventLabel::ROUND_END >(active_team, m_state->round());
@@ -613,7 +530,7 @@ void Logic::_end_round()
    SymArr< std::vector< sptr< Unit > > > regenerating_units;
    auto end_round_proc = [&](Team team) {
       // kill ephemeral units
-      for(auto& unit : *m_state->board()->camp(team)) {
+      for(auto& unit : m_state->board().camp(team)) {
          if(unit->has_keyword(Keyword::EPHEMERAL)) {
             kill_unit(to_unit(unit), unit);
             continue;
@@ -632,8 +549,8 @@ void Logic::_end_round()
          }
       }
       // store floating mana if available
-      auto* mana = m_state->player(team).mana();
-      mana->floating += mana->common;
+      auto& mana = m_state->player(team).mana();
+      mana.floating += mana.common;
    };
 
    auto regen_proc = [&](Team team) {
@@ -659,8 +576,8 @@ void Logic::heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amo
 }
 void Logic::retreat_to_camp(Team team)
 {
-   auto& bf = *m_state->board()->battlefield(team);
-   auto& camp = *m_state->board()->camp(team);
+   auto& bf = m_state->board().battlefield(team);
+   auto& camp = m_state->board().camp(team);
    std::decay_t< decltype(bf) > bf_stack_buffer;
    bf_stack_buffer.reserve(bf.size());
    // we reverse the bf container, because popping from the end of a vector is performant, while
@@ -695,6 +612,9 @@ void Logic::restore_previous_invoker()
    m_action_invoker = std::move(m_prev_action_invoker);
    m_prev_action_invoker = nullptr;
 }
+void Logic::summon(const sptr< Unit >& unit, bool to_bf, bool is_play) {
+
+}
 
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
@@ -708,7 +628,7 @@ void Logic::restore_previous_invoker()
 //{
 //   Team team = unit->mutables().owner;
 //   auto bf = m_state->board()->battlefield(team);
-//   auto curr_unit_count = m_state->board()->count_units(team, false);
+//   auto curr_unit_count = m_state->board()->count_occupied_spots(team, false);
 //   if(curr_unit_count < BATTLEFIELD_SIZE) {
 //      auto index_to_place = std::max(static_cast< long >(curr_unit_count - 1), 0L);
 //      bf.at(index_to_place) = unit;

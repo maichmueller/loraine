@@ -40,8 +40,8 @@ class EventListener: public utils::CRTP< EventListener, Derived > {
    }
 
 
-   [[nodiscard]] auto* subscribed_events() { return &m_subscribed_events; }
-   [[nodiscard]] auto& subscribed_events() const { return &m_subscribed_events; }
+   [[nodiscard]] auto& subscribed_events() { return m_subscribed_events; }
+   [[nodiscard]] auto& subscribed_events() const { return m_subscribed_events; }
 
   private:
    std::vector< events::LOREvent* > m_subscribed_events{};

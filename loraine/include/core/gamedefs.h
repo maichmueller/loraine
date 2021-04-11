@@ -46,10 +46,10 @@ struct Status {
    inline void mark_checked() { m_checked = true;}
    inline void uncheck() { m_checked = false;}
 
-   bool operator==(const Status& other) const { return value == other.value; }
-   bool operator!=(const Status& other) const { return value != other.value; }
-   bool operator==(const Value& other) const { return value == other; }
-   bool operator!=(const Value& other) const { return value != other; }
+   inline bool operator==(const Status& other) const { return value == other.value; }
+   inline bool operator!=(const Status& other) const { return value != other.value; }
+   inline bool operator==(const Value& other) const { return value == other; }
+   inline bool operator!=(const Value& other) const { return value != other; }
 
   public:
    Value value = ONGOING;

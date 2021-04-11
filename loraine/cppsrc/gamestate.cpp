@@ -15,15 +15,15 @@ void GameState::commit_to_history(uptr< Record >&& record)
 
 void GameState::send_to_graveyard(const sptr< FieldCard >& unit)
 {
-   player(unit->mutables().owner).graveyard()->at(m_round).emplace_back(unit);
+   player(unit->mutables().owner).graveyard().at(m_round).emplace_back(unit);
 }
 void GameState::send_to_spellyard(const sptr< Spell >& unit)
 {
-   player(unit->mutables().owner).spellyard()->at(m_round).emplace_back(unit);
+   player(unit->mutables().owner).spellyard().at(m_round).emplace_back(unit);
 }
 void GameState::send_to_tossed(const sptr< Card >& card)
 {
-   player(card->mutables().owner).tossed_cards()->emplace_back(card);
+   player(card->mutables().owner).tossed_cards().emplace_back(card);
 }
 
 Status GameState::status()
