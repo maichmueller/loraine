@@ -8,14 +8,14 @@
 #include "cards/card_defs.h"
 #include "core/targeting.h"
 #include "effects/effect.h"
+#include "events/event_labels.h"
 #include "events/event_listener.h"
 #include "events/event_subscriber.h"
-#include "events/lor_events/event_labels.h"
 #include "gamedefs.h"
 
 class Nexus: public EventListener< Nexus >, public Targetable {
   public:
-   using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
+   using EffectMap = std::map< events::EventLabel, std::vector< sptr< IEffect > > >;
 
    Nexus(Team team, long health, EffectMap emap = {}, KeywordMap kwordmap = {})
        : m_team(team), m_health(health), m_keywords(kwordmap), m_effects(std::move(emap))
@@ -32,7 +32,7 @@ class Nexus: public EventListener< Nexus >, public Targetable {
    {
       return m_effects.find(e_type) != m_effects.end();
    }
-   [[nodiscard]] bool has_effect(events::EventLabel e_type, const EffectBase& effect) const;
+   [[nodiscard]] bool has_effect(events::EventLabel e_type, const IEffect& effect) const;
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
       return m_keywords.at(static_cast< unsigned long >(kword));

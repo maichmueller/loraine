@@ -131,7 +131,7 @@ class EffectGrant: public Grant {
       const sptr< Card >& bestowing_card,
       const sptr< Card >& bestowed_card,
       bool permanent,
-      sptr<EffectBase> effect,
+      sptr< IEffect > effect,
       events::EventLabel event_type);
 
    void _undo() override
@@ -146,13 +146,13 @@ class EffectGrant: public Grant {
    }
 
    void set_event_type(events::EventLabel e_type) { m_event_type = e_type; }
-   void set_effect(sptr<EffectBase> effect) { m_effect = std::move(effect); }
+   void set_effect(sptr< IEffect > effect) { m_effect = std::move(effect); }
 
    [[nodiscard]] inline auto get_effect() const { return m_effect; }
    [[nodiscard]] inline auto get_event_type() const { return m_event_type; }
 
   private:
-   sptr<EffectBase> m_effect;
+   sptr< IEffect > m_effect;
    events::EventLabel m_event_type;
 };
 

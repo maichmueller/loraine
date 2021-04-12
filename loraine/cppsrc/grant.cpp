@@ -73,7 +73,7 @@ EffectGrant::EffectGrant(
    const sptr< Card >& bestowing_card,
    const sptr< Card >& bestowed_card,
    bool permanent,
-   sptr<EffectBase> effect,
+   sptr< IEffect > effect,
    events::EventLabel event_type)
     : Grant(GrantType::EFFECT, bestowing_card, bestowed_card, permanent),
       m_effect(std::move(effect)),

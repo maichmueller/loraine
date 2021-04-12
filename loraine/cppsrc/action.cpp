@@ -7,7 +7,7 @@
 
 bool actions::PlaceSpellAction::execute_impl(GameState& state)
 {
-   auto reset_targets = [](std::vector< sptr< EffectBase > >& effects) {
+   auto reset_targets = [](std::vector< sptr< IEffect > >& effects) {
       for(auto& effect : effects) {
          effect->reset_targets();
       }
@@ -128,7 +128,7 @@ bool actions::MulliganAction::execute_impl(GameState& state)
 }
 bool actions::CancelAction::execute_impl(GameState& state)
 {
-   auto reset_targets = [](std::vector< sptr< EffectBase > >& effects) {
+   auto reset_targets = [](std::vector< sptr< IEffect > >& effects) {
       for(auto& effect : effects) {
          effect->reset_targets();
       }
@@ -288,7 +288,7 @@ bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
 
    field_card->uncover();
    state.logic()->spend_mana(field_card);
-   state.logic()->place_in_camp(field_card, m_camp_index);
+   state.logic()->summon(field_card, m_camp_index);
    state.logic()->play_event_triggers(field_card);
    return true;
 }

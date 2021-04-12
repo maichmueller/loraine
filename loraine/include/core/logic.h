@@ -3,14 +3,14 @@
 #ifndef LORAINE_LOGIC_H
 #define LORAINE_LOGIC_H
 
-#include <events/lor_events/construction.h>
+#include <events/construction.h>
 #include <grants/grant.h>
 
 #include <array>
 
 #include "action_invoker.h"
+#include "events/event_labels.h"
 #include "events/event_subscriber.h"
-#include "events/lor_events/event_labels.h"
 
 // forward declare
 class GameState;
@@ -66,7 +66,7 @@ class Logic: public Cloneable< Logic > {
    void init_block(Team team);
    void resolve();
    void unsubscribe_effects(const sptr< Card >& card);
-   void subscribe_effects(const sptr< Card >& card, EffectBase::RegistrationTime registration_time);
+   void subscribe_effects(const sptr< Card >& card, IEffect::RegistrationTime registration_time);
    /**
     * Cast the given spells. This does not check whether the spell is also played.
     */
@@ -78,7 +78,8 @@ class Logic: public Cloneable< Logic > {
     * @param: to_bf: boolean,
     *    to decide whether to summon it to the camp or battlefield.
     */
-   void summon(const sptr< Unit >& unit, bool to_bf, bool is_play);
+   void
+   summon(const sptr< FieldCard >& unit, std::optional< size_t > replaces, bool to_bf, bool played);
    /**
     * Increase/Decrease the managems of the given team.
     * @param: team: The team whose managems are changed.

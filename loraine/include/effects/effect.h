@@ -6,7 +6,7 @@
 #include "core/targeting.h"
 #include "events/event_listener.h"
 #include "events/event_subscriber.h"
-#include "events/lor_events/event_types.h"
+#include "events/event_types.h"
 #include "utils/types.h"
 #include "utils/utils.h"
 
@@ -18,10 +18,9 @@ class Controller;
 /**
  * The base class for effects in the game.
  */
-
-class EffectBase:
-    public Cloneable< EffectBase >,
-    public EventListener< EffectBase >,
+class IEffect:
+    public Cloneable< IEffect >,
+    public EventListener< IEffect >,
     public events::IAllEventSubscriber,
     public Targeting {
 
@@ -34,7 +33,7 @@ class EffectBase:
       SUMMON,
    };
 
-   explicit EffectBase(
+   explicit IEffect(
       sptr< Card > card_ptr,
       RegistrationTime reg_time,
       const sptr< TargeterBase >& targeter = std::make_shared< NoneTargeter >(),
@@ -46,11 +45,11 @@ class EffectBase:
          m_uuid(utils::new_uuid())
    {
    }
-   EffectBase(const EffectBase& effect);
-   EffectBase(EffectBase&& effect) noexcept = default;
-   EffectBase& operator=(EffectBase&& rhs) = default;
-   EffectBase& operator=(const EffectBase& rhs) = default;
-   ~EffectBase() override = default;
+   IEffect(const IEffect& effect);
+   IEffect(IEffect&& effect) noexcept = default;
+   IEffect& operator=(IEffect&& rhs) = default;
+   IEffect& operator=(const IEffect& rhs) = default;
+   ~IEffect() override = default;
 
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
@@ -60,10 +59,12 @@ class EffectBase:
    [[nodiscard]] auto label() const { return m_effect_label; }
    [[nodiscard]] auto registration_time() const { return m_reg_time; }
 
+   [[nodiscard]] virtual events::EventLabel event_label() const = 0;
+
    [[nodiscard]] auto& uuid() const { return m_uuid; }
 
-   bool operator==(const EffectBase& effect) const;
-   bool operator!=(const EffectBase& effect) const;
+   bool operator==(const IEffect& effect) const;
+   bool operator!=(const IEffect& effect) const;
 
   private:
    Label m_effect_label;

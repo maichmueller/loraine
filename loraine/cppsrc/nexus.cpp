@@ -1,7 +1,7 @@
 
 #include "core/nexus.h"
 
-bool Nexus::has_effect(events::EventLabel e_type, const EffectBase& effect) const
+bool Nexus::has_effect(events::EventLabel e_type, const IEffect& effect) const
 {
    auto found_effects = m_effects.find(e_type);
    bool found = found_effects != m_effects.end();
@@ -10,7 +10,7 @@ bool Nexus::has_effect(events::EventLabel e_type, const EffectBase& effect) cons
       return std::find_if(
                 effects.begin(),
                 effects.end(),
-                [&](const sptr< EffectBase >& e) { return *e == effect; })
+                [&](const sptr< IEffect >& e) { return *e == effect; })
              != effects.end();
    }
    return false;

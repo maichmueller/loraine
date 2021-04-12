@@ -21,7 +21,7 @@ struct TestController: public Controller {
       action_stack.pop();
       return a;
    }
-   actions::Action choose_targets(const GameState& state, const sptr< EffectBase >& effect) override
+   actions::Action choose_targets(const GameState& state, const sptr< IEffect >& effect) override
    {
       auto a = action_stack.top();
       action_stack.pop();

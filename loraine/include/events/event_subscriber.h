@@ -4,6 +4,7 @@
 
 // forward-declare
 class GameState;
+class LOREvent;
 
 /**
  * The IEventSubscriber is a helper struct designed to bring the specific on_event
@@ -20,17 +21,19 @@ struct IEventSubscriber:
 };
 
 /**
- * Single EventBus deduction end. Any combination of ListenerTypes, such as Listener<AttackEvent,
+ * Single Event deduction end. Any combination of ListenerTypes, such as Listener<AttackEvent,
  * DamageEvent>, will inherit from each individual call pattern and thus be eligible as subscriber
  * of the individual m_subscribed_events.
  * @tparam Event
  */
 template < typename Event >
 struct IEventSubscriber< Event > {
-   virtual void on_event(GameState& state, typename Event::EventData&& arg_tuple)
+//   virtual void pre_event(GameState& state, const Event& event) {}
+   virtual void on_event(GameState& state, const Event& event)
    {
       throw std::logic_error("Empty on_event function called.");
    }
+//   virtual void post_event(GameState& state, const Event& event) {}
 };
 
 #endif  // LORAINE_EVENT_SUBSCRIBER_H

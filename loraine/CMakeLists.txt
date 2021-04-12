@@ -12,6 +12,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/toll.cpp
         ${LORAINE_SRC_DIR}/player.cpp
         ${LORAINE_SRC_DIR}/record.cpp
+        ${LORAINE_SRC_DIR}/event.cpp
 
         ${LORAINE_SRC_DIR}/gamemode.cpp
         ${LORAINE_SRC_DIR}/logic.cpp

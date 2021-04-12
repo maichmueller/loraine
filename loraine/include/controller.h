@@ -27,7 +27,7 @@ class Controller {
    [[nodiscard]] auto uuid() const { return m_uuid; }
 
    virtual actions::Action choose_action(const GameState& state) = 0;
-   virtual actions::Action choose_targets(const GameState& state, const sptr< EffectBase >& effect) = 0;
+   virtual actions::Action choose_targets(const GameState& state, const sptr< IEffect >& effect) = 0;
 };
 
 #endif  // LORAINE_CONTROLLER_H

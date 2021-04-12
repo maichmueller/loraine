@@ -2,7 +2,7 @@
 #ifndef LORAINE_GAMESTATE_H
 #define LORAINE_GAMESTATE_H
 
-#include <events/lor_events/event_types.h>
+#include <events/event_types.h>
 #include <grants/grantfactory.h>
 
 #include <array>
@@ -13,8 +13,8 @@
 #include "action_invoker.h"
 #include "board.h"
 #include "config.h"
+#include "events/event_labels.h"
 #include "events/event_subscriber.h"
-#include "events/lor_events/event_labels.h"
 #include "gamedefs.h"
 #include "nexus.h"
 #include "player.h"
@@ -32,7 +32,7 @@ class GameState {
       std::optional< sptr< FieldCard > > play;  // play buffer
       std::vector< sptr< Unit > > bf;  // battlefield buffer
       std::vector< sptr< Spell > > spell;  // spell stack buffer
-      std::vector< sptr< EffectBase > > targeting;  // targeting buffer
+      std::vector< sptr< IEffect > > targeting;  // targeting buffer
       std::vector< sptr< Card > > choice;  // choice buffer
       std::vector< sptr< actions::Action > > action;  // command buffer
    };
@@ -103,9 +103,9 @@ class GameState {
              && m_board.battlefield(Team::RED).empty();
    }
    void commit_to_history(uptr< Record >&& record);
-   void send_to_graveyard(const sptr< FieldCard >& unit);
-   void send_to_spellyard(const sptr< Spell >& unit);
-   void send_to_tossed(const sptr< Card >& card);
+   void to_graveyard(const sptr< FieldCard >& unit);
+   void to_spellyard(const sptr< Spell >& unit);
+   void to_tossed(const sptr< Card >& card);
 
   private:
    Config m_config;

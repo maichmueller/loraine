@@ -12,7 +12,7 @@ class Player {
       bool attack_token = false;
       bool scout_token = false;
       bool plunder_token = false;
-      bool is_daybreak = false;
+      bool is_daybreak = true;
       bool is_nightfall = false;
       bool enlightened = false;
       bool has_played = false;
@@ -60,6 +60,8 @@ class Player {
    [[nodiscard]] inline auto& mana() { return m_mana; }
    [[nodiscard]] inline auto& mana() const { return m_mana; }
 
+   [[nodiscard]] inline auto& playyard() { return m_playyard; }
+   [[nodiscard]] inline auto& playyard() const { return m_playyard; }
    [[nodiscard]] inline auto& graveyard() { return m_graveyard; }
    [[nodiscard]] inline auto& graveyard() const { return m_graveyard; }
    [[nodiscard]] inline auto& spellyard() { return m_spellyard; }
@@ -75,6 +77,7 @@ class Player {
    Deck m_deck;
    Mana m_mana;
    Flags m_flags;
+   std::map< size_t, std::vector< sptr< Card > > > m_playyard = {};  // all the cards played
    std::map< size_t, std::vector< sptr< FieldCard > > > m_graveyard = {};
    std::map< size_t, std::vector< sptr< Spell > > > m_spellyard = {};
    std::vector< sptr< Card > > m_tossed_cards = {};

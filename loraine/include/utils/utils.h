@@ -76,10 +76,7 @@ struct pass_args< OutClass, std::tuple< T... > > {
 };
 
 template < typename... Args >
-struct deduction_help {
-  private:
-   std::tuple< Args... > t;
-};
+struct deduction_help;
 
 template < class T, class... Ts >
 struct is_any: std::disjunction< std::is_same< T, Ts >... > {

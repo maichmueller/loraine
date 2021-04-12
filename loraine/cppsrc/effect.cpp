@@ -1,16 +1,16 @@
 
 #include "effects/effect.h"
 
-bool EffectBase::operator==(const EffectBase& effect) const
+bool IEffect::operator==(const IEffect& effect) const
 {
    return m_uuid == effect.uuid();
 }
 
-bool EffectBase::operator!=(const EffectBase& effect) const
+bool IEffect::operator!=(const IEffect& effect) const
 {
    return not (*this == effect);
 }
-EffectBase::EffectBase(const EffectBase& effect)
+IEffect::IEffect(const IEffect& effect)
     : Targeting(effect),
       m_effect_label(effect.m_effect_label),
       m_consumed(effect.m_consumed),

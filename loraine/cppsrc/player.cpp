@@ -35,3 +35,4 @@ Player::Player(const Player& other)
       m_hand.emplace_back(card->clone());
    }
 }
+

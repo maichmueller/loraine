@@ -453,8 +453,7 @@ void Logic::unsubscribe_effects(const sptr< Card >& card)
    }
 }
 void Logic::subscribe_effects(
-   const sptr< Card >& card,
-   EffectBase::RegistrationTime registration_time)
+   const sptr< Card >& card, IEffect::RegistrationTime registration_time)
 {
    //   subscribe_effects_impl< events::n_events - 1 >(card, registration_time);
    for(auto& [label, effect_vec] : card->effects()) {
@@ -612,10 +611,23 @@ void Logic::restore_previous_invoker()
    m_action_invoker = std::move(m_prev_action_invoker);
    m_prev_action_invoker = nullptr;
 }
-void Logic::summon(const sptr< Unit >& unit, bool to_bf, bool is_play) {
 
+void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replaces, bool to_bf, bool played)
+{
+   auto& camp = m_state->board().camp(card->mutables().owner);
+   if(utils::has_value(replaces)) {
+      size_t replace_idx = replaces.value();
+      obliterate(camp[replace_idx]);
+      camp[replace_idx] = card;
+   } else {
+      camp.emplace_back(card);
+   }
+   if(played) {
+      play_event_triggers(card);
+   } else {
+      trigger_event<events::EventLabel::SUMMON>(card->mutables().owner, card);
+   }
 }
-
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
 //   m_state->board()->add_to_camp_queue(unit);

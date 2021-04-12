@@ -31,8 +31,8 @@ using SymArr = std::array< T, 2 >;
 
 /// Code to enable classes to have fully correct std::shared_ptr clone methods using CRTP and
 /// inheritance. This convoluted pattern is needed since std::shared_ptr<Base> and
-/// std::shared_ptr<Derived> are not covariant types and thus cannot be used to simply chagne the
-/// clone method's return type to std::shared_ptr<Derived> in every child class.
+/// std::shared_ptr<EventT> are not covariant types and thus cannot be used to simply chagne the
+/// clone method's return type to std::shared_ptr<EventT> in every child class.
 /// As such, any cloneable class needs to inherit from this pattern in the following way:
 ///
 /// class Base : Cloneable<Base> {...};
@@ -79,11 +79,11 @@ struct inherit_constructors< T >: public T {
 };
 
 /**
- * Cloneable Interface for when the base classes of Derived are also Cloneable
+ * Cloneable Interface for when the base classes of EventT are also Cloneable
  * @tparam Derived,
  *      the actual class to clone
  * @tparam Bases,
- *      the cloneable base classes of Derived
+ *      the cloneable base classes of EventT
  */
 template < typename Derived, typename... Bases >
 class Cloneable: public Bases... {

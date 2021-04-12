@@ -12,9 +12,9 @@
 #include "cards/card_defs.h"
 #include "core/targeting.h"
 #include "effects/effect.h"
+#include "events/event_labels.h"
 #include "events/event_listener.h"
 #include "events/event_subscriber.h"
-#include "events/lor_events/event_labels.h"
 #include "utils/algorithms.h"
 #include "utils/types.h"
 #include "utils/utils.h"
@@ -29,7 +29,7 @@ class Grant;
  */
 class Card: public Cloneable< abstract_method< Card > >, public Targetable {
   public:
-   using EffectMap = std::map< events::EventLabel, std::vector< sptr< EffectBase > > >;
+   using EffectMap = std::map< events::EventLabel, std::vector< sptr< IEffect > > >;
 
    struct ConstState {
       // the spell code
@@ -93,7 +93,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
    {
       return std::max(0L, m_mutables.mana_cost_base + m_mutables.mana_cost_delta);
    }
-   void effects(events::EventLabel e_type, std::vector< sptr< EffectBase > > effects);
+   void effects(events::EventLabel e_type, std::vector< sptr< IEffect > > effects);
    [[nodiscard]] inline auto& effects(events::EventLabel etype)
    {
       return m_mutables.effects.at(etype);
@@ -144,7 +144,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
       return m_mutables.effects.find(e_type) != m_mutables.effects.end();
    }
 
-   [[nodiscard]] bool has_effect(events::EventLabel e_type, const EffectBase& effect) const;
+   [[nodiscard]] bool has_effect(events::EventLabel e_type, const IEffect& effect) const;
    inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
 
    inline void move(Location loc, size_t index)
@@ -157,8 +157,8 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
 
    inline void uncover() { m_mutables.hidden = false; }
 
-   void add_effect(events::EventLabel e_type, sptr< EffectBase > effect);
-   void remove_effect(events::EventLabel e_type, const EffectBase& effect);
+   void add_effect(events::EventLabel e_type, sptr< IEffect > effect);
+   void remove_effect(events::EventLabel e_type, const IEffect& effect);
 
    void store_grant(const sptr< Grant >& grant);
    inline void store_grant(const std::vector< sptr< Grant > >& grants)
