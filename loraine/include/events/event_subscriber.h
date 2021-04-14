@@ -6,6 +6,7 @@
 class GameState;
 class LOREvent;
 
+namespace events {
 /**
  * The IEventSubscriber is a helper struct designed to bring the specific on_event
  * overload to any inheriting class that listens to the specific event.
@@ -28,12 +29,12 @@ struct IEventSubscriber:
  */
 template < typename Event >
 struct IEventSubscriber< Event > {
-//   virtual void pre_event(GameState& state, const Event& event) {}
+   using EventType = Event;
+
    virtual void on_event(GameState& state, const Event& event)
    {
       throw std::logic_error("Empty on_event function called.");
    }
-//   virtual void post_event(GameState& state, const Event& event) {}
 };
-
+}  // namespace events
 #endif  // LORAINE_EVENT_SUBSCRIBER_H

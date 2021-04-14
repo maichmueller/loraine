@@ -1,42 +1,37 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
-        ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/action.cpp
         ${LORAINE_SRC_DIR}/action_invoker.cpp
+        ${LORAINE_SRC_DIR}/board.cpp
+        ${LORAINE_SRC_DIR}/card_defs.cpp
+        ${LORAINE_SRC_DIR}/cardbase.cpp
+        ${LORAINE_SRC_DIR}/cardfactory.cpp
+        ${LORAINE_SRC_DIR}/concrete_effects.cpp
+        ${LORAINE_SRC_DIR}/config.cpp
+        ${LORAINE_SRC_DIR}/deck.cpp
+        ${LORAINE_SRC_DIR}/effectmap.cpp
+        ${LORAINE_SRC_DIR}/effect.cpp
+        ${LORAINE_SRC_DIR}/entity.cpp
+        ${LORAINE_SRC_DIR}/event.cpp
         ${LORAINE_SRC_DIR}/event_types.cpp
         ${LORAINE_SRC_DIR}/event_listener.cpp
-        ${LORAINE_SRC_DIR}/gamestate.cpp
-        ${LORAINE_SRC_DIR}/config.cpp
-        ${LORAINE_SRC_DIR}/nexus.cpp
-        ${LORAINE_SRC_DIR}/toll.cpp
-        ${LORAINE_SRC_DIR}/player.cpp
-        ${LORAINE_SRC_DIR}/record.cpp
-        ${LORAINE_SRC_DIR}/event.cpp
-
-        ${LORAINE_SRC_DIR}/gamemode.cpp
-        ${LORAINE_SRC_DIR}/logic.cpp
-        ${LORAINE_SRC_DIR}/board.cpp
-        ${LORAINE_SRC_DIR}/specific_effects.cpp
-        ${LORAINE_SRC_DIR}/effectmap.cpp
-
-        ${LORAINE_SRC_DIR}/card_defs.cpp
-        ${LORAINE_SRC_DIR}/effect.cpp
-        ${LORAINE_SRC_DIR}/targeting.cpp
-        ${LORAINE_SRC_DIR}/concrete_effects.cpp
-
-        ${LORAINE_SRC_DIR}/cardfactory.cpp
-
-        ${LORAINE_SRC_DIR}/cardbase.cpp
         ${LORAINE_SRC_DIR}/fieldcard.cpp
-        ${LORAINE_SRC_DIR}/unit.cpp
-        ${LORAINE_SRC_DIR}/spell.cpp
-        ${LORAINE_SRC_DIR}/landmark.cpp
-        ${LORAINE_SRC_DIR}/trap.cpp
-
+        ${LORAINE_SRC_DIR}/gamemode.cpp
+        ${LORAINE_SRC_DIR}/gamestate.cpp
         ${LORAINE_SRC_DIR}/grant.cpp
         ${LORAINE_SRC_DIR}/grantmodifier.cpp
-
+        ${LORAINE_SRC_DIR}/landmark.cpp
+        ${LORAINE_SRC_DIR}/logic.cpp
+        ${LORAINE_SRC_DIR}/nexus.cpp
+        ${LORAINE_SRC_DIR}/player.cpp
+        ${LORAINE_SRC_DIR}/record.cpp
+        ${LORAINE_SRC_DIR}/specific_effects.cpp
+        ${LORAINE_SRC_DIR}/spell.cpp
+        ${LORAINE_SRC_DIR}/targeting.cpp
+        ${LORAINE_SRC_DIR}/toll.cpp
+        ${LORAINE_SRC_DIR}/trap.cpp
+        ${LORAINE_SRC_DIR}/unit.cpp
         )
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
