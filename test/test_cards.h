@@ -21,7 +21,7 @@ class TestUnit1: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{5, 4},
           Unit::MutableUnitState{5, 4})
    {
@@ -44,7 +44,7 @@ class TestUnit2: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{4, 5},
           Unit::MutableUnitState{4, 5})
    {
@@ -66,7 +66,7 @@ class TestUnit3: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{3, 4},
           Unit::MutableUnitState{3, 4})
    {
@@ -88,7 +88,7 @@ class TestUnit4: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{5, 4},
           Unit::MutableUnitState{5, 4})
    {
@@ -110,7 +110,7 @@ class TestUnit5: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{5, 4},
           Unit::MutableUnitState{5, 4})
    {
@@ -132,7 +132,7 @@ class TestUnit6: public Unit {
              CardType::UNIT,
              2,
           },
-          Card::MutableState{owner, Location::DECK, 0, true},
+          Card::MutableState{owner, Zone::DECK, 0, true},
           Unit::ConstUnitState{5, 4},
           Unit::MutableUnitState{5, 4})
    {
@@ -155,7 +155,7 @@ class TestSpell: public Spell {
              CardType::SPELL,
              1,
           },
-          Card::MutableState{owner, Location::DECK, 0, true})
+          Card::MutableState{owner, Zone::DECK, 0, true})
    {
    }
 };

@@ -1,6 +1,7 @@
 [requires]
 gtest/1.10.0
 stduuid/1.0
+entt/3.7.0
 
 [generators]
 cmake

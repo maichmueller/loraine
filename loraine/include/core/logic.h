@@ -174,7 +174,7 @@ class Logic: public Cloneable< Logic > {
    template < events::EventLabel event_type, typename... Params >
    inline void trigger_event(Params&&... params);
 
-   template < Location range >
+   template < Zone range >
    std::vector< sptr< Targetable > > filter_targets(
       const Filter& filter,
       std::optional< Team > opt_team);

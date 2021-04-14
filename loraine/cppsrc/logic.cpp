@@ -22,7 +22,7 @@ void Logic::cast(bool burst)
    while(not spell_stack.empty()) {
       auto spell = spell_stack.back();
       spell_stack.pop_back();
-      trigger_event< events::EventLabel::CAST >(spell->mutables().owner, spell);
+      trigger_event< events::EventLabel::CAST >(spell->mutables().team, spell);
       if(burst) {
          break;
       }
@@ -45,13 +45,13 @@ Status Logic::step()
 }
 void Logic::play_event_triggers(const sptr< Card >& card)
 {
-   trigger_event< events::EventLabel::PLAY >(card->mutables().owner, card);
+   trigger_event< events::EventLabel::PLAY >(card->mutables().team, card);
    _trigger_daybreak_if(card);
    _trigger_nightfall_if(card);
 }
 void Logic::place_in_camp(const sptr< FieldCard >& card, const std::optional< size_t >& replaces)
 {
-   auto& camp = m_state->board().camp(card->mutables().owner);
+   auto& camp = m_state->board().camp(card->mutables().team);
    if(utils::has_value(replaces)) {
       size_t replace_idx = replaces.value();
       obliterate(camp[replace_idx]);
@@ -62,7 +62,7 @@ void Logic::place_in_camp(const sptr< FieldCard >& card, const std::optional< si
 }
 void Logic::_trigger_daybreak_if(const sptr< Card >& card)
 {
-   Team team = card->mutables().owner;
+   Team team = card->mutables().team;
    auto daybreak = m_state->player(team).flags().is_daybreak;  // copy before overwriting
    m_state->player(team).flags().is_daybreak = false;  // if there was daybreak, there is none now
    if(daybreak && card->has_effect(events::EventLabel::DAYBREAK)) {
@@ -71,7 +71,7 @@ void Logic::_trigger_daybreak_if(const sptr< Card >& card)
 }
 void Logic::_trigger_nightfall_if(const sptr< Card >& card)
 {
-   Team team = card->mutables().owner;
+   Team team = card->mutables().team;
    auto nightfall = m_state->player(team).flags().is_nightfall;  // copy before overwriting
    m_state->player(team).flags().is_nightfall = true;  // from now on there is certainly nightfall
    if(nightfall && card->has_effect(events::EventLabel::NIGHTFALL)) {
@@ -151,7 +151,7 @@ void Logic::_check_enlightenment(Team team)
 void Logic::spend_mana(const sptr< Card >& card)
 {
    long common_mana_cost = card->mana_cost();
-   auto& mana_resource = m_state->player(card->mutables().owner).mana();
+   auto& mana_resource = m_state->player(card->mutables().team).mana();
 
    if(card->is_spell()) {
       common_mana_cost = static_cast< size_t >(card->mana_cost() - mana_resource.floating);
@@ -272,7 +272,7 @@ void Logic::resolve()
    // then process the combat if necessary
    auto overwhelm_if = [&](sptr< Unit > unit_att, long dmg) {
       if(dmg > 0 && unit_att->has_keyword(Keyword::OVERWHELM)
-         && m_state->attacker() == unit_att->mutables().owner) {
+         && m_state->attacker() == unit_att->mutables().team) {
          strike_nexus(unit_att, dmg);
       }
    };
@@ -345,7 +345,7 @@ long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
    auto dmg = unit_att->power();
    long surplus_dmg = 0;
    if(dmg > 0) {
-      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().owner, unit_att, unit_def);
+      trigger_event< events::EventLabel::STRIKE >(unit_att->mutables().team, unit_att, unit_def);
       surplus_dmg = dmg - damage_unit(unit_def, unit_att, dmg);
    }
    return surplus_dmg;
@@ -355,10 +355,10 @@ SymArr< long > Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& u
    SymArr< long > dmg_taken{0, 0};
    SymArr< long > surplus_dmg{0, 0};
    std::function< void() > trigger_strike_1 = [&]() {
-      trigger_event< events::EventLabel::STRIKE >(unit1->mutables().owner, unit1, unit2);
+      trigger_event< events::EventLabel::STRIKE >(unit1->mutables().team, unit1, unit2);
    };
    std::function< void() > trigger_strike_2 = [&]() {
-      trigger_event< events::EventLabel::STRIKE >(unit2->mutables().owner, unit2, unit1);
+      trigger_event< events::EventLabel::STRIKE >(unit2->mutables().team, unit2, unit1);
    };
    if(auto dmg = unit1->power(); dmg > 0) {
       dmg_taken[0] = unit2->take_damage(unit1, dmg);
@@ -376,10 +376,10 @@ SymArr< long > Logic::strike_mutually(const sptr< Unit >& unit1, sptr< Unit >& u
    trigger_strike_2();
 
    if(auto dmg = dmg_taken[0]; dmg > 0) {
-      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit1->mutables().owner, unit1, unit2, dmg);
+      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit1->mutables().team, unit1, unit2, dmg);
    }
    if(auto dmg = dmg_taken[1]; dmg > 0) {
-      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit2->mutables().owner, unit2, unit1, dmg);
+      trigger_event< events::EventLabel::UNIT_DAMAGE >(unit2->mutables().team, unit2, unit1, dmg);
    }
    return surplus_dmg;
 }
@@ -412,7 +412,7 @@ long Logic::damage_unit(const sptr< Unit >& unit, const sptr< Card >& cause, lon
 {
    long dmg_taken = unit->take_damage(cause, dmg);
    trigger_event< events::EventLabel::UNIT_DAMAGE >(
-      cause->mutables().owner, cause, unit, dmg_taken);
+      cause->mutables().team, cause, unit, dmg_taken);
    return dmg_taken;
 }
 void Logic::kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause)
@@ -422,21 +422,21 @@ void Logic::kill_unit(const sptr< Unit >& killed_unit, const sptr< Card >& cause
       // we need to check for the unit being truly dead, in case it had an
       // e.g. last breath effect (The Immortal Fire), which kept it alive, or a level up effect
       // (Tryndamere) etc.
-      trigger_event< events::EventLabel::SLAY >(cause->mutables().owner, cause, killed_unit);
+      trigger_event< events::EventLabel::SLAY >(cause->mutables().team, cause, killed_unit);
       m_state->send_to_graveyard(killed_unit);
       _remove(killed_unit);
    }
 }
 void Logic::_remove(const sptr< Card >& card)
 {
-   Team team = card->mutables().owner;
+   Team team = card->mutables().team;
    unsubscribe_effects(card);
    // remove the unit from camp
    if(card->is_fieldcard()) {
       auto loc = card->mutables().location;
-      if(loc == Location::CAMP) {
+      if(loc == Zone::CAMP) {
          auto camp = m_state->board().camp(team);
-         camp.erase(std::next(camp.begin(), card->mutables().position));
+         camp.erase(std::next(camp.begin(), card->mutables().index));
       }
       // if it is on the battlefield, then we let the retreat to camp method clean up dead units
    }
@@ -468,7 +468,7 @@ void Logic::subscribe_effects(
 void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 {
    if(dmg > 0) {
-      m_state->player(striking_unit->mutables().owner).nexus().add_health(striking_unit, dmg);
+      m_state->player(striking_unit->mutables().team).nexus().add_health(striking_unit, dmg);
    }
 }
 
@@ -571,7 +571,7 @@ void Logic::heal(const sptr< Unit >& unit, const sptr< Card >& cause, size_t amo
 {
    auto true_amount = unit->heal(amount);
    trigger_event< events::EventLabel::HEAL_UNIT >(
-      cause->mutables().owner, unit, cause, true_amount);
+      cause->mutables().team, unit, cause, true_amount);
 }
 void Logic::retreat_to_camp(Team team)
 {
@@ -614,7 +614,7 @@ void Logic::restore_previous_invoker()
 
 void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replaces, bool to_bf, bool played)
 {
-   auto& camp = m_state->board().camp(card->mutables().owner);
+   auto& camp = m_state->board().camp(card->mutables().team);
    if(utils::has_value(replaces)) {
       size_t replace_idx = replaces.value();
       obliterate(camp[replace_idx]);
@@ -625,20 +625,20 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
    if(played) {
       play_event_triggers(card);
    } else {
-      trigger_event<events::EventLabel::SUMMON>(card->mutables().owner, card);
+      trigger_event<events::EventLabel::SUMMON>(card->mutables().team, card);
    }
 }
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
 //   m_state->board()->add_to_camp_queue(unit);
-//   Team team = unit->mutables().owner;
+//   Team team = unit->mutables().team;
 //   process_camp_queue(team);
 //   m_event_listener.register_card(unit);
 //   _trigger_event(m_subscribed_events::SummonEvent(team, unit));
 //}
 // void Logic::summon_to_battlefield(const sptr< Unit >& unit)
 //{
-//   Team team = unit->mutables().owner;
+//   Team team = unit->mutables().team;
 //   auto bf = m_state->board()->battlefield(team);
 //   auto curr_unit_count = m_state->board()->count_occupied_spots(team, false);
 //   if(curr_unit_count < BATTLEFIELD_SIZE) {
@@ -653,7 +653,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //
 // void Logic::summon_exact_copy(const sptr< Unit >& unit)
 //{
-//   Team team = unit->mutables().owner;
+//   Team team = unit->mutables().team;
 //   auto copied_unit = std::make_shared< Unit >(*unit);
 //   m_state->board()->add_to_camp_queue(unit);
 //   process_camp_queue(team);

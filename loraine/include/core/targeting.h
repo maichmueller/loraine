@@ -50,7 +50,7 @@ class TargeterBase: public Cloneable< abstract_method< TargeterBase > > {
    Filter m_filter{};
 };
 
-template < TargetingMode mode, TargetingTeam affiliation, Location range >
+template < TargetingMode mode, TargetingTeam affiliation, Zone range >
 class Targeter:
     public Cloneable<
        abstract_method< Targeter< mode, affiliation, range > >,
@@ -65,7 +65,7 @@ class Targeter:
    explicit Targeter(const Filter& filter) : base(mode, filter) {}
 };
 
-template < TargetingTeam affiliation, Location range >
+template < TargetingTeam affiliation, Zone range >
 class AutomaticTargeter:
     public Cloneable<
        abstract_method< AutomaticTargeter< affiliation, range > >,
@@ -82,11 +82,11 @@ class AutomaticTargeter:
 class NoneTargeter:
     public Cloneable<
        NoneTargeter,
-       AutomaticTargeter< TargetingTeam::ANY, Location::EVERYWHERE > > {
+       AutomaticTargeter< TargetingTeam::ANY, Zone::EVERYWHERE > > {
   private:
    using base = Cloneable<
       NoneTargeter,
-      AutomaticTargeter< TargetingTeam::ANY, Location::EVERYWHERE > >;
+      AutomaticTargeter< TargetingTeam::ANY, Zone::EVERYWHERE > >;
 
   public:
    NoneTargeter() : base() {}

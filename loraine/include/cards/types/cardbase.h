@@ -4,6 +4,7 @@
 
 #include <cards/toll.h>
 
+#include <entt/entt.hpp>
 #include <map>
 #include <set>
 #include <utility>
@@ -27,52 +28,76 @@ class Grant;
 /**
  * Abstract base class (abc) for LOR cards.
  */
+
+struct CardAttributes {
+   // the cards' name
+   const std::string name;
+   // the card's code in the LoR format, e.g. "DE01012"
+   const std::string code;
+   // the description text of the cards for their effects
+   const std::string description;
+   // text of the cards in context of the lol universe
+   const std::string lore;
+   // the region the cards is from
+   const Region region;
+   // the subgroup the cards belongs to
+   const Group group;
+   // the super type (champion, skill, none)
+   const CardSuperType super_type;
+   // the rarity of the cards
+   const Rarity rarity;
+   // whether the card is a spell, unit, landmark, or trap
+   const CardType card_type;
+   // whether a spell is collectible (i.e. can be added to a deck)
+   const bool is_collectible;
+   // was the card created by another
+   const std::optional< entt::entity > creator = std::nullopt;
+
+   // whether the card is observable by all or only by its owner
+   bool hidden;
+};
+
+struct Mana {
+   Mana(size_t cost_ref, long delta = 0)
+       : m_cost_ref(cost_ref), m_cost_cache(cost_ref), m_cost_delta(0)
+   {
+      if(delta != 0) {
+         add(delta);
+      }
+   }
+
+   inline size_t cost() const { return m_cost_cache; }
+   inline void add(long amount)
+   {
+      m_cost_delta += amount;
+      m_cost_cache = std::max(0L, (long) m_cost_ref + m_cost_delta);
+   }
+
+  private:
+   // the mana it costs to play the card (as default)
+   const size_t m_cost_ref;
+   // the actual cost at the moment
+   size_t m_cost_cache;
+   // the change to the mana cost of the card
+   long int m_cost_delta = 0;
+};
+
+struct Position {
+   Position(Zone zone, size_t index) : m_location(zone), m_index(index) {}
+
+   inline Zone
+  private:
+   // the current location of the spell in the game
+   Zone m_location;
+   // the index in the current location
+   size_t m_index;
+};
+
 class Card: public Cloneable< abstract_method< Card > >, public Targetable {
   public:
    using EffectMap = std::map< events::EventLabel, std::vector< sptr< IEffect > > >;
 
-   struct ConstState {
-      // the spell code
-      const std::string code;
-      // the cards' name
-      const std::string name;
-      // the description text of the cards
-      const std::string effect_desc;
-      // text of the cards in context of the lol universe
-      const std::string lore;
-      // the region the cards is from
-      const Region region;
-      // the subgroup the cards belongs to
-      const Group group;
-      // the super type (champion, skill, none)
-      const CardSuperType super_type;
-      // the rarity of the cards
-      const Rarity rarity;
-      // whether the cards is a floating or a common
-      const CardType card_type;
-      // the mana it costs to play_event_triggers the cards (as default)
-      const size_t mana_cost_ref;
-      // whether a spell is collectible (i.e. can be added to a deck)
-      const bool is_collectible = true;
-      // was the spell created by another
-      const std::optional< const char* const > creator = {};
-      // the unique id used to identify this specific instance of a spell
-      const UUID uuid = utils::new_uuid();
-   };
-
    struct MutableState {
-      // the team whose spell this is
-      Team owner;
-      // the current location of the spell in the game
-      Location location;
-      // the index in the current location
-      size_t position;
-      // whether the spell is observable by all or only by the owner
-      bool hidden;
-      // when m_effects move the base cost to a new permanent value
-      long int mana_cost_base = 0;
-      // the current change to the mana cost of the spell
-      long int mana_cost_delta = 0;
       // all the m_keywords pertaining to the cards
       KeywordMap keywords = {};
       // all m_effects
@@ -85,14 +110,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
       std::vector< sptr< Grant > > grants_temp = {};
    };
 
-   [[nodiscard]] inline auto& immutables() const { return m_immutables; }
-   [[nodiscard]] inline auto& immutables() { return m_immutables; }
-   [[nodiscard]] inline auto& mutables() const { return m_mutables; }
-   [[nodiscard]] inline auto& mutables() { return m_mutables; }
-   [[nodiscard]] inline auto mana_cost() const
-   {
-      return std::max(0L, m_mutables.mana_cost_base + m_mutables.mana_cost_delta);
-   }
+   [[nodiscard]] inline auto mana_cost() const {}
    void effects(events::EventLabel e_type, std::vector< sptr< IEffect > > effects);
    [[nodiscard]] inline auto& effects(events::EventLabel etype)
    {
@@ -105,7 +123,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
    [[nodiscard]] inline auto& effects() { return m_mutables.effects; }
    [[nodiscard]] inline auto& effects() const { return m_mutables.effects; }
 
-   [[nodiscard]] auto creator() const { return m_immutables.creator.value(); }
+   [[nodiscard]] auto creator() const { return m_immutables.creator_code.value(); }
 
    [[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
 
@@ -127,7 +145,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
       return m_immutables.super_type == CardSuperType::CHAMPION;
    }
    [[nodiscard]] inline bool is_follower() const { return is_unit() && not is_champion(); }
-   [[nodiscard]] bool is_created() const { return utils::has_value(m_immutables.creator); }
+   [[nodiscard]] bool is_created() const { return utils::has_value(m_immutables.creator_code); }
 
    [[nodiscard]] inline bool has_keyword(Keyword kword) const
    {
@@ -147,7 +165,7 @@ class Card: public Cloneable< abstract_method< Card > >, public Targetable {
    [[nodiscard]] bool has_effect(events::EventLabel e_type, const IEffect& effect) const;
    inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
 
-   inline void move(Location loc, size_t index)
+   inline void move(Zone loc, size_t index)
    {
       m_mutables.location = loc;
       m_mutables.position = index;

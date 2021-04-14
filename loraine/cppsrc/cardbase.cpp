@@ -77,7 +77,7 @@ bool Card::has_effect(events::EventLabel e_type, const IEffect& effect) const
 Card::Card(const Card& card)
     : m_immutables(card.m_immutables),
       m_mutables(MutableState{
-         card.m_mutables.owner,
+         card.m_mutables.team,
          card.m_mutables.location,
          card.m_mutables.position,
          card.m_mutables.hidden,

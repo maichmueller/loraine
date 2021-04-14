@@ -12,7 +12,7 @@
 //   bool to_stack = action.to_stack();
 //
 //   auto& state = m_logic->state();
-//   auto& hand = state->player(spell->mutables().owner).hand();
+//   auto& hand = state->player(spell->mutables().team).hand();
 //   auto& effects_to_cast = spell->effects(m_subscribed_events::EventLabel::CAST);
 //   auto& spell_stack = state->spell_stack();
 //   auto& spell_buffer = state->spell_buffer();
@@ -23,7 +23,7 @@
 //      // through)
 //      spell_buffer->emplace_back(spell);
 //      spell_stack->emplace_back(spell);
-//      spell->move(Location::SPELLSTACK, spell_stack->size() - 1);
+//      spell->move(BoardRegion::SPELLSTACK, spell_stack->size() - 1);
 //
 //      for(auto& effect : effects_to_cast) {
 //         if(auto& targeter = *effect->targeter(); bool(targeter)) {
@@ -51,7 +51,7 @@
 //      spell_stack->erase(
 //         std::remove(spell_stack->begin(), spell_stack->end(), spell), spell_stack->end());
 //      hand->emplace_back(spell);
-//      spell->move(Location::HAND, hand->size() - 1);
+//      spell->move(BoardRegion::HAND, hand->size() - 1);
 //   }
 //   return false;
 //}

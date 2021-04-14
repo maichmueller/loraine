@@ -57,7 +57,7 @@ struct Status {
    bool m_checked = false;
 };
 
-enum class Location {
+enum class Zone {
    BATTLEFIELD = 0,
    CAMP,
    BOARD,  // Board = Camp + Battlefield
@@ -69,6 +69,6 @@ enum class Location {
    SPELLSTACK
 };
 
-constexpr const size_t n_locations = static_cast< size_t >(Location::SPELLSTACK) + 1;
+constexpr const size_t n_locations = static_cast< size_t >(Zone::SPELLSTACK) + 1;
 
 #endif  // LORAINE_GAMEDEFS_H

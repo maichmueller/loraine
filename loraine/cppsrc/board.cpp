@@ -48,35 +48,35 @@ std::vector< sptr< Unit > > Board::camp_units(Team team) const
 }
 void Board::add_to_camp_queue(const sptr< FieldCard >& card)
 {
-   m_camp_queue[card->mutables().owner].emplace(card);
+   m_camp_queue[card->mutables().team].emplace(card);
 }
 void Board::add_to_camp_queue(std::vector< sptr< FieldCard > >&& units)
 {
    for(auto&& card : units) {
-      m_camp_queue[card->mutables().owner].emplace(std::move(card));
+      m_camp_queue[card->mutables().team].emplace(std::move(card));
    }
 }
 void Board::add_to_bf_queue(const sptr< Unit >& unit)
 {
-   m_bf_queue[unit->mutables().owner].emplace(unit);
+   m_bf_queue[unit->mutables().team].emplace(unit);
 }
 void Board::add_to_bf_queue(std::vector< sptr< Unit > >&& units)
 {
    for(auto&& unit : units) {
-      m_bf_queue[unit->mutables().owner].emplace(std::move(unit));
+      m_bf_queue[unit->mutables().team].emplace(std::move(unit));
    }
 }
 void Board::add_to_bf(const sptr< Unit >& card, size_t idx)
 {
-   _fill_with_nullptr(card->mutables().owner, idx);
+   _fill_with_nullptr(card->mutables().team, idx);
    add_to_bf(card);
 }
 void Board::add_to_bf(const sptr< Unit >& card)
 {
-   m_bf[card->mutables().owner].emplace_back(card);
+   m_bf[card->mutables().team].emplace_back(card);
 }
 void Board::add_to_camp(const sptr< Unit >& card)
 {
-   m_camp[card->mutables().owner].emplace_back(card);
+   m_camp[card->mutables().team].emplace_back(card);
 }
 
