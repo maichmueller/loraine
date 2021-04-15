@@ -16,16 +16,16 @@ Card::Card(ConstState const_attrs, MutableState var_attrs)
 void Card::remove_effect(events::EventLabel e_type, const IEffect& effect)
 {
    if(auto eff_vec_iter = std::find_if(
-         m_mutables.effects.begin(),
-         m_mutables.effects.end(),
+         m_mutables.add_effects.begin(),
+         m_mutables.add_effects.end(),
          [&](const auto& val) { return val.first == e_type; });
-      eff_vec_iter != m_mutables.effects.end()) {
+      eff_vec_iter != m_mutables.add_effects.end()) {
       auto& eff_vec = (*eff_vec_iter).second;
       auto position = std::find_if(
          eff_vec.begin(), eff_vec.end(), [&](const auto& eff_ptr) { return (*eff_ptr) == effect; });
       if(position != eff_vec.end()) {
          if(eff_vec.size() == 1) {
-            m_mutables.effects.erase(eff_vec_iter);
+            m_mutables.add_effects.erase(eff_vec_iter);
          } else {
             eff_vec.erase(position);
          }
@@ -36,14 +36,14 @@ void Card::add_effect(events::EventLabel e_type, sptr< IEffect > effect)
 {
    // if the key is already found in the m_effects map, delete the previous
    // effect. This essentially implies we overwrite preexisting m_effects
-   if(m_mutables.effects.find(e_type) != m_mutables.effects.end()) {
-      m_mutables.effects.erase(e_type);
+   if(m_mutables.add_effects.find(e_type) != m_mutables.add_effects.end()) {
+      m_mutables.add_effects.erase(e_type);
    }
-   m_mutables.effects[e_type].emplace_back(std::move(effect));
+   m_mutables.add_effects[e_type].emplace_back(std::move(effect));
 }
 void Card::effects(events::EventLabel e_type, std::vector< sptr< IEffect > > effects)
 {
-   auto& curr_vec = m_mutables.effects[e_type];
+   auto& curr_vec = m_mutables.add_effects[e_type];
    for(auto&& eff : effects) {
       curr_vec.emplace_back(std::move(eff));
    }
@@ -63,8 +63,8 @@ void Card::store_grant(const sptr< Grant >& grant)
 }
 bool Card::has_effect(events::EventLabel e_type, const IEffect& effect) const
 {
-   auto found_effects = m_mutables.effects.find(e_type);
-   if(found_effects != m_mutables.effects.end()) {
+   auto found_effects = m_mutables.add_effects.find(e_type);
+   if(found_effects != m_mutables.add_effects.end()) {
       const auto& effects = found_effects->second;
       return std::find_if(
                 effects.begin(),
@@ -84,7 +84,7 @@ Card::Card(const Card& card)
          card.m_mutables.mana_cost_base,
          card.m_mutables.mana_cost_delta,
          card.m_mutables.keywords,
-         _clone_effect_map(card.m_mutables.effects),
+         _clone_effect_map(card.m_mutables.add_effects),
          card.m_mutables.play_toll->clone(),
          card.m_mutables.grants,
          card.m_mutables.grants_temp})

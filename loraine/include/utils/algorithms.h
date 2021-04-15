@@ -99,73 +99,63 @@ void remove_element(Container& container, const T& elem)
 }
 
 template < class InputIt, class UnaryPredicate >
-constexpr bool any_of(
-   InputIt first,
-   InputIt last,
-   UnaryPredicate p)
+constexpr bool any_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return std::find_if(first, last, p) != last;
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool any_of(
-   const Container& container,
-   UnaryPredicate p)
+constexpr bool any_of(const Container& container, UnaryPredicate p)
 {
    return std::find_if(container.begin(), container.end(), p) != container.end();
 }
 
 template < class InputIt, class UnaryPredicate >
-constexpr bool all_of(
-   InputIt first,
-   InputIt last,
-   UnaryPredicate p)
+constexpr bool all_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return std::find_if_not(first, last, p) == last;
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool all_of(
-   const Container& container,
-   UnaryPredicate p)
+constexpr bool all_of(const Container& container, UnaryPredicate p)
 {
    return std::find_if_not(container.begin(), container.end(), p) == container.end();
 }
 
 template < class InputIt, class UnaryPredicate >
-constexpr bool none_of(
-   InputIt first,
-   InputIt last,
-   UnaryPredicate p)
+constexpr bool none_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return not any_of(first, last, p);
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool none_of(
-   const Container& container,
-   UnaryPredicate p)
+constexpr bool none_of(const Container& container, UnaryPredicate p)
 {
    return not any_of(container, p);
 }
 
 template < typename Predicate, typename Container >
-Container apply(Predicate f, Container&& container)
+Container transform(Predicate f, Container& container)
 {
-   std::transform(container.begin(), container.end(), f);
+   std::transform(container.begin(), container.end(), container.begin(), f);
    return container;
+}
+template < typename Predicate, typename Container, typename OutIter >
+Container transform(Predicate f, const Container& container, OutIter out_iter)
+{
+   std::transform(container.begin(), container.end(), out_iter, f);
+   return container;
+}
+
+template < typename Predicate, typename Container >
+void for_each(Predicate f, Container& container)
+{
+   std::for_each(container.begin(), container.end(), f);
 }
 template < typename Predicate, typename Container >
-Container apply(Predicate f, Container container)
+void for_each(Predicate f, const Container& container)
 {
-   std::transform(container.begin(), container.end(), f);
-   return container;
-}
-template < typename Predicate, typename value_type >
-std::vector< value_type > apply(Predicate f, std::initializer_list< value_type >&& container)
-{
-   std::transform(container.begin(), container.end(), f);
-   return container;
+   std::for_each(container.begin(), container.end(), f);
 }
 
 template < typename VectorT, typename IndexVectorT >

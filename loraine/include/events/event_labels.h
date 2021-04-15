@@ -42,6 +42,6 @@ struct EventLabelType {
 
 constexpr const size_t n_events = static_cast< size_t >(EventLabel::UNIT_DAMAGE) + 1;
 
-}  // namespace lor_events
+}  // namespace events
 
 #endif  // LORAINE_EVENT_LABELS_H

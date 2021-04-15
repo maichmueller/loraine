@@ -5,6 +5,16 @@
 #include <array>
 
 #include "effects/effect.h"
+#include "entt/entt.hpp"
+#include "events/event_labels.h"
+#include "events/helpers.h"
+
+// class EffectMap {
+//
+//
+//   private:
+//    std::vector< entt::entity > m_effect_entities;
+// };
 
 namespace detail {
 
@@ -20,8 +30,8 @@ namespace detail {
 
 struct effect_tuple_builder {
    template < size_t... Ints >
-   using effect_tuple = std::tuple< std::vector<
-      sptr< helpers::eventlabel_to_effect_t< static_cast< events::EventLabel >(Ints) > > >... >;
+   using effect_tuple = std::tuple< std::vector< sptr< events::IGameEventListener<
+      helpers::label_to_event_t< static_cast< events::EventLabel >(Ints) > > > >... >;
 
    template < size_t... Ints >
    effect_tuple< Ints... > make_effect_tuple(std::index_sequence< Ints... >);
@@ -35,70 +45,90 @@ using EffectVectorTuple = decltype(std::declval< effect_tuple_builder >().make_e
 class EffectMap {
   private:
    template < events::EventLabel elabel >
-   using EffectVectorType = std::
+   using EffectContainerType = std::
       tuple_element_t< static_cast< size_t >(elabel), detail::EffectVectorTuple >;
+   template < events::EventLabel elabel >
+   using IListener = events::IGameEventListener< helpers::label_to_event_t< elabel > >;
+
    /**
     * Setter method
     * @tparam e_type
     * @param effects
     */
-   template < events::EventLabel e_type >
-   void effects(EffectVectorType< e_type > effects);
+   template <
+      events::EventLabel elabel,
+      typename Container,
+      typename = std::enable_if_t<
+         std::is_convertible_v< typename Container::value_type, sptr< IListener< elabel > > > > >
+   void add_effects(Container&& effects) {
+      effects<elabel>(m_effects).emplace_back(effects);
+   }
+
+   template <
+      events::EventLabel elabel,
+      typename Container,
+      typename = std::enable_if_t<
+         std::is_convertible_v< typename Container::value_type, sptr< IListener< elabel > > > > >
+   void remove_effects(Container effects);
+
+   template < typename EventType >
+   [[nodiscard]] inline auto& get()
+   {
+      return std::get< EventType >(m_effects);
+   }
 
    template < events::EventLabel elabel >
-   [[nodiscard]] inline auto& effects()
+   [[nodiscard]] inline auto& get()
    {
       return std::get< static_cast< size_t >(elabel) >(m_effects);
+   }
+   template < typename EventType >
+   [[nodiscard]] inline auto& get() const
+   {
+      return std::get< EventType >(m_effects);
    }
    template < events::EventLabel elabel >
-   [[nodiscard]] inline auto& effects() const
+   [[nodiscard]] inline auto& get() const
    {
       return std::get< static_cast< size_t >(elabel) >(m_effects);
    }
-   /**
-    * Runtime decision of which effects to return
-    * @param elabel
-    * @return
-    */
-   [[nodiscard]] auto& effects(events::EventLabel elabel);
-   [[nodiscard]] auto& effects(events::EventLabel elabel) const;
 
   private:
    detail::EffectVectorTuple m_effects = {};
 
-   //   std::vector< sptr< effects::AttackEffect > > m_attack_effect{};
-   //   std::vector< sptr< effects::BeholdEffect > > m_behold_effect{};
-   //   std::vector< sptr< effects::BlockEffect > > m_block_effect{};
-   //   std::vector< sptr< effects::CaptureEffect > > m_capture_effect{};
-   //   std::vector< sptr< effects::CastEffect > > m_cast_effect{};
-   //   std::vector< sptr< effects::DaybreakEffect > > m_daybreak_effect{};
-   //   std::vector< sptr< effects::DiscardEffect > > m_discard_effect{};
-   //   std::vector< sptr< effects::DrawCardEffect > > m_drawcard_effect{};
-   //   std::vector< sptr< effects::EnlightenmentEffect > > m_englightenment_effect{};
-   //   std::vector< sptr< effects::GainManagemEffect > > m_gainmanagem_effect{};
-   //   std::vector< sptr< effects::HealUnitEffect > > m_healunit_effect{};
-   //   std::vector< sptr< effects::LevelUpEffect > > m_levelup_effect{};
-   //   std::vector< sptr< effects::NexusDamageEffect > > m_nexusdamage_effect{};
-   //   std::vector< sptr< effects::NexusStrikeEffect > > m_nexuststrike_effect{};
-   //   std::vector< sptr< effects::NightfallEffect > > m_nightfall_effect{};
-   //   std::vector< sptr< effects::PlayEffect > > m_play_effect{};
-   //   std::vector< sptr< effects::RecallEffect > > m_recall_effect{};
-   //   std::vector< sptr< effects::RoundEndEffect > > m_roundend_effect{};
-   //   std::vector< sptr< effects::RoundStartEffect > > m_roundstart_effect{};
-   //   std::vector< sptr< effects::ScoutEffect > > m_scout_effect{};
-   //   std::vector< sptr< effects::SlayEffect > > m_slay_effect{};
-   //   std::vector< sptr< effects::StrikeEffect > > m_strike_effect{};
-   //   std::vector< sptr< effects::StunEffect > > m_stun_effect{};
-   //   std::vector< sptr< effects::SummonEffect > > m_summon_effect{};
-   //   std::vector< sptr< effects::SupportEffect > > m_support_effect{};
-   //   std::vector< sptr< effects::TargetEffect > > m_target_effect{};
-   //   std::vector< sptr< effects::UnitDamageEffect > > m_unitdamage_effect{};
+   //   std::vector< sptr< get::AttackEffect > > m_attack_effect{};
+   //   std::vector< sptr< get::BeholdEffect > > m_behold_effect{};
+   //   std::vector< sptr< get::BlockEffect > > m_block_effect{};
+   //   std::vector< sptr< get::CaptureEffect > > m_capture_effect{};
+   //   std::vector< sptr< get::CastEffect > > m_cast_effect{};
+   //   std::vector< sptr< get::DaybreakEffect > > m_daybreak_effect{};
+   //   std::vector< sptr< get::DiscardEffect > > m_discard_effect{};
+   //   std::vector< sptr< get::DrawCardEffect > > m_drawcard_effect{};
+   //   std::vector< sptr< get::EnlightenmentEffect > > m_englightenment_effect{};
+   //   std::vector< sptr< get::GainManagemEffect > > m_gainmanagem_effect{};
+   //   std::vector< sptr< get::HealUnitEffect > > m_healunit_effect{};
+   //   std::vector< sptr< get::LevelUpEffect > > m_levelup_effect{};
+   //   std::vector< sptr< get::NexusDamageEffect > > m_nexusdamage_effect{};
+   //   std::vector< sptr< get::NexusStrikeEffect > > m_nexuststrike_effect{};
+   //   std::vector< sptr< get::NightfallEffect > > m_nightfall_effect{};
+   //   std::vector< sptr< get::PlayEffect > > m_play_effect{};
+   //   std::vector< sptr< get::RecallEffect > > m_recall_effect{};
+   //   std::vector< sptr< get::RoundEndEffect > > m_roundend_effect{};
+   //   std::vector< sptr< get::RoundStartEffect > > m_roundstart_effect{};
+   //   std::vector< sptr< get::ScoutEffect > > m_scout_effect{};
+   //   std::vector< sptr< get::SlayEffect > > m_slay_effect{};
+   //   std::vector< sptr< get::StrikeEffect > > m_strike_effect{};
+   //   std::vector< sptr< get::StunEffect > > m_stun_effect{};
+   //   std::vector< sptr< get::SummonEffect > > m_summon_effect{};
+   //   std::vector< sptr< get::SupportEffect > > m_support_effect{};
+   //   std::vector< sptr< get::TargetEffect > > m_target_effect{};
+   //   std::vector< sptr< get::UnitDamageEffect > > m_unitdamage_effect{};
 };
 
 template < events::EventLabel e_type >
-void EffectMap::effects(EffectVectorType< e_type > effects)
+void EffectMap::add_effects(effects)
 {
-   std::get< static_cast< size_t >(e_type) >(m_effects) = effects;
+
 }
 
 #endif  // LORAINE_EFFECTMAP_H

@@ -14,7 +14,7 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
    };
    auto& hand = state.player(team()).hand();
    auto spell = to_spell(hand.at(m_hand_index));
-   auto& effects_to_cast = spell->effects(events::EventLabel::CAST);
+   auto& effects_to_cast = spell->add_effects(events::EventLabel::CAST);
    auto& spell_stack = state.spell_stack();
    auto& s_buffer = state.buffer().spell;
    if(m_to_stack) {
@@ -144,12 +144,12 @@ bool actions::CancelAction::execute_impl(GameState& state)
    }
 
    if(utils::has_value(*p_buffer)) {
-      // the player cancelled playing this field spell so undo all targeting for its effects
-      reset_targets(p_buffer.value()->effects(events::EventLabel::PLAY));
+      // the player cancelled playing this field spell so undo all targeting for its get
+      reset_targets(p_buffer.value()->add_effects(events::EventLabel::PLAY));
       p_buffer->reset();
    } else if(not s_buffer.empty()) {
       // a spell to play with targeting was cancelled so cancel its targets
-      reset_targets(s_buffer.back()->effects(events::EventLabel::CAST));
+      reset_targets(s_buffer.back()->add_effects(events::EventLabel::CAST));
       s_buffer.pop_back();
    }
 
@@ -165,7 +165,7 @@ bool actions::TargetingAction::execute_impl(GameState& state)
    if(t_buffer.size() == 1) {  // effect to choose targets for is last in buffer
       if(assoc_card->is_spell() &&  // effect belongs to a spell
          assoc_card->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
-         // if the effect to target is the last one in the t_buffer, and the effects belong
+         // if the effect to target is the last one in the t_buffer, and the get belong
          // to a BURST or FOCUS spell, then a placing with subsequent targeting also triggers
          // playing it
          state.buffer().action.emplace_back(
@@ -242,7 +242,7 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
       std::make_shared< Action >(PlayFieldCardFinishAction(team(), camp.size())));
 
    if(field_card->has_effect(events::EventLabel::PLAY)) {
-      for(const auto& effect : field_card->effects(events::EventLabel::PLAY)) {
+      for(const auto& effect : field_card->add_effects(events::EventLabel::PLAY)) {
          if(auto& targeter = *effect->targeter(); targeter.is_automatic()) {
             targeter(state, team());
          } else {
@@ -251,7 +251,7 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
       }
       if(not state.buffer().targeting.empty()) {
          // set the next invoker to be a target mode invoker so that targets are chosen for the
-         // effects in the buffer
+         // get in the buffer
          state.logic()->transition< TargetModeInvoker >();
          return false;
       }

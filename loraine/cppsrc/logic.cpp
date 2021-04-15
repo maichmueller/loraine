@@ -389,13 +389,13 @@ void Logic::init_attack(Team team)
    trigger_event< events::EventLabel::ATTACK >(team);
 
    auto& attacker_bf = m_state->board().battlefield(team);
-   // Check for support effects taking place:
-   // we need to loop over all potential indices, since attack and support effects might
+   // Check for support get taking place:
+   // we need to loop over all potential indices, since attack and support get might
    // summon further attackers onto the battlefield, which changes the battlefield container
    // sizes (and invalidates existing iterators)
    for(int i = 0; i < m_state->board().max_size_bf(); ++i) {
       if(not (i < attacker_bf.size() - 1)) {
-         // once we reach the last unit on board, we dont check for support effects anymore
+         // once we reach the last unit on board, we dont check for support get anymore
          break;
       }
       if(attacker_bf[i]->has_keyword(Keyword::SUPPORT)) {
@@ -587,7 +587,7 @@ void Logic::retreat_to_camp(Team team)
          bf.emplace_back(unit);
       }
       // if it isn't alive, then the kill_unit method should have already sent it to the graveyard
-      // and unsubscribed its effects. The pointer on the battlefield was only kept for
+      // and unsubscribed its get. The pointer on the battlefield was only kept for
       // deciding striking mechanisms during combat resolution
    }
    bf.clear();

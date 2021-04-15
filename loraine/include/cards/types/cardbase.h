@@ -28,37 +28,66 @@ class Grant;
 /**
  * Abstract base class (abc) for LOR cards.
  */
+class CardAttributes {
+  public:
+   CardAttributes(
+      std::string name,
+      std::string code,
+      std::string description,
+      std::string lore,
+      Region region,
+      Group group,
+      CardSuperType super_type,
+      Rarity rarity,
+      CardType card_type,
+      bool is_collectible,
+      bool hidden = true,
+      std::optional< entt::entity > creator = std::nullopt)
+       : m_name(name),
+         m_code(code),
+         m_description(description),
+         m_lore(lore),
+         m_region(region),
+         m_group(group),
+         m_super_type(super_type),
+         m_rarity(rarity),
+         m_card_type(card_type),
+         m_is_collectible(is_collectible),
+         m_creator(creator),
+         m_hidden(hidden)
+   {
+   }
 
-struct CardAttributes {
+  private:
    // the cards' name
-   const std::string name;
+   const std::string m_name;
    // the card's code in the LoR format, e.g. "DE01012"
-   const std::string code;
+   const std::string m_code;
    // the description text of the cards for their effects
-   const std::string description;
+   const std::string m_description;
    // text of the cards in context of the lol universe
-   const std::string lore;
+   const std::string m_lore;
    // the region the cards is from
-   const Region region;
+   const Region m_region;
    // the subgroup the cards belongs to
-   const Group group;
+   const Group m_group;
    // the super type (champion, skill, none)
-   const CardSuperType super_type;
+   const CardSuperType m_super_type;
    // the rarity of the cards
-   const Rarity rarity;
+   const Rarity m_rarity;
    // whether the card is a spell, unit, landmark, or trap
-   const CardType card_type;
+   const CardType m_card_type;
    // whether a spell is collectible (i.e. can be added to a deck)
-   const bool is_collectible;
+   const bool m_is_collectible;
    // was the card created by another
-   const std::optional< entt::entity > creator = std::nullopt;
-
+   const std::optional< entt::entity > m_creator;
    // whether the card is observable by all or only by its owner
-   bool hidden;
+   bool m_hidden;
 };
 
-struct Mana {
-   Mana(size_t cost_ref, long delta = 0)
+class ManaCost {
+  public:
+   ManaCost(size_t cost_ref, long delta = 0)
        : m_cost_ref(cost_ref), m_cost_cache(cost_ref), m_cost_delta(0)
    {
       if(delta != 0) {
@@ -82,10 +111,13 @@ struct Mana {
    long int m_cost_delta = 0;
 };
 
-struct Position {
+class Position {
+  public:
    Position(Zone zone, size_t index) : m_location(zone), m_index(index) {}
 
-   inline Zone
+   inline Zone zone() const { return m_location; }
+   inline size_t index() const { return m_index; }
+
   private:
    // the current location of the spell in the game
    Zone m_location;
@@ -93,176 +125,212 @@ struct Position {
    size_t m_index;
 };
 
-class Card: public Cloneable< abstract_method< Card > >, public Targetable {
+class KeywordMap {
   public:
-   using EffectMap = std::map< events::EventLabel, std::vector< sptr< IEffect > > >;
-
-   struct MutableState {
-      // all the m_keywords pertaining to the cards
-      KeywordMap keywords = {};
-      // all m_effects
-      EffectMap effects = {};
-      // condition
-      uptr< Toll > play_toll = std::make_unique< Toll >();
-      // all permanent grants
-      std::vector< sptr< Grant > > grants = {};
-      // all temporary grants
-      std::vector< sptr< Grant > > grants_temp = {};
-   };
-
-   [[nodiscard]] inline auto mana_cost() const {}
-   void effects(events::EventLabel e_type, std::vector< sptr< IEffect > > effects);
-   [[nodiscard]] inline auto& effects(events::EventLabel etype)
+   KeywordMap() : m_kw_arr() {}  // all keyword positions marked false by default
+   constexpr KeywordMap(std::array< bool, n_keywords > keywords) : m_kw_arr(keywords) {}
+   template <typename Container>
+   KeywordMap(Container keywords) : m_kw_arr()
    {
-      return m_mutables.effects.at(etype);
+      algo::for_each([&](Keyword kw) { add_keyword(kw); }, keywords);
    }
-   [[nodiscard]] inline auto& effects(events::EventLabel etype) const
-   {
-      return m_mutables.effects.at(etype);
-   }
-   [[nodiscard]] inline auto& effects() { return m_mutables.effects; }
-   [[nodiscard]] inline auto& effects() const { return m_mutables.effects; }
-
-   [[nodiscard]] auto creator() const { return m_immutables.creator_code.value(); }
-
-   [[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
-
-   // status requests
-   [[nodiscard]] inline bool is_spell() const { return m_immutables.card_type == CardType::SPELL; }
-   [[nodiscard]] inline bool is_unit() const { return m_immutables.card_type == CardType::UNIT; }
-   [[nodiscard]] inline bool is_landmark() const
-   {
-      return m_immutables.card_type == CardType::LANDMARK;
-   }
-   [[nodiscard]] inline bool is_fieldcard() const { return is_unit() || is_landmark(); }
-   [[nodiscard]] inline bool is_trap() const { return m_immutables.card_type == CardType::TRAP; }
-   [[nodiscard]] inline bool is_skill() const
-   {
-      return m_immutables.super_type == CardSuperType::SKILL;
-   }
-   [[nodiscard]] inline bool is_champion() const
-   {
-      return m_immutables.super_type == CardSuperType::CHAMPION;
-   }
-   [[nodiscard]] inline bool is_follower() const { return is_unit() && not is_champion(); }
-   [[nodiscard]] bool is_created() const { return utils::has_value(m_immutables.creator_code); }
-
-   [[nodiscard]] inline bool has_keyword(Keyword kword) const
-   {
-      return m_mutables.keywords.at(static_cast< unsigned long >(kword));
-   }
-   [[nodiscard]] inline bool has_any_keyword(std::initializer_list< Keyword > kwords) const
-   {
-      return algo::any_of(kwords, [&](const auto& kw) {
-         return m_mutables.keywords.at(static_cast< unsigned long >(kw));
-      });
-   }
-   [[nodiscard]] inline bool has_effect(events::EventLabel e_type) const
-   {
-      return m_mutables.effects.find(e_type) != m_mutables.effects.end();
-   }
-
-   [[nodiscard]] bool has_effect(events::EventLabel e_type, const IEffect& effect) const;
-   inline void reduce_mana_cost(long int amount) { m_mutables.mana_cost_delta -= amount; }
-
-   inline void move(Zone loc, size_t index)
-   {
-      m_mutables.location = loc;
-      m_mutables.position = index;
-   }
-
-   // manipulations
-
-   inline void uncover() { m_mutables.hidden = false; }
-
-   void add_effect(events::EventLabel e_type, sptr< IEffect > effect);
-   void remove_effect(events::EventLabel e_type, const IEffect& effect);
-
-   void store_grant(const sptr< Grant >& grant);
-   inline void store_grant(const std::vector< sptr< Grant > >& grants)
-   {
-      for(const auto& grant : grants) {
-         store_grant(grant);
-      }
-   }
-   inline void add_keyword(Keyword kword)
-   {
-      m_mutables.keywords[static_cast< unsigned long >(kword)] = true;
-   }
-   inline void remove_keyword(Keyword kword)
-   {
-      m_mutables.keywords[static_cast< unsigned long >(kword)] = false;
-   }
-   inline void add_mana_cost(long int amount, bool permanent)
-   {
-      if(permanent) {
-         m_mutables.mana_cost_base += amount;
-      } else {
-         m_mutables.mana_cost_delta += amount;
-      }
-   }
-
-   inline bool operator==(const Card& rhs) const
-   {
-      return m_immutables.uuid == rhs.immutables().uuid;
-   }
-   inline bool operator!=(const Card& rhs) const { return not (*this == rhs); }
-
-   /*
-    * A defaulted virtual destructor needed bc of inheritance
-    */
-   ~Card() override = default;
-
-   /*
-    *  Basic constructor
-    */
-   Card(ConstState const_attrs, MutableState var_attrs);
-
-   /*
-    * Copy Constructor
-    */
-   Card(const Card& card);
-
-   /*
-    * Deleted copy assignment operator
-    */
-   Card& operator=(const Card&) = delete;
-
-   /*
-    * Move assignment operator
-    */
-   Card& operator=(Card&&) = delete;
-
-   /*
-    * Move constructor.
-    */
-   Card(Card&& card) = delete;
 
   private:
-   // fixed attributes of the spell
-   const ConstState m_immutables;
-   // variable attributes of the spell
-   MutableState m_mutables;
+   inline size_t to_int(Keyword kw) const { return static_cast< size_t >(kw); }
 
-   EffectMap _clone_effect_map(const EffectMap& emap);
+   [[nodiscard]] inline bool has_keyword(Keyword kword) const { return m_kw_arr.at(to_int(kword)); }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   [[nodiscard]] inline bool has_any_keyword(Container kwords) const
+   {
+      return algo::any_of(kwords, [&](const auto& kw) { return has_keyword(kw); });
+   }
+
+   inline void add_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = true; }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   inline void add_keywords(Container kwords)
+   {
+      algo::transform(&KeywordMap::add_keyword, kwords);
+   }
+   inline void remove_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = false; }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   inline void remove_keywords(Container kwords)
+   {
+      algo::transform(&KeywordMap::remove_keyword, kwords);
+   }
+
+  private:
+   std::array< bool, n_keywords > m_kw_arr;
 };
 
-template < typename T >
-inline sptr< Card > to_card(const sptr< T >& card)
-{
-   return std::dynamic_pointer_cast< Card >(card);
+class EffectMap {
+  public:
+   EffectMap() : m_kw_arr() {}  // all keyword positions marked false by default
+   constexpr EffectMap(std::array< bool, n_keywords > keywords) : m_kw_arr(keywords) {}
+   template <typename Container>
+   EffectMap(Container keywords) : m_kw_arr()
+   {
+      algo::for_each([&](Keyword kw) { add_keyword(kw); }, keywords);
+   }
+
+  private:
+   inline size_t to_int(Keyword kw) const { return static_cast< size_t >(kw); }
+
+   [[nodiscard]] inline bool has_keyword(Keyword kword) const { return m_kw_arr.at(to_int(kword)); }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   [[nodiscard]] inline bool has_any_keyword(Container kwords) const
+   {
+      return algo::any_of(kwords, [&](const auto& kw) { return has_keyword(kw); });
+   }
+
+   inline void add_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = true; }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   inline void add_keywords(Container kwords)
+   {
+      algo::transform(&KeywordMap::add_keyword, kwords);
+   }
+   inline void remove_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = false; }
+   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   inline void remove_keywords(Container kwords)
+   {
+      algo::transform(&KeywordMap::remove_keyword, kwords);
+   }
+
+  private:
+   std::array< bool, n_keywords > m_kw_arr;
 }
 
-// hash specializations
-namespace std {
-template <>
-struct hash< Card > {
-   size_t operator()(const Card& x) const { return std::hash< UUID >()(x.immutables().uuid); }
+struct MutableState {
+   // all the m_keywords pertaining to the cards
+   KeywordMap keywords = {};
+   // all m_effects
+   EffectMap effects = {};
+   // condition
+   uptr< Toll > play_toll = std::make_unique< Toll >();
+   // all permanent grants
+   std::vector< sptr< Grant > > grants = {};
+   // all temporary grants
+   std::vector< sptr< Grant > > grants_temp = {};
 };
-template <>
-struct hash< sptr< Card > > {
-   size_t operator()(const sptr< Card >& x) const { return std::hash< Card >()(*x); }
-};
-}  // namespace std
+
+[[nodiscard]] inline auto mana_cost() const {}
+void effects(events::EventLabel e_type, std::vector< sptr< IEffect > > effects);
+[[nodiscard]] inline auto& effects(events::EventLabel etype)
+{
+   return m_mutables.add_effects.at(etype);
+}
+[[nodiscard]] inline auto& effects(events::EventLabel etype) const
+{
+   return m_mutables.add_effects.at(etype);
+}
+[[nodiscard]] inline auto& effects()
+{
+   return m_mutables.add_effects;
+}
+[[nodiscard]] inline auto& effects() const
+{
+   return m_mutables.add_effects;
+}
+
+[[nodiscard]] auto creator() const
+{
+   return m_immutables.creator_code.value();
+}
+
+[[nodiscard]] std::vector< sptr< Grant > > all_grants() const;
+
+// status requests
+[[nodiscard]] inline bool is_spell() const
+{
+   return m_immutables.card_type == CardType::SPELL;
+}
+[[nodiscard]] inline bool is_unit() const
+{
+   return m_immutables.card_type == CardType::UNIT;
+}
+[[nodiscard]] inline bool is_landmark() const
+{
+   return m_immutables.card_type == CardType::LANDMARK;
+}
+[[nodiscard]] inline bool is_fieldcard() const
+{
+   return is_unit() || is_landmark();
+}
+[[nodiscard]] inline bool is_trap() const
+{
+   return m_immutables.card_type == CardType::TRAP;
+}
+[[nodiscard]] inline bool is_skill() const
+{
+   return m_immutables.super_type == CardSuperType::SKILL;
+}
+[[nodiscard]] inline bool is_champion() const
+{
+   return m_immutables.super_type == CardSuperType::CHAMPION;
+}
+[[nodiscard]] inline bool is_follower() const
+{
+   return is_unit() && not is_champion();
+}
+[[nodiscard]] bool is_created() const
+{
+   return utils::has_value(m_immutables.creator_code);
+}
+
+[[nodiscard]] inline bool has_effect(events::EventLabel e_type) const
+{
+   return m_mutables.add_effects.find(e_type) != m_mutables.add_effects.end();
+}
+
+[[nodiscard]] bool has_effect(events::EventLabel e_type, const IEffect& effect) const;
+
+// manipulations
+
+inline void uncover()
+{
+   m_mutables.hidden = false;
+}
+
+void add_effect(events::EventLabel e_type, sptr< IEffect > effect);
+void remove_effect(events::EventLabel e_type, const IEffect& effect);
+
+void store_grant(const sptr< Grant >& grant);
+inline void store_grant(const std::vector< sptr< Grant > >& grants)
+{
+   for(const auto& grant : grants) {
+      store_grant(grant);
+   }
+}
+
+/*
+ * A defaulted virtual destructor needed bc of inheritance
+ */
+~Card() override = default;
+
+/*
+ *  Basic constructor
+ */
+Card(ConstState const_attrs, MutableState var_attrs);
+
+/*
+ * Copy Constructor
+ */
+Card(const Card& card);
+
+/*
+ * Deleted copy assignment operator
+ */
+Card& operator=(const Card&) = delete;
+
+/*
+ * Move assignment operator
+ */
+Card& operator=(Card&&) = delete;
+
+/*
+ * Move constructor.
+ */
+Card(Card&& card) = delete;
+}
+;
 
 #endif  // LORAINE_BASE_H

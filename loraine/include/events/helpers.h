@@ -164,6 +164,18 @@ template < size_t... Ints >
 SubChannel< label_to_event_t< static_cast< EventLabel >(Ints) >... > make_subchannel(
    std::index_sequence< Ints... >);
 
+template <typename T, typename... Events>
+using is_event_of = std::disjunction< std::is_same< T, Events> ... >;
+using is_event_of_t = std::disjunction_t< std::is_same< T, Events> ... >;
+
+template <size_t... Ints>
+is_event_of<Ints...> make_is_event(std::index_sequence<Ints...>);
+
 }  // namespace helpers
+
+namespace events {
+
+struct is_event =
+}
 
 #endif  // LORAINE_HELPERS_H

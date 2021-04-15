@@ -2,8 +2,6 @@
 #ifndef LORAINE_TYPES_H
 #define LORAINE_TYPES_H
 
-#include <uuid.h>
-
 #include <cinttypes>
 #include <memory>
 
@@ -16,8 +14,6 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 
-// unique universal identifier type
-using UUID = uuids::uuid;
 // short handles for most common pointer types
 template < typename T >
 using uptr = std::unique_ptr< T >;

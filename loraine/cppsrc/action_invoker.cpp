@@ -13,7 +13,7 @@
 //
 //   auto& state = m_logic->state();
 //   auto& hand = state->player(spell->mutables().team).hand();
-//   auto& effects_to_cast = spell->effects(m_subscribed_events::EventLabel::CAST);
+//   auto& effects_to_cast = spell->get(m_subscribed_events::EventLabel::CAST);
 //   auto& spell_stack = state->spell_stack();
 //   auto& spell_buffer = state->spell_buffer();
 //   if(to_stack) {
@@ -95,7 +95,7 @@
 //      logic()->transition(
 //         std::make_unique< TargetModeHandler >(logic(), this->clone()));
 //   }
-//   for(auto& effect : spell->effects(m_subscribed_events::EventLabel::PLAY_FIELDCARD)) {
+//   for(auto& effect : spell->get(m_subscribed_events::EventLabel::PLAY_FIELDCARD)) {
 //      if(auto targeter = effect->targeter(); bool(targeter) && (not targeter->is_automatic())) {
 //         state->targeting_buffer()->emplace_back(effect);
 //      }
