@@ -1,2 +1,2 @@
 
-#include "cards/types/trap.h"
+#include "loraine/cards/types/trap.h"

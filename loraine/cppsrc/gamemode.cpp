@@ -1,14 +1,14 @@
 
-#include "core/gamemode.h"
+#include "loraine/core/gamemode.h"
 
-#include <utils/algorithms.h>
+#include <loraine/utils/algorithms.h>
 
 #include <utility>
 
-#include "core/gamedefs.h"
-#include "core/logic.h"
-#include "grants/grant.h"
-#include "utils/utils.h"
+#include "loraine/core/gamedefs.h"
+#include "loraine/core/logic.h"
+#include "loraine/grants/grant.h"
+#include "loraine/utils/utils.h"
 
 void GameMode::run_game()
 {

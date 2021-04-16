@@ -1,9 +1,9 @@
 
-#include "core/player.h"
+#include "loraine/core/player.h"
 
 #include <utility>
 
-#include "cards/card.h"
+#include "loraine/cards/card.h"
 Player::Player(
    Team team,
    Nexus nexus,

@@ -1,5 +1,5 @@
 
-#include "events/event_types.h"
+#include "loraine/events/event_types.h"
 
-#include "cards/card.h"
-#include "effects/effect.h"
+#include "loraine/cards/card.h"
+#include "loraine/effects/effect.h"

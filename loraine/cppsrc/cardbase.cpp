@@ -1,12 +1,12 @@
 
-#include <cards/types/cardbase.h>
+#include <loraine/cards/types/cardbase.h>
 
 #include <utility>
 
-#include "cards/card.h"
-#include "core/gamemode.h"
-#include "grants/grant.h"
-#include "utils/utils.h"
+#include "loraine/cards/card.h"
+#include "loraine/core/gamemode.h"
+#include "loraine/grants/grant.h"
+#include "loraine/utils/utils.h"
 
 Card::Card(ConstState const_attrs, MutableState var_attrs)
     : m_immutables(std::move(const_attrs)), m_mutables(std::move(var_attrs))

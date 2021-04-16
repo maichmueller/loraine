@@ -1,12 +1,12 @@
 
 
-#include "core/gamestate.h"
+#include "loraine/core/gamestate.h"
 
-#include <utils/algorithms.h>
+#include <loraine/utils/algorithms.h>
 
-#include "core/action.h"
-#include "core/logic.h"
-#include "events/construction.h"
+#include "loraine/core/action.h"
+#include "loraine/core/logic.h"
+#include "loraine/events/construction.h"
 
 void GameState::commit_to_history(uptr< Record >&& record)
 {

@@ -1,5 +1,5 @@
 
-#include "core/nexus.h"
+#include "loraine/core/nexus.h"
 
 bool Nexus::has_effect(events::EventLabel e_type, const IEffect& effect) const
 {

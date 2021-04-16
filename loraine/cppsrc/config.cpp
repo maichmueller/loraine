@@ -1,2 +1,2 @@
 
-#include "core/config.h"
+#include "loraine/core/config.h"

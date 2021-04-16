@@ -8,7 +8,7 @@
 #include <stack>
 
 #include "test_cards.h"
-#include "all.h"
+#include "loraine/loraine.h"
 
 struct TestController: public Controller {
    using Controller::Controller;

@@ -1,5 +1,5 @@
 
-#include "effects/effect.h"
+#include "loraine/effects/effect.h"
 
 bool IEffect::operator==(const IEffect& effect) const
 {

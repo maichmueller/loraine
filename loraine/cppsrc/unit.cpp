@@ -1,7 +1,7 @@
 
-#include "cards/types/unit.h"
+#include "loraine/cards/types/unit.h"
 
-#include "core/gamemode.h"
+#include "loraine/core/gamemode.h"
 
 void Unit::add_power(long amount, bool permanent)
 {

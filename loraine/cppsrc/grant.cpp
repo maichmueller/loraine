@@ -1,6 +1,6 @@
 
 
-#include "grants/grant.h"
+#include "loraine/grants/grant.h"
 
 Grant::Grant(
    GrantType grant_type, sptr< Card > bestowing_card, sptr< Card > bestowed_card, bool permanent)

@@ -1,9 +1,9 @@
 
-#include "core/action.h"
+#include "loraine/core/action.h"
 
-#include "core/gamestate.h"
-#include "core/logic.h"
-#include "utils/algorithms.h"
+#include "loraine/core/gamestate.h"
+#include "loraine/core/logic.h"
+#include "loraine/utils/algorithms.h"
 
 bool actions::PlaceSpellAction::execute_impl(GameState& state)
 {

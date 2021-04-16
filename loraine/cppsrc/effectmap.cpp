@@ -1,3 +1,3 @@
 
-#include "effects/effectmap.h"
+#include "loraine/effects/effectmap.h"
 

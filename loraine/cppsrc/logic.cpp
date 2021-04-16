@@ -1,7 +1,7 @@
-#include "core/logic.h"
+#include "loraine/core/logic.h"
 
-#include "core/action.h"
-#include "core/gamestate.h"
+#include "loraine/core/action.h"
+#include "loraine/core/gamestate.h"
 
 Logic::Logic(const Logic& other)
     : m_state(other.m_state),
@@ -535,7 +535,7 @@ void Logic::_end_round()
             continue;
          }
          // remove temporary grants
-         // undo temporary buffs/nerfs and possibly heal the units if applicable
+         // undo temporary loraine/buffs/nerfs and possibly heal the units if applicable
          auto temp_grants = unit->mutables().grants_temp;
          for(auto&& grant : temp_grants) {
             grant->undo();

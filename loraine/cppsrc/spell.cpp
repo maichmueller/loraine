@@ -1,5 +1,5 @@
 
 
-#include "cards/types/spell.h"
+#include "loraine/cards/types/spell.h"
 
-#include "core/gamemode.h"
+#include "loraine/core/gamemode.h"

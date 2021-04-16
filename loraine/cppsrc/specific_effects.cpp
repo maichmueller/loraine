@@ -1,9 +1,9 @@
 
 
-#include "cards/gallery/specific_effects.h"
+#include "loraine/cards/gallery/specific_effects.h"
 
-#include "core/gamemode.h"
-#include "core/targeting.h"
+#include "loraine/core/gamemode.h"
+#include "loraine/core/targeting.h"
 
 //void m_effects::fading_memories_cast(
 //   GameMode& game, const m_subscribed_events::CastEvent& /*m_subscribed_events*/, Effect& source_container)

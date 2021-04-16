@@ -1,9 +1,9 @@
 
 
-#include "core/board.h"
+#include "loraine/core/board.h"
 
-#include "cards/card.h"
-#include "utils/utils.h"
+#include "loraine/cards/card.h"
+#include "loraine/utils/utils.h"
 
 size_t Board::count_units(
    Team team,
