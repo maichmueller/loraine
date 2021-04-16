@@ -14,7 +14,7 @@
  * A deck is essentially a std vector with a few utility methods added. Maybe a later rewrite to
  * free functions will forego the sin of inheriting from vector
  */
-class Deck final: std::vector< entt::entity > {
+class Deck final: private std::vector< entt::entity > {
   public:
    using base = std::vector< entt::entity >;
 
@@ -34,6 +34,18 @@ class Deck final: std::vector< entt::entity > {
    Deck(Deck&& other) = default;
    Deck& operator=(Deck&& other) = default;
    ~Deck() = default;
+
+   /// forwarded functions from container
+
+   using base::size;
+   using base::begin;
+   using base::end;
+   using base::operator[];
+   using base::at;
+   using base::erase;
+   using base::empty;
+   using base::front;
+   using base::back;
 
    /// logic
 
