@@ -4,7 +4,7 @@
 #include <vector>
 #include <entt/entt.hpp>
 
-struct Hand : private std::vector< entt::entity> {
+struct Hand final: private std::vector< entt::entity> {
    using base = std::vector< entt::entity >;
 
    /// constructors

@@ -83,7 +83,7 @@ class Logic: public Cloneable< Logic > {
    /**
     * Increase/Decrease the managems of the given team.
     * @param: team: The team whose managems are changed.
-    * @param: amount: (optional) the number of gems to add/remove. Defaults to 1.
+    * @param: amount: (optional) the number of gems to modify/remove. Defaults to 1.
     */
    void give_managems(Team team, long amount = 1);
    /**

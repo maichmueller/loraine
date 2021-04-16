@@ -11,8 +11,7 @@
 #include "loraine/cards/carddefs.h"
 
 /**
- * A deck is essentially a std vector with a few utility methods added. Maybe a later rewrite to
- * free functions will forego the sin of inheriting from vector
+ * A deck is essentially a std vector with a few utility methods added.
  */
 class Deck final: private std::vector< entt::entity > {
   public:
