@@ -56,14 +56,8 @@ class GameState {
 
    GameState(const GameState& other);
 
-   inline auto& event(events::EventLabel label)
-   {
-      return m_events.at(static_cast< size_t >(label));
-   }
-   [[nodiscard]] inline auto& event(events::EventLabel label) const
-   {
-      return m_events.at(static_cast< size_t >(label));
-   }
+   [[nodiscard]] inline auto& registry() { return m_registry; }
+   [[nodiscard]] inline auto& registry() const { return m_registry; }
 
    [[nodiscard]] inline auto& board() { return m_board; }
    [[nodiscard]] inline auto& board() const { return m_board; }

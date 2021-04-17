@@ -36,29 +36,29 @@ class CardAttributes {
    {
    }
 
-   // the cards' name
+   /// the cards' name
    const std::string name;
-   // the card's code in the LoR format, e.g. "DE01012"
+   /// the card's code in the LoR format, e.g. "DE01012"
    const std::string code;
-   // the description text of the cards for their effects
+   /// the description text of the cards for their effects
    const std::string description;
-   // text of the cards in context of the lol universe
+   /// text of the cards in context of the lol universe
    const std::string lore;
-   // the region the cards is from
+   /// the region the cards is from
    const Region region;
-   // the subgroup the cards belongs to
+   /// the subgroup the cards belongs to
    const Group group;
-   // the super type (champion, skill, none)
+   /// the super type (champion, skill, none)
    const CardSuperType super_type;
-   // the rarity of the cards
+   /// the rarity of the cards
    const Rarity rarity;
-   // whether the card is a spell, unit, landmark, or trap
+   /// whether the card is a spell, unit, landmark, or trap
    const CardType card_type;
-   // whether a spell is collectible (i.e. can be added to a deck)
+   /// whether a spell is collectible (i.e. can be added to a deck)
    const bool is_collectible;
-   // was the card created by another
+   /// was the card created by another
    const std::optional< entt::entity > creator;
-   // whether the card is observable by all or only by its owner
+   /// whether the card is observable by all or only by its owner
    bool hidden;
 };
 
@@ -74,11 +74,11 @@ class ManaCost {
    }
 
   private:
-   // the mana it costs to play the card (as default)
+   /// the mana it costs to play the card (as default)
    const long m_cost_ref;
-   // the actual cost at the moment
+   /// the actual cost at the moment
    long m_cost_cache;
-   // the change to the mana cost of the card
+   /// the change to the mana cost of the card
    long m_cost_delta = 0;
 };
 
@@ -94,11 +94,11 @@ class PowerStat {
    }
 
   private:
-   // the mana it costs to play the card (as default)
+   /// the mana it costs to play the card (as default)
    const long m_power_ref;
-   // the actual cost at the moment
+   /// the actual cost at the moment
    long m_power_cache;
-   // the change to the mana cost of the card
+   /// the change to the mana cost of the card
    long int m_power_delta = 0;
 };
 
@@ -120,15 +120,15 @@ class HealthStat {
    inline void heal(unsigned int amount) { m_damage -= std::min(amount, m_damage); }
 
   private:
-   // the mana it costs to play the card (as default)
+   /// the mana it costs to play the card (as default)
    const long m_health_ref;
-   // the actual cost at the moment
+   /// the actual cost at the moment
    unsigned int m_health_cache;
-   // the change to the mana cost of the card
+   /// the change to the mana cost of the card
    long m_power_delta = 0;
-   // the temporary change to the mana cost of the card, which can reduce damage at round end
+   /// the temporary change to the mana cost of the card, which can reduce damage at round end
    long m_power_delta_temp = 0;
-   // the current damage taken
+   /// the current damage taken
    unsigned int m_damage = 0;
 };
 
@@ -140,9 +140,9 @@ class Position {
    inline size_t index() const { return m_index; }
 
   private:
-   // the current location of the spell in the game
+   /// the current location of the spell in the game
    Zone m_location;
-   // the index in the current location
+   /// the index in the current location
    size_t m_index;
 };
 
@@ -156,23 +156,20 @@ class KeywordMap {
       algo::for_each([&](Keyword kw) { add_keyword(kw); }, keywords);
    }
 
-  private:
-   inline size_t to_int(Keyword kw) const { return static_cast< size_t >(kw); }
-
-   [[nodiscard]] inline bool has_keyword(Keyword kword) const { return m_kw_arr.at(to_int(kword)); }
+   [[nodiscard]] inline bool has_keyword(Keyword kword) const { return m_kw_arr.at(_to_int(kword)); }
    template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
    [[nodiscard]] inline bool has_any_keyword(Container kwords) const
    {
       return algo::any_of(kwords, [&](const auto& kw) { return has_keyword(kw); });
    }
 
-   inline void add_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = true; }
+   inline void add_keyword(Keyword kw) { m_kw_arr[_to_int(kw)] = true; }
    template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
    inline void add_keywords(Container kwords)
    {
       algo::transform(&KeywordMap::add_keyword, kwords);
    }
-   inline void remove_keyword(Keyword kw) { m_kw_arr[to_int(kw)] = false; }
+   inline void remove_keyword(Keyword kw) { m_kw_arr[_to_int(kw)] = false; }
    template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
    inline void remove_keywords(Container kwords)
    {
@@ -180,12 +177,22 @@ class KeywordMap {
    }
 
   private:
+
+   /// members
+
    std::array< bool, n_keywords > m_kw_arr;
+
+   /// private methods
+
+   inline size_t _to_int(Keyword kw) const { return static_cast< size_t >(kw); }
 };
 
 class PlayCondition {
+   bool check(GameState& state);
+
   private:
-   Eff
+   entt::entity m_effect;
+   entt::entity m_condition;
 };
 
 #endif  // LORAINE_COMPONENTS_H
