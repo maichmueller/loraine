@@ -3,13 +3,12 @@
 #ifndef LORAINE_LOGIC_H
 #define LORAINE_LOGIC_H
 
-#include <loraine/events/construction.h>
 #include <loraine/grants/grant.h>
 
 #include <array>
 
 #include "action_invoker.h"
-#include "loraine/events/event_labels.h"
+#include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 
 // forward declare

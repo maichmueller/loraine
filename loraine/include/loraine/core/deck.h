@@ -8,7 +8,7 @@
 
 #include "loraine/utils/random.h"
 #include "loraine/utils/utils.h"
-#include "loraine/cards/carddefs.h"
+#include "loraine/core/carddefs.h"
 
 /**
  * A deck is essentially a std vector with a few utility methods added.
@@ -16,6 +16,21 @@
 class Deck final: private std::vector< entt::entity > {
   public:
    using base = std::vector< entt::entity >;
+
+   // forwarding traits;
+
+   using base::value_type;
+   using base::pointer;
+   using base::const_pointer;
+   using base::reference;
+   using base::const_reference;
+   using base::iterator;
+   using base::const_iterator;
+   using base::const_reverse_iterator;
+   using base::reverse_iterator;
+   using base::size_type;
+   using base::difference_type;
+   using base::allocator_type;
 
    /// constructors
 

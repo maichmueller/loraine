@@ -2,7 +2,8 @@
 #ifndef LORAINE_GAMESTATE_H
 #define LORAINE_GAMESTATE_H
 
-#include <loraine/events/event_types.h>
+#include <loraine/core/schedule.h>
+#include <loraine/effects/effectmap.h>
 #include <loraine/grants/grantfactory.h>
 
 #include <array>
@@ -14,32 +15,15 @@
 #include "board.h"
 #include "config.h"
 #include "gamedefs.h"
-#include "loraine/events/event_labels.h"
+#include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 #include "loraine/utils/random.h"
 #include "loraine/utils/types.h"
-#include "nexus.h"
-#include "player.h"
-#include "record.h"
-
-class Card;
-
 
 class GameState {
    friend Logic;
 
-   struct Buffer {
-      std::optional< sptr< FieldCard > > play;  // play buffer
-      std::vector< sptr< Unit > > bf;  // battlefield buffer
-      std::vector< sptr< Spell > > spell;  // spell stack buffer
-      std::vector< sptr< IEffect > > targeting;  // targeting buffer
-      std::vector< sptr< Card > > choice;  // choice buffer
-      std::vector< sptr< actions::Action > > action;  // command buffer
-   };
-
   public:
-   using SpellStackType = std::vector< sptr< Spell > >;
-   using HistoryType = std::map< size_t, std::vector< uptr< Record > > >;
 
    GameState(
       const Config& cfg,
@@ -55,6 +39,34 @@ class GameState {
       random::rng_type rng = random::create_rng());
 
    GameState(const GameState& other);
+
+   template < RegistrationTime registration_time >
+   inline void connect(entt::entity entity)
+   {
+      _connect_impl< events::n_events - 1, registration_time >(entity);
+   }
+   template < RegistrationTime registration_time >
+   inline void disconnect(entt::entity entity)
+   {
+      _disconnect_impl< events::n_events - 1, registration_time >(entity);
+   }
+
+   template < events::EventID event_id, typename... Args >
+   void trigger(Args&&... args)
+   {
+      // create the event corresponding to the ID first
+      auto event = helpers::id_to_event_t< event_id >{std::forward< Args >(args)...};
+      // get the sorted subscribers to this event type
+      auto view = m_registry.view< tag::subscriber< event_id > >();
+      auto scheduled_entities = std::vector< entt::entity >{view.begin(), view.end()};
+      // iterate over the scheduled entities, always popping the next one according to the order
+      // policy of this event
+      while(not scheduled_entities.empty()) {
+         auto next_to_trigger = schedule::next< event_id >(m_registry, event, scheduled_entities);
+         next_to_trigger.first->on_event(event);
+         scheduled_entities.erase(algo::find(scheduled_entities, next_to_trigger.second));
+      }
+   }
 
    [[nodiscard]] inline auto& registry() { return m_registry; }
    [[nodiscard]] inline auto& registry() const { return m_registry; }
@@ -75,18 +87,10 @@ class GameState {
    [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
 
    [[nodiscard]] auto& config() const { return m_config; }
-   [[nodiscard]] auto logic() const { return m_logic; }
    [[nodiscard]] inline auto starting_team() const { return m_starting_team; }
-   [[nodiscard]] inline auto& player(Team team) { return m_players[team]; }
    [[nodiscard]] inline auto& player(Team team) const { return m_players[team]; }
    [[nodiscard]] inline auto& spell_stack() { return m_spell_stack; }
    [[nodiscard]] inline auto& spell_stack() const { return m_spell_stack; }
-   [[nodiscard]] inline auto& buffer() { return m_buffer; }
-   [[nodiscard]] inline auto& buffer() const { return m_buffer; }
-   [[nodiscard]] inline auto& grantfactory(Team team) { return m_grant_factory[team]; }
-   [[nodiscard]] inline auto& grantfactory(Team team) const { return m_grant_factory[team]; }
-   [[nodiscard]] inline auto& history() { return m_history; }
-   [[nodiscard]] inline auto& history() const { return m_history; }
    [[nodiscard]] inline auto& rng() { return m_rng; }
    [[nodiscard]] inline auto& rng() const { return m_rng; }
 
@@ -96,34 +100,39 @@ class GameState {
       return m_spell_stack.empty() && m_board.battlefield(Team::BLUE).empty()
              && m_board.battlefield(Team::RED).empty();
    }
-   void commit_to_history(uptr< Record >&& record);
-   void to_graveyard(const sptr< FieldCard >& unit);
-   void to_spellyard(const sptr< Spell >& unit);
-   void to_tossed(const sptr< Card >& card);
 
   private:
    // the registry holding all the game entities
    entt::registry m_registry;
-   // the event dispatcher to trigger gameplay events
-   entt::dispatcher m_ge_dispatcher;
 
    Config m_config;
    SymArr< entt::entity > m_players;
    Team m_starting_team;
    Board m_board;
-
-   // TODO: Remove logic altogether and place gameplay logic in fitting parts
-   sptr< Logic > m_logic;
+   /// the shared stack container for the played spells
+   std::vector< entt::entity > m_spell_stack = {};
 
    std::optional< Team > m_attacker;
    size_t m_turn;
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
 
-   SpellStackType m_spell_stack{};
-   SymArr< GrantFactory > m_grant_factory = {};
-   uptr< HistoryType > m_history = {};
+
    random::rng_type m_rng;
+
+   template < size_t id, RegistrationTime registration_time >
+   void _connect_impl(entt::entity entity);
+
+   template < size_t id, RegistrationTime registration_time >
+   void _disconnect_impl(entt::entity entity);
 };
+
+template < size_t id, RegistrationTime registration_time >
+void GameState::_connect_impl(entt::entity entity)
+{
+   if constexpr(id > 0) {
+      _connect_impl<id - 1>(entity);
+   }
+}
 
 #endif  // LORAINE_GAMESTATE_H

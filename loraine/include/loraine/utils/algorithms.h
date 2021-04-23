@@ -38,17 +38,18 @@ auto find_indices(const Container& container, const std::vector< T >& elems) -> 
    }
    return indices;
 }
+
 template < typename Container, typename T >
-auto find_index(const Container& container, const T& elem) -> long
+inline auto find(const Container& container, const T& elem) noexcept
 {
-   long index = -1;
-   for(size_t i = 0; i < container.size(); ++i) {
-      if(container[i] == elem) {
-         index = i;
-         break;
-      }
-   }
-   return index;
+   return std::find(container.begin(), container.end(), elem);
+}
+
+template < typename Container, typename T >
+inline auto find_index(const Container& container, const T& elem) -> long
+{
+   auto pos = find(container, elem);
+   return pos == container.end() ? -1 : std::distance(container.begin(), pos);
 }
 
 template < template < typename, typename > class Container, typename T1, typename T2 >
@@ -78,7 +79,7 @@ auto pop_if(Container& container, const FilterFunc& filter) -> std::vector< T >
 }
 
 template < typename Container, typename T, typename FilterFunc >
-auto copy_if(const Container& container, const FilterFunc& filter) -> std::vector< T >
+inline auto copy_if(const Container& container, const FilterFunc& filter) -> std::vector< T >
 {
    std::vector< T > elements;
    std::copy_if(container.begin(), container.end(), std::back_inserter(elements), filter);
@@ -87,77 +88,98 @@ auto copy_if(const Container& container, const FilterFunc& filter) -> std::vecto
 }
 
 template < typename Container, typename T >
-void remove_element(Container& container, const T& elem)
+inline void remove_element(Container& container, const T& elem)
 {
-   auto index = algo::find_index(container, elem);
-   if(index == -1) {
+   auto pos = algo::find(container, elem);
+   if(pos == container.end()) {
       throw std::logic_error("Element to remove was not found in ContainerType.");
    }
-   container.erase(container.begin() + index);
+   container.erase(pos);
 }
 
 template < class InputIt, class UnaryPredicate >
-constexpr bool any_of(InputIt first, InputIt last, UnaryPredicate p)
+inline constexpr bool any_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return std::find_if(first, last, p) != last;
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool any_of(const Container& container, UnaryPredicate p)
+inline constexpr bool any_of(const Container& container, UnaryPredicate p)
 {
    return std::find_if(container.begin(), container.end(), p) != container.end();
 }
 
+template < class Container >
+inline constexpr bool contains(const Container& container, const typename Container::value_type& value)
+{
+   return std::find(container.begin(), container.end(), value) != container.end();
+}
+
 template < class InputIt, class UnaryPredicate >
-constexpr bool all_of(InputIt first, InputIt last, UnaryPredicate p)
+inline constexpr bool all_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return std::find_if_not(first, last, p) == last;
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool all_of(const Container& container, UnaryPredicate p)
+inline constexpr bool all_of(const Container& container, UnaryPredicate p)
 {
    return std::find_if_not(container.begin(), container.end(), p) == container.end();
 }
 
 template < class InputIt, class UnaryPredicate >
-constexpr bool none_of(InputIt first, InputIt last, UnaryPredicate p)
+inline constexpr bool none_of(InputIt first, InputIt last, UnaryPredicate p)
 {
    return not any_of(first, last, p);
 }
 
 template < class Container, class UnaryPredicate >
-constexpr bool none_of(const Container& container, UnaryPredicate p)
+inline constexpr bool none_of(const Container& container, UnaryPredicate p)
 {
    return not any_of(container, p);
 }
 
 template < typename Predicate, typename Container >
-Container transform(Predicate f, Container& container)
+inline Container transform(Predicate f, Container& container)
 {
    std::transform(container.begin(), container.end(), container.begin(), f);
    return container;
 }
 template < typename Predicate, typename Container, typename OutIter >
-Container transform(Predicate f, const Container& container, OutIter out_iter)
+inline Container transform(Predicate f, const Container& container, OutIter out_iter)
 {
    std::transform(container.begin(), container.end(), out_iter, f);
    return container;
 }
 
 template < typename Predicate, typename Container >
-void for_each(Predicate f, Container& container)
+inline std::vector< std::invoke_result_t<Predicate> > apply(Predicate f, const Container& container)
+{
+   std::vector< std::invoke_result_t<Predicate> > results;
+   std::transform(container.begin(), container.end(), std::back_inserter(results), f);
+   return container;
+}
+
+template < typename Predicate, typename Container, typename OutContainer >
+inline OutContainer apply(Predicate f, const Container& container, const OutContainer&& container_out)
+{
+   std::transform(container.begin(), container.end(), std::back_inserter(container_out), f);
+   return container_out;
+}
+
+template < typename Predicate, typename Container >
+inline void for_each(Predicate f, Container& container)
 {
    std::for_each(container.begin(), container.end(), f);
 }
 template < typename Predicate, typename Container >
-void for_each(Predicate f, const Container& container)
+inline void for_each(Predicate f, const Container& container)
 {
    std::for_each(container.begin(), container.end(), f);
 }
 
 template < typename VectorT, typename IndexVectorT >
-void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
+inline void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
 {
    static_assert(
       std::is_integral_v< typename IndexVectorT::value_type >,
@@ -167,7 +189,7 @@ void remove_by_sorted_indices(VectorT& v, const IndexVectorT& indices)
    });
 }
 template < typename VectorT, typename IndexVectorT >
-void remove_by_indices(VectorT& v, const IndexVectorT& indices)
+inline void remove_by_indices(VectorT& v, const IndexVectorT& indices)
 {
    auto indices_copy = indices;
    std::sort(indices_copy.begin(), indices_copy.end());

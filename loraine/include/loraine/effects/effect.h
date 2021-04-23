@@ -2,38 +2,23 @@
 #ifndef LORAINE_EFFECT_H
 #define LORAINE_EFFECT_H
 
+#include <loraine/events/event_id.h>
+
 #include <entt/entt.hpp>
 
 #include "loraine/core/gamedefs.h"
-#include "loraine/core/targeting.h"
-#include "loraine/events/event_listener.h"
+#include "loraine/effects/effectdefs.h"
 #include "loraine/events/event_subscriber.h"
-#include "loraine/events/event_types.h"
 #include "loraine/utils/types.h"
 #include "loraine/utils/utils.h"
 
-// forward-declarations
-class GameMode;
-class Card;
-class Controller;
-
-namespace effects {
-
 /**
- * The base class for add_effects in the game.
+ * The base class for effects in the game.
  */
 template < typename... Events >
-class IGameEffect: public events::IGameEventListener< Events... > {
+class IGameEffect: public events::IGameEventListener< IGameEffect< Events... >, Events... > {
   public:
-   enum class Style { AOE = 0, AURA, SIMPLE, TARGETING };
-   enum class RegistrationTime {
-      CREATION = 0,
-      DRAW,
-      DEATH,
-      SUMMON,
-   };
-
-   IGameEffect(entt::entity owner, RegistrationTime reg_time, Style style = Style::SIMPLE)
+   IGameEffect(entt::entity owner, RegistrationTime reg_time, Style style)
        : m_owner(owner), m_style(style), m_reg_time(reg_time)
    {
    }
@@ -44,20 +29,31 @@ class IGameEffect: public events::IGameEventListener< Events... > {
    virtual ~IGameEffect() = default;
 
    virtual void operator()(GameState& state) = 0;
-   virtual bool is_composite() = 0;
+   virtual void add(uptr< IGameEffect >&& effect) = 0;
+   virtual void remove(IGameEffect* effect) = 0;
+   virtual bool is_composite() const { return false; }
 
-   bool requires_targeting() const { return m_style == Style::TARGETING; }
+   /**
+    * @brief Updates the state of this effect
+    *
+    * Some effects hold conditions for their execution, which need to be updated.
+    *
+    * @param state
+    * @return
+    */
+   virtual bool update(GameState& state) { return true; }
+
+   bool is_targeting() const { return m_style == Style::TARGETING; }
 
    [[nodiscard]] bool is_consumed() const { return m_consumed; }
    inline void consume() { m_consumed = true; }
 
    [[nodiscard]] auto owner(entt::entity owner) const { return m_owner; }
-   [[nodiscard]] auto label() const { return m_style; }
+   [[nodiscard]] auto style() const { return m_style; }
    [[nodiscard]] auto registration_time() const { return m_reg_time; }
-
-   [[nodiscard]] inline constexpr auto subscribes_to() const
+   [[nodiscard]] inline constexpr static auto ids_of_interest()
    {
-      return std::initializer_list< events::EventLabel >{Events::label...};
+      return std::array< events::EventID, sizeof...(Events) >{Events::id...};
    }
 
    bool operator==(const IGameEffect& effect) const;
@@ -65,24 +61,30 @@ class IGameEffect: public events::IGameEventListener< Events... > {
 
   private:
    entt::entity m_owner;
-   Style m_style;
    RegistrationTime m_reg_time;
+   Style m_style;
    bool m_consumed = false;
 };
-
 template < typename... Events >
 class GameEffectLeaf: public IGameEffect< Events... > {
-   bool is_composite() const override { return false; }
-};
+   using base = IGameEffect< Events... >;
 
+   virtual void add(uptr< base >&& effect) override{};
+   virtual void remove(base* effect) override{};
+};
 template < typename... Events >
 class GameEffectComposite: public IGameEffect< Events... > {
+   using base = IGameEffect< Events... >;
+
+   virtual void add(uptr< base >&& effect) override
+   {
+      m_constituents.emplace_back(std::move(effect));
+   };
+   virtual void remove(base* effect) override{};
    bool is_composite() const override { return true; }
 
   private:
-   std::vector< IGameEffect< Events... >* > m_constituents;
+   std::vector< uptr< IGameEffect< Events... > > > m_constituents{};
 };
-
-}  // namespace effects
 
 #endif  // LORAINE_EFFECT_H

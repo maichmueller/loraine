@@ -7,13 +7,10 @@
 #include <utility>
 #include <variant>
 
+#include <entt/entt.hpp>
 #include "gamedefs.h"
 #include "loraine/utils/utils.h"
-#include "targeting.h"
 
-class Card;
-class FieldCard;
-class Spell;
 class GameState;
 
 namespace actions {
@@ -178,7 +175,7 @@ class PlayAction:
          m_targets(std::nullopt)
    {
    }
-   PlayAction(Team team, size_t hand_index, std::vector< sptr< Targetable > > targets) noexcept
+   PlayAction(Team team, size_t hand_index, std::vector< entt::entity > targets) noexcept
        : ActionBase(team),
          m_hand_index(hand_index),
          m_target_index(std::nullopt),
@@ -194,7 +191,7 @@ class PlayAction:
    size_t m_hand_index;
    // the index in the camp to place the spell (should be set automatically, unless full)
    std::optional< size_t > m_target_index;
-   std::optional< std::vector< sptr< Targetable > > > m_targets;
+   std::optional< std::vector< entt::entity > > m_targets;
 };
 
 /**
@@ -319,7 +316,7 @@ class TargetingAction:
   public:
    using base = ActionBase< TargetingAction, actions::ActionLabelType< ActionLabel::TARGETING > >;
 
-   explicit TargetingAction(Team team, std::vector< sptr< Targetable > > targets)
+   explicit TargetingAction(Team team, std::vector< entt::entity > targets)
        : ActionBase(team), m_targets(std::move(targets))
    {
    }
@@ -329,7 +326,7 @@ class TargetingAction:
 
   private:
    // the selected targets
-   std::vector< sptr< Targetable > > m_targets;
+   std::vector< entt::entity > m_targets;
 };
 
 class ReplacingAction:

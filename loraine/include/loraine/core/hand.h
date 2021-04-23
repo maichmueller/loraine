@@ -1,11 +1,29 @@
 #ifndef LORAINE_HAND_H
 #define LORAINE_HAND_H
 
-#include <vector>
 #include <entt/entt.hpp>
+#include <vector>
 
-struct Hand final: private std::vector< entt::entity> {
+struct Hand final: private std::vector< entt::entity > {
+
    using base = std::vector< entt::entity >;
+
+  public:
+
+   // forwarding traits;
+
+   using base::value_type;
+   using base::pointer;
+   using base::const_pointer;
+   using base::reference;
+   using base::const_reference;
+   using base::iterator;
+   using base::const_iterator;
+   using base::const_reverse_iterator;
+   using base::reverse_iterator;
+   using base::size_type;
+   using base::difference_type;
+   using base::allocator_type;
 
    /// constructors
 

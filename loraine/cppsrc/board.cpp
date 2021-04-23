@@ -1,82 +1,49 @@
 
 
 #include "loraine/core/board.h"
-
-#include "loraine/cards/card.h"
+#include "loraine/core/components/all.h"
 #include "loraine/utils/utils.h"
 
-size_t Board::count_units(
-   Team team,
-   bool in_camp,
-   const std::function< bool(const sptr< FieldCard >&) >& filter) const
+std::vector< entt::entity > Board::camp_units(entt::registry& registry, Team team) const
 {
-   size_t sum = 0;
-   if(in_camp) {
-      for(const auto& pot_unit : m_camp.at(team)) {
-         if(pot_unit->is_unit() && filter(to_unit(pot_unit))) {
-            sum += 1;
-         } else {
-            break;
-         }
-      }
-   } else {
-      for(const auto& pot_unit : m_bf.at(team)) {
-         if(utils::has_value(pot_unit) && filter(pot_unit)) {
-            sum += 1;
-         } else {
-            break;
-         }
-      }
-   }
-   return sum;
-}
-size_t Board::count_occupied_spots(Team team, bool in_camp) const
-{
-   return in_camp ? m_camp[team].size()
-                  : count_units(team, false, [](const auto& /*unused*/) { return true; });
-}
-
-std::vector< sptr< Unit > > Board::camp_units(Team team) const
-{
-   std::vector< sptr< Unit > > units;
+   std::vector< entt::entity > units;
    for(const auto& card : m_camp[team]) {
-      if(card->is_unit()) {
-         units.emplace_back(to_unit(card));
+      if(registry.get< CardAttributes >(card).card_type == CardType::UNIT) {
+         units.emplace_back(card);
       }
    }
    return units;
 }
-void Board::add_to_camp_queue(const sptr< FieldCard >& card)
+void Board::add_to_camp_queue(entt::registry& registry, entt::entity card)
 {
-   m_camp_queue[card->mutables().team].emplace(card);
+   m_camp_queue[registry.get< Team >(card)].emplace(card);
 }
-void Board::add_to_camp_queue(std::vector< sptr< FieldCard > >&& units)
+void Board::add_to_camp_queue(entt::registry& registry, std::vector< entt::entity >&& units)
 {
    for(auto&& card : units) {
-      m_camp_queue[card->mutables().team].emplace(std::move(card));
+      m_camp_queue[registry.get< Team >(card)].emplace(std::move(card));
    }
 }
-void Board::add_to_bf_queue(const sptr< Unit >& unit)
+void Board::add_to_bf_queue(entt::registry& registry, entt::entity unit)
 {
-   m_bf_queue[unit->mutables().team].emplace(unit);
+   m_bf_queue[registry.get< Team >(unit)].emplace(unit);
 }
-void Board::add_to_bf_queue(std::vector< sptr< Unit > >&& units)
+void Board::add_to_bf_queue(entt::registry& registry, std::vector< entt::entity >&& units)
 {
    for(auto&& unit : units) {
-      m_bf_queue[unit->mutables().team].emplace(std::move(unit));
+      m_bf_queue[registry.get< Team >(unit)].emplace(std::move(unit));
    }
 }
-void Board::add_to_bf(const sptr< Unit >& card, size_t idx)
+void Board::add_to_bf(entt::registry& registry, entt::entity card, size_t idx)
 {
-   _fill_with_nullptr(card->mutables().team, idx);
-   add_to_bf(card);
+   _fill_with_null(registry.get< Team >(card), idx);
+   add_to_bf(registry, card);
 }
-void Board::add_to_bf(const sptr< Unit >& card)
+void Board::add_to_bf(entt::registry& registry, entt::entity card)
 {
-   m_bf[card->mutables().team].emplace_back(card);
+   m_bf[registry.get< Team >(card)].emplace_back(card);
 }
-void Board::add_to_camp(const sptr< Unit >& card)
+void Board::add_to_camp(entt::registry& registry, entt::entity card)
 {
-   m_camp[card->mutables().team].emplace_back(card);
+   m_camp[registry.get< Team >(card)].emplace_back(card);
 }
-

@@ -3,165 +3,165 @@
 #ifndef LORAINE_HELPERS_H
 #define LORAINE_HELPERS_H
 
-#include "event_labels.h"
+#include "event_id.h"
 #include "event.h"
 
 namespace helpers {
 
 using namespace events;
 
-template < EventLabel label >
-struct label_to_event;
+template < EventID label >
+struct id_to_event;
 
 template <>
-struct label_to_event< EventLabel::ATTACK > {
+struct id_to_event< EventID::ATTACK > {
    using type = AttackEvent;
-   using label_type = EventLabelType< EventLabel::ATTACK >;
+   using id = EventIDType< EventID::ATTACK >;
 };
 template <>
-struct label_to_event< EventLabel::BEHOLD > {
+struct id_to_event< EventID::BEHOLD > {
    using type = BeholdEvent;
-   using label_type = EventLabelType< EventLabel::BEHOLD >;
+   using id = EventIDType< EventID::BEHOLD >;
 };
 template <>
-struct label_to_event< EventLabel::BLOCK > {
+struct id_to_event< EventID::BLOCK > {
    using type = BlockEvent;
-   using label_type = EventLabelType< EventLabel::BLOCK >;
+   using id = EventIDType< EventID::BLOCK >;
 };
 template <>
-struct label_to_event< EventLabel::CAPTURE > {
+struct id_to_event< EventID::CAPTURE > {
    using type = CaptureEvent;
-   using label_type = EventLabelType< EventLabel::CAPTURE >;
+   using id = EventIDType< EventID::CAPTURE >;
 };
 template <>
-struct label_to_event< EventLabel::CAST > {
+struct id_to_event< EventID::CAST > {
    using type = CastEvent;
-   using label_type = EventLabelType< EventLabel::CAST >;
+   using id = EventIDType< EventID::CAST >;
 };
 template <>
-struct label_to_event< EventLabel::DAYBREAK > {
+struct id_to_event< EventID::DAYBREAK > {
    using type = DaybreakEvent;
-   using label_type = EventLabelType< EventLabel::DAYBREAK >;
+   using id = EventIDType< EventID::DAYBREAK >;
 };
 
 template <>
-struct label_to_event< EventLabel::DISCARD > {
+struct id_to_event< EventID::DISCARD > {
    using type = DiscardEvent;
-   using label_type = EventLabelType< EventLabel::DISCARD >;
+   using id = EventIDType< EventID::DISCARD >;
 };
 template <>
-struct label_to_event< EventLabel::DRAW_CARD > {
+struct id_to_event< EventID::DRAW_CARD > {
    using type = DrawCardEvent;
-   using label_type = EventLabelType< EventLabel::DRAW_CARD >;
+   using id = EventIDType< EventID::DRAW_CARD >;
 };
 template <>
-struct label_to_event< EventLabel::ENLIGHTENMENT > {
+struct id_to_event< EventID::ENLIGHTENMENT > {
    using type = EnlightenmentEvent;
-   using label_type = EventLabelType< EventLabel::ENLIGHTENMENT >;
+   using id = EventIDType< EventID::ENLIGHTENMENT >;
 };
 template <>
-struct label_to_event< EventLabel::GAIN_MANAGEM > {
+struct id_to_event< EventID::GAIN_MANAGEM > {
    using type = GainManagemEvent;
-   using label_type = EventLabelType< EventLabel::GAIN_MANAGEM >;
+   using id = EventIDType< EventID::GAIN_MANAGEM >;
 };
 template <>
-struct label_to_event< EventLabel::HEAL_UNIT > {
+struct id_to_event< EventID::HEAL_UNIT > {
    using type = HealUnitEvent;
-   using label_type = EventLabelType< EventLabel::HEAL_UNIT >;
+   using id = EventIDType< EventID::HEAL_UNIT >;
 };
 template <>
-struct label_to_event< EventLabel::LEVEL_UP > {
+struct id_to_event< EventID::LEVEL_UP > {
    using type = LevelUpEvent;
-   using label_type = EventLabelType< EventLabel::LEVEL_UP >;
+   using id = EventIDType< EventID::LEVEL_UP >;
 };
 template <>
-struct label_to_event< EventLabel::NEXUS_DAMAGE > {
+struct id_to_event< EventID::NEXUS_DAMAGE > {
    using type = NexusDamageEvent;
-   using label_type = EventLabelType< EventLabel::NEXUS_DAMAGE >;
+   using id = EventIDType< EventID::NEXUS_DAMAGE >;
 };
 template <>
-struct label_to_event< EventLabel::NEXUS_STRIKE > {
+struct id_to_event< EventID::NEXUS_STRIKE > {
    using type = NexusStrikeEvent;
-   using label_type = EventLabelType< EventLabel::NEXUS_STRIKE >;
+   using id = EventIDType< EventID::NEXUS_STRIKE >;
 };
 template <>
-struct label_to_event< EventLabel::NIGHTFALL > {
+struct id_to_event< EventID::NIGHTFALL > {
    using type = NightfallEvent;
-   using label_type = EventLabelType< EventLabel::NIGHTFALL >;
+   using id = EventIDType< EventID::NIGHTFALL >;
 };
 template <>
-struct label_to_event< EventLabel::PLAY > {
+struct id_to_event< EventID::PLAY > {
    using type = PlayEvent;
-   using label_type = EventLabelType< EventLabel::PLAY >;
+   using id = EventIDType< EventID::PLAY >;
 };
 template <>
-struct label_to_event< EventLabel::RECALL > {
+struct id_to_event< EventID::RECALL > {
    using type = RecallEvent;
-   using label_type = EventLabelType< EventLabel::RECALL >;
+   using id = EventIDType< EventID::RECALL >;
 };
 template <>
-struct label_to_event< EventLabel::ROUND_END > {
+struct id_to_event< EventID::ROUND_END > {
    using type = RoundEndEvent;
-   using label_type = EventLabelType< EventLabel::ROUND_END >;
+   using id = EventIDType< EventID::ROUND_END >;
 };
 template <>
-struct label_to_event< EventLabel::ROUND_START > {
+struct id_to_event< EventID::ROUND_START > {
    using type = RoundStartEvent;
-   using label_type = EventLabelType< EventLabel::ROUND_START >;
+   using id = EventIDType< EventID::ROUND_START >;
 };
 template <>
-struct label_to_event< EventLabel::SCOUT > {
+struct id_to_event< EventID::SCOUT > {
    using type = ScoutEvent;
-   using label_type = EventLabelType< EventLabel::SCOUT >;
+   using id = EventIDType< EventID::SCOUT >;
 };
 template <>
-struct label_to_event< EventLabel::SLAY > {
+struct id_to_event< EventID::SLAY > {
    using type = SlayEvent;
-   using label_type = EventLabelType< EventLabel::SLAY >;
+   using id = EventIDType< EventID::SLAY >;
 };
 template <>
-struct label_to_event< EventLabel::STRIKE > {
+struct id_to_event< EventID::STRIKE > {
    using type = StrikeEvent;
-   using label_type = EventLabelType< EventLabel::STRIKE >;
+   using id = EventIDType< EventID::STRIKE >;
 };
 template <>
-struct label_to_event< EventLabel::SUMMON > {
+struct id_to_event< EventID::SUMMON > {
    using type = SummonEvent;
-   using label_type = EventLabelType< EventLabel::SUMMON >;
+   using id = EventIDType< EventID::SUMMON >;
 };
 template <>
-struct label_to_event< EventLabel::STUN > {
+struct id_to_event< EventID::STUN > {
    using type = StunEvent;
-   using label_type = EventLabelType< EventLabel::STUN >;
+   using id = EventIDType< EventID::STUN >;
 };
 template <>
-struct label_to_event< EventLabel::SUPPORT > {
+struct id_to_event< EventID::SUPPORT > {
    using type = SupportEvent;
-   using label_type = EventLabelType< EventLabel::SUPPORT >;
+   using id = EventIDType< EventID::SUPPORT >;
 };
 template <>
-struct label_to_event< EventLabel::TARGET > {
+struct id_to_event< EventID::TARGET > {
    using type = TargetEvent;
-   using label_type = EventLabelType< EventLabel::TARGET >;
+   using id = EventIDType< EventID::TARGET >;
 };
 template <>
-struct label_to_event< EventLabel::UNIT_DAMAGE > {
+struct id_to_event< EventID::UNIT_DAMAGE > {
    using type = UnitDamageEvent;
-   using label_type = EventLabelType< EventLabel::UNIT_DAMAGE >;
+   using id = EventIDType< EventID::UNIT_DAMAGE >;
 };
 
-template < EventLabel elabel >
-using label_to_event_t = typename label_to_event< elabel >::type;
+template < EventID elabel >
+using id_to_event_t = typename id_to_event< elabel >::type;
 
 template < size_t... Ints >
-IEventSubscriber< label_to_event_t< static_cast< EventLabel >(Ints) >... > make_eventsub_interface(
+IEventSubscriber< id_to_event_t< static_cast< EventID >(Ints) >... > make_eventsub_interface(
    std::index_sequence< Ints... >);
 
 template < typename... Events >
 using SubChannel = std::tuple< std::vector< IEventSubscriber< Events >* >... >;
 
 template < size_t... Ints >
-SubChannel< label_to_event_t< static_cast< EventLabel >(Ints) >... > make_subchannel(
+SubChannel< id_to_event_t< static_cast< EventID >(Ints) >... > make_subchannel(
    std::index_sequence< Ints... >);
 
 template <typename T, typename... Events>

@@ -6,15 +6,9 @@
 
 #include "effect.h"
 #include "entt/entt.hpp"
-#include "loraine/events/event_labels.h"
+#include "loraine/events/event_id.h"
 #include "loraine/events/helpers.h"
 
-// class EffectMap {
-//
-//
-//   private:
-//    std::vector< entt::entity > m_effect_entities;
-// };
 
 namespace detail {
 

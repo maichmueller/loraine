@@ -3,7 +3,6 @@
 
 #include <utility>
 
-#include "loraine/cards/card.h"
 #include "loraine/utils/types.h"
 #include "loraine/utils/utils.h"
 

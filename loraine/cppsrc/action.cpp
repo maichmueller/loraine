@@ -22,7 +22,7 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
       // opponent to also see that a spell might be played
       s_buffer.emplace_back(spell);
       spell_stack.emplace_back(spell);
-      spell->move(Zone::SPELLSTACK, spell_stack.size() - 1);
+      spell->move_to(Zone::SPELLSTACK, spell_stack.size() - 1);
       // check the effect targets of this spell
       for(auto& effect : effects_to_cast) {
          if(auto& targeter = *effect->targeter(); bool(targeter)) {
@@ -54,7 +54,7 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
       spell_stack.erase(
          std::remove(spell_stack.begin(), spell_stack.end(), spell), spell_stack.end());
       hand.emplace_back(spell);
-      spell->move(Zone::HAND, hand.size() - 1);
+      spell->move_to(Zone::HAND, hand.size() - 1);
    }
    return false;
 }
@@ -68,7 +68,7 @@ bool actions::PlaceUnitAction::execute_impl(GameState& state)
          const auto& field_card = camp[idx];
          bf.emplace_back(to_unit(field_card));
          state.buffer().bf.emplace_back(to_unit(field_card));
-         field_card->move(Zone::BATTLEFIELD, bf.size() - 1);
+         field_card->move_to(Zone::BATTLEFIELD, bf.size() - 1);
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
@@ -79,7 +79,7 @@ bool actions::PlaceUnitAction::execute_impl(GameState& state)
          camp.emplace_back(bf[idx]);
          auto& bf_buffer = state.buffer().bf;
          bf_buffer.erase(std::find(bf_buffer.begin(), bf_buffer.end(), unit));
-         unit->move(Zone::CAMP, camp.size() - 1);
+         unit->move_to(Zone::CAMP, camp.size() - 1);
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
@@ -94,13 +94,13 @@ bool actions::DragEnemyAction::execute_impl(GameState& state)
    if(m_to_bf) {
       auto dragged = camp[m_from];
       bf[m_to] = to_unit(dragged);
-      dragged->move(Zone::BATTLEFIELD, m_to);
+      dragged->move_to(Zone::BATTLEFIELD, m_to);
       // removing the units from the camp from the end of the vector.
       camp.erase(std::next(camp.begin(), m_from));
    } else {
       auto dragged = bf[m_from];
       camp.emplace_back(dragged);
-      dragged->move(Zone::CAMP, camp.size() - 1);
+      dragged->move_to(Zone::CAMP, camp.size() - 1);
       // removing the units from the camp from the end of the vector.
       bf.erase(std::next(bf.begin(), m_from));
    }
