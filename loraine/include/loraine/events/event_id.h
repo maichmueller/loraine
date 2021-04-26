@@ -23,6 +23,7 @@ enum class EventID {
    NIGHTFALL,  // the played spell is not the first to be played in this round
    PLAY,  // summoning a unit from hand or playing a floating
    RECALL,  // a unit gets recalled from field back to the hand
+   REPUTATION,  // a unit with power >= 5 strikes
    ROUND_END,  // the round ends
    ROUND_START,  // the round starts
    SCOUT,  // a scout attack occurred (not yet needed afaik)

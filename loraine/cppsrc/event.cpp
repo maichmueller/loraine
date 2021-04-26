@@ -1,7 +1,6 @@
 
 #include "loraine/events/event.h"
 
-#include "loraine/events/event_types.h"
 
 namespace events {
 

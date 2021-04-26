@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_POSITION_H
-#define LORAINE_POSITION_H
+#ifndef LORAINE_POSITION_HPP
+#define LORAINE_POSITION_HPP
 
 #include "loraine/core/gamedefs.h"
 
@@ -10,4 +10,4 @@ struct Position {
    size_t index;
 };
 
-#endif  // LORAINE_POSITION_H
+#endif  // LORAINE_POSITION_HPP

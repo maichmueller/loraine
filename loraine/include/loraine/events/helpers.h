@@ -5,6 +5,7 @@
 
 #include "event_id.h"
 #include "event.h"
+#include "event_subscriber.h"
 
 namespace helpers {
 
@@ -100,6 +101,11 @@ struct id_to_event< EventID::RECALL > {
    using id = EventIDType< EventID::RECALL >;
 };
 template <>
+struct id_to_event< EventID::REPUTATION > {
+   using type = ReputationEvent;
+   using id = EventIDType< EventID::REPUTATION >;
+};
+template <>
 struct id_to_event< EventID::ROUND_END > {
    using type = RoundEndEvent;
    using id = EventIDType< EventID::ROUND_END >;
@@ -154,28 +160,16 @@ template < EventID elabel >
 using id_to_event_t = typename id_to_event< elabel >::type;
 
 template < size_t... Ints >
-IEventSubscriber< id_to_event_t< static_cast< EventID >(Ints) >... > make_eventsub_interface(
-   std::index_sequence< Ints... >);
-
-template < typename... Events >
-using SubChannel = std::tuple< std::vector< IEventSubscriber< Events >* >... >;
-
-template < size_t... Ints >
-SubChannel< id_to_event_t< static_cast< EventID >(Ints) >... > make_subchannel(
+IGameEventListener< id_to_event_t< static_cast< EventID >(Ints) >... > make_eventsub_interface(
    std::index_sequence< Ints... >);
 
 template <typename T, typename... Events>
 using is_event_of = std::disjunction< std::is_same< T, Events> ... >;
-using is_event_of_t = std::disjunction_t< std::is_same< T, Events> ... >;
+template <typename T, typename... Events>
+using is_event_of_v = typename std::disjunction< std::is_same< T, Events> ... >::value;
 
-template <size_t... Ints>
-is_event_of<Ints...> make_is_event(std::index_sequence<Ints...>);
 
 }  // namespace helpers
 
-namespace events {
-
-struct is_event =
-}
 
 #endif  // LORAINE_HELPERS_H

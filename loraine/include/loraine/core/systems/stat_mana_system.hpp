@@ -4,7 +4,7 @@
 #define LORAINE_STAT_MANA_SYSTEM_HPP
 
 #include "loraine/core/components.h"
-#include "system.h"
+#include "system.hpp"
 
 class ManaStatSystem : public ILogicSystem {
    ManaStatSystem(entt::registry& registry) : ILogicSystem(registry) {}

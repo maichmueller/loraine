@@ -8,7 +8,7 @@
 
 #include "loraine/utils/random.h"
 #include "loraine/utils/utils.h"
-#include "loraine/core/carddefs.h"
+#include "loraine/core/gamedefs.h"
 
 /**
  * A deck is essentially a std vector with a few utility methods added.
@@ -144,7 +144,7 @@ std::vector< size_t > Deck::_find_indices(const Predicate& filter, size_t at_mos
       if(at_most == 0) {
          break;
       }
-      if(filter(self[i])) {
+      if(filter((*this)[i])) {
          indices.emplace_back(i);
          at_most--;
       }
@@ -156,7 +156,7 @@ std::vector< size_t > Deck::_find_indices(const Predicate& filter, size_t at_mos
 template < typename RNG >
 void Deck::shuffle(RNG& rng)
 {
-   random::shuffle_inplace(self, rng);
+   random::shuffle_inplace(*this, rng);
 }
 
 template < class Predicate, class RNG >

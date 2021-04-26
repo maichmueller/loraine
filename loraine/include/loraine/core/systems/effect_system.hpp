@@ -1,0 +1,89 @@
+
+#ifndef LORAINE_EFFECT_SYSTEM_HPP
+#define LORAINE_EFFECT_SYSTEM_HPP
+
+#include <entt/entt.hpp>
+
+#include "loraine/core/components.h"
+#include "loraine/core/gamedefs.h"
+#include "loraine/core/schedule.h"
+#include "loraine/effects/effectdefs.hpp"
+#include "loraine/events/event_id.h"
+#include "loraine/events/helpers.h"
+#include "loraine/utils/utils.h"
+#include "system.hpp"
+
+class GameState;
+
+/**
+ * The base class for effects in the game.
+ */
+template < typename Event >
+class EffectSystem: public ILogicSystem {
+  public:
+   EffectSystem(entt::registry& registry) : ILogicSystem(registry) {}
+
+   template < events::EventID event_id, typename... Args >
+   void trigger(Args&&... args)
+   {
+      // create the event corresponding to the ID first
+      auto event = helpers::id_to_event_t< event_id >{std::forward< Args >(args)...};
+      // get the subscribers to this event type
+      auto view = m_registry.view< tag::subscriber< event_id > >();
+      auto scheduled_entities = std::vector< entt::entity >{view.begin(), view.end()};
+      // iterate over the scheduled entities, always popping the next one according to the order
+      // policy of this event
+      while(not scheduled_entities.empty()) {
+         auto next_to_trigger = schedule::next< event_id >(m_registry, event, scheduled_entities);
+         next_to_trigger.first->on_event(event);
+         scheduled_entities.erase(algo::find(scheduled_entities, next_to_trigger.second));
+      }
+   }
+
+   template < events::EventID event_id >
+   void give_effect(entt::entity entity, const Effect< event_id >& effect)
+   {
+      if(m_registry.all_of< EffectVector< event_id > >(entity)) {
+         m_registry.patch< EffectVector< event_id > >(
+            entity, [&effect](auto& eff_vec) { eff_vec.emplace_back(effect); });
+      }
+   }
+
+   template < events::EventID event_id >
+   inline void give_effect(
+      entt::entity entity,
+      const Ability< event_id >& ability,
+      const AbilityCondition< event_id >& condition = AbilityCondition< event_id >([](const auto&) {
+         return true;
+      }))
+   {
+      give_effect(entity, Effect< event_id >(ability, condition));
+   }
+   template < events::EventID event_id >
+   [[nodiscard]] bool is_targeting(const Effect< event_id >& effect) const
+   {
+      return effect.first.style == Style::TARGETING;
+   }
+   template < events::EventID event_id >
+   [[nodiscard]] bool has_unconsumed_effects(entt::entity entity) const
+   {
+      if(m_registry.all_of< EffectVector< event_id > >(entity)) {
+         return algo::any_of(
+            m_registry.get< EffectVector< event_id > >(entity),
+            [entity](const auto& effect) { return effect.first.is_consumed; });
+      }
+   }
+   template < events::EventID event_id >
+   [[nodiscard]] bool is_consumed(const Effect< event_id >& effect) const
+   {
+      return effect.first.is_consumed;
+   }
+   template < events::EventID event_id >
+   [[nodiscard]] bool consume(const Effect< event_id >& effect) const
+   {
+      return effect.first.is_consumed = true;
+   }
+
+};
+
+#endif  // LORAINE_EFFECT_SYSTEM_HPP

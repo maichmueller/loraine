@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_STAT_POWER_H
-#define LORAINE_STAT_POWER_H
+#ifndef LORAINE_STAT_POWER_HPP
+#define LORAINE_STAT_POWER_HPP
 
 struct PowerStat {
    /// the mana it costs to play the card (as default)
@@ -41,4 +41,4 @@ struct Buffer {
    FuncType execute = &detail::default_buffer::operation;
 };
 
-#endif  // LORAINE_STAT_POWER_H
+#endif  // LORAINE_STAT_POWER_HPP

@@ -197,7 +197,7 @@ void Logic::process_camp_queue(Team team)
    size_t bf_units_count = board.count_units(team, false, [](const sptr< Card >& unit) {
       // ephemerals are expected to be gone after striking, which is why they are excluded from
       // counting as 'camp returning' units (at least this has been observed in the actual gameplay)
-      return not unit->has_keyword(Keyword::EPHEMERAL);
+      return not unit->has(Keyword::EPHEMERAL);
    });
    size_t units_in_queue = queue.size();
    auto& camp = board.camp(team);
@@ -271,7 +271,7 @@ void Logic::resolve()
    cast(false);
    // then process the combat if necessary
    auto overwhelm_if = [&](sptr< Unit > unit_att, long dmg) {
-      if(dmg > 0 && unit_att->has_keyword(Keyword::OVERWHELM)
+      if(dmg > 0 && unit_att->has(Keyword::OVERWHELM)
          && m_state->attacker() == unit_att->mutables().team) {
          strike_nexus(unit_att, dmg);
       }
@@ -293,8 +293,8 @@ void Logic::resolve()
 
          if(utils::has_value(unit_def)) {
             if(unit_def->unit_mutables().alive) {
-               bool quick_attacks = unit_att->has_keyword(Keyword::QUICK_ATTACK);
-               bool double_attacks = unit_att->has_keyword(Keyword::DOUBLE_ATTACK);
+               bool quick_attacks = unit_att->has(Keyword::QUICK_ATTACK);
+               bool double_attacks = unit_att->has(Keyword::DOUBLE_ATTACK);
 
                if(quick_attacks || double_attacks) {
                   // first the attacker hits the defender, any surplus is potential overwhelm_if dmg
@@ -398,7 +398,7 @@ void Logic::init_attack(Team team)
          // once we reach the last unit on board, we dont check for support get anymore
          break;
       }
-      if(attacker_bf[i]->has_keyword(Keyword::SUPPORT)) {
+      if(attacker_bf[i]->has(Keyword::SUPPORT)) {
          trigger_event< events::EventLabel::SUPPORT >(team, attacker_bf[i], attacker_bf[i + 1]);
       }
    }
@@ -530,7 +530,7 @@ void Logic::_end_round()
    auto end_round_proc = [&](Team team) {
       // kill ephemeral units
       for(auto& unit : m_state->board().camp(team)) {
-         if(unit->has_keyword(Keyword::EPHEMERAL)) {
+         if(unit->has(Keyword::EPHEMERAL)) {
             kill_unit(to_unit(unit), unit);
             continue;
          }
@@ -543,7 +543,7 @@ void Logic::_end_round()
          temp_grants.clear();
 
          // REGENERATION units will regenerate after removing grants etc.
-         if(unit->has_keyword(Keyword::REGENERATION)) {
+         if(unit->has(Keyword::REGENERATION)) {
             regenerating_units[team].emplace_back(to_unit(unit));
          }
       }

@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_CARD_ATTRIBUTES_H
-#define LORAINE_CARD_ATTRIBUTES_H
+#ifndef LORAINE_CARD_ATTRIBUTES_HPP
+#define LORAINE_CARD_ATTRIBUTES_HPP
 
 #include "loraine/core/gamedefs.h"
 
@@ -36,4 +36,4 @@ struct CardAttributes {
 };
 
 
-#endif  // LORAINE_CARD_ATTRIBUTES_H
+#endif  // LORAINE_CARD_ATTRIBUTES_HPP

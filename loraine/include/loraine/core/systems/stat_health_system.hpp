@@ -3,7 +3,7 @@
 #define LORAINE_STAT_HEALTH_SYSTEM_HPP
 
 #include "loraine/core/components/all.h"
-#include "loraine/core/systems/system.h"
+#include "loraine/core/systems/system.hpp"
 
 class HealthStatSystem: public ILogicSystem {
    HealthStatSystem(entt::registry& registry) : ILogicSystem(registry) {}

@@ -4,7 +4,7 @@
 
 #include "core/action.h"
 #include "core/gamedefs.h"
-#include "effects/effect.h"
+#include "loraine/core/systems/effect_system.hpp"
 #include "utils/types.h"
 
 class Target;

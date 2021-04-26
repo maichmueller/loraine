@@ -1,6 +1,8 @@
 
-#ifndef LORAINE_CONDITION_H
-#define LORAINE_CONDITION_H
+#ifndef LORAINE_CONDITION_HPP
+#define LORAINE_CONDITION_HPP
+
+class GameState;
 
 /**
  * A std::function< bool(GameState&) > wrapper, which should be used to
@@ -13,4 +15,4 @@ struct Condition {
    std::function< bool(GameState&) > func;
 };
 
-#endif  // LORAINE_CONDITION_H
+#endif  // LORAINE_CONDITION_HPP

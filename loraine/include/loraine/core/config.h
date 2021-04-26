@@ -24,6 +24,7 @@ struct Config {
       size_t floating_mana_start,
       size_t initial_hand_size,
       size_t max_rounds,
+      size_t reputation_count,
       size_t invalid_actions_limit,
       size_t enlightenment_threshold)
        : MAX_CARD_COPIES_IN_DECK(max_card_copies_in_deck),
@@ -41,6 +42,7 @@ struct Config {
          FLOATING_MANA_START(floating_mana_start),
          INITIAL_HAND_SIZE(initial_hand_size),
          MAX_ROUNDS(max_rounds),
+         REPUTATION_COUNT(reputation_count),
          INVALID_ACTIONS_LIMIT(invalid_actions_limit),
          ENLIGHTENMENT_THRESHOLD(enlightenment_threshold)
    {
@@ -63,14 +65,11 @@ struct Config {
    size_t MANA_START;
    size_t FLOATING_MANA_START;
    size_t INITIAL_HAND_SIZE;
+   size_t REPUTATION_COUNT;
    size_t MAX_ROUNDS;
    size_t INVALID_ACTIONS_LIMIT;
    size_t ENLIGHTENMENT_THRESHOLD;
 
-   const std::vector< std::string > PASSIVE_POWERS_BLUE = {};
-   const std::vector< std::string > PASSIVE_POWERS_RED = {};
-   const KeywordMap NEXUS_KEYWORDS_BLUE = {};
-   const KeywordMap NEXUS_KEYWORDS_RED = {};
 
    constexpr static size_t DEF_MAX_CARD_COPIES_IN_DECK = 3;
    constexpr static size_t DEF_DECK_CARDS_LIMIT = 40;
@@ -86,6 +85,7 @@ struct Config {
    constexpr static size_t DEF_MANA_START = 0;
    constexpr static size_t DEF_FLOATING_MANA_START = 0;
    constexpr static size_t DEF_INITIAL_HAND_SIZE = 4;
+   constexpr static size_t DEF_REPUTATION_COUNT = 4;
    constexpr static size_t DEF_MAX_ROUNDS = 40;
    constexpr static size_t DEF_INVALID_ACTIONS_LIMIT = 40;
    constexpr static size_t DEF_ENLIGHTENMENT_THRESHOLD = 10;
@@ -108,6 +108,7 @@ struct Config {
       FLOATING_MANA_START = DEF_FLOATING_MANA_START;
       INITIAL_HAND_SIZE = DEF_INITIAL_HAND_SIZE;
       MAX_ROUNDS = DEF_MAX_ROUNDS;
+      REPUTATION_COUNT = DEF_REPUTATION_COUNT;
       INVALID_ACTIONS_LIMIT = DEF_INVALID_ACTIONS_LIMIT;
       ENLIGHTENMENT_THRESHOLD = DEF_ENLIGHTENMENT_THRESHOLD;
    }

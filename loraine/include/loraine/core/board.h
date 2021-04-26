@@ -10,7 +10,7 @@
 #include <variant>
 
 #include "gamedefs.h"
-#include "loraine/utils/types.h"
+#include "loraine/utils/utils.h"
 
 class Board {
   public:

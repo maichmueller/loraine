@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_TAGS_H
-#define LORAINE_TAGS_H
+#ifndef LORAINE_TAGS_HPP
+#define LORAINE_TAGS_HPP
 
 #include "loraine/events/event_id.h"
 
@@ -18,7 +18,7 @@ struct trap {
 };
 struct nexus {
 };
-template <Zone zone>
+template < Zone zone >
 struct location {
 };
 struct played {
@@ -30,6 +30,9 @@ struct daybroken {
 template < events::EventID event_id >
 struct subscriber {
    constexpr static events::EventID id = event_id;
+};
+template < Keyword kw >
+struct keyword {
 };
 
 // player tags
@@ -53,10 +56,9 @@ struct has_played {
 struct pass {
 };
 
-
 struct alive {
 };
 
 }  // namespace tag
 
-#endif  // LORAINE_TAGS_H
+#endif  // LORAINE_TAGS_HPP

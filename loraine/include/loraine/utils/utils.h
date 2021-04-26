@@ -9,8 +9,6 @@
 #include "algorithms.h"
 #include "types.h"
 
-#define self (*this)
-
 template < typename T, typename Allocator >
 std::vector< T, Allocator >& operator+(
    std::vector< T, Allocator >& vec1,

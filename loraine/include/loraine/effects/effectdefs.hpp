@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_EFFECTDEFS_H
-#define LORAINE_EFFECTDEFS_H
+#ifndef LORAINE_EFFECTDEFS_HPP
+#define LORAINE_EFFECTDEFS_HPP
 
 enum class Style { AOE = 0, AURA, SIMPLE, TARGETING };
 enum class RegistrationTime {
@@ -10,4 +10,4 @@ enum class RegistrationTime {
    SUMMON,
 };
 
-#endif  // LORAINE_EFFECTDEFS_H
+#endif  // LORAINE_EFFECTDEFS_HPP

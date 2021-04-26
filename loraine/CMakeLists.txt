@@ -14,8 +14,9 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/gamestate.cpp
         ${LORAINE_SRC_DIR}/grant.cpp
         ${LORAINE_SRC_DIR}/grantmodifier.cpp
-        ${LORAINE_SRC_DIR}/landmark.cpp
         ${LORAINE_SRC_DIR}/logic.cpp
+
+        ${LORAINE_SRC_DIR}/reputation_system.cpp
         )
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")

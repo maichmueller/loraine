@@ -10,7 +10,6 @@
 #include "config.h"
 #include "gamedefs.h"
 #include "gamestate.h"
-#include "loraine/cards/card.h"
 #include "loraine/controller.h"
 #include "loraine/grants/grant.h"
 #include "loraine/grants/grantfactory.h"

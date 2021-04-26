@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_SYSTEM_H
-#define LORAINE_SYSTEM_H
+#ifndef LORAINE_SYSTEM_HPP
+#define LORAINE_SYSTEM_HPP
 
 #include "entt/entt.hpp"
 
@@ -11,6 +11,8 @@ class GameState;
  */
 class IContinuousSystem {
   public:
+   virtual ~IContinuousSystem() = default;
+
    virtual void update(double deltatime) = 0;
 
   protected:
@@ -25,6 +27,8 @@ class IContinuousSystem {
  */
 class IDiscreteSystem {
   public:
+   virtual ~IDiscreteSystem() = default;
+
    virtual void update(GameState& state) = 0;
 
   protected:
@@ -33,6 +37,20 @@ class IDiscreteSystem {
    entt::registry& m_registry;
 };
 
+/**
+ * @brief Base class for per round updated systems. Provides methods for round begin and end.
+ */
+class IRoundSystem {
+   virtual ~IRoundSystem() = default;
+
+   virtual void update_begin(GameState& state) {};
+   virtual void update_end(GameState& state) {};
+
+  protected:
+   IRoundSystem(entt::registry& registry) : m_registry(registry) {}
+
+   entt::registry& m_registry;
+};
 
 /**
  * @brief Base class for logic offering systems only. No update method implied
@@ -44,4 +62,4 @@ class ILogicSystem {
    entt::registry& m_registry;
 };
 
-#endif  // LORAINE_SYSTEM_H
+#endif  // LORAINE_SYSTEM_HPP

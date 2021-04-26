@@ -7,7 +7,7 @@
 #include "loraine/core/board.h"
 #include "loraine/core/components.h"
 #include "loraine/core/gamedefs.h"
-#include "system.h"
+#include "system.hpp"
 
 class PositionSystem: public ILogicSystem {
    /**

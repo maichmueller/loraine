@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_STAT_HEALTH_H
-#define LORAINE_STAT_HEALTH_H
+#ifndef LORAINE_STAT_HEALTH_HPP
+#define LORAINE_STAT_HEALTH_HPP
 
 struct HealthStat {
    /// the health of the card on creation
@@ -73,4 +73,4 @@ struct Healer {
    FuncType execute = &detail::default_healer::operation;
 };
 
-#endif  // LORAINE_STAT_HEALTH_H
+#endif  // LORAINE_STAT_HEALTH_HPP

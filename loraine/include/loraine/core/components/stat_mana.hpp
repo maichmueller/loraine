@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_STAT_MANA_H
-#define LORAINE_STAT_MANA_H
+#ifndef LORAINE_STAT_MANA_HPP
+#define LORAINE_STAT_MANA_HPP
 
 struct ManaStat {
    /// the mana it costs to play the card (as default)
@@ -43,4 +43,4 @@ struct ManaChanger {
 };
 
 
-#endif  // LORAINE_STAT_MANA_H
+#endif  // LORAINE_STAT_MANA_HPP

@@ -6,7 +6,6 @@
 
 #include "loraine/core/action.h"
 #include "loraine/core/logic.h"
-#include "loraine/events/construction.h"
 
 void GameState::commit_to_history(uptr< Record >&& record)
 {

@@ -3,7 +3,7 @@
 #define LORAINE_STAT_POWER_SYSTEM_HPP
 
 #include "loraine/core/components.h"
-#include "system.h"
+#include "system.hpp"
 
 class PowerStatSystem : public ILogicSystem {
    PowerStatSystem(entt::registry& registry) : ILogicSystem(registry) {}

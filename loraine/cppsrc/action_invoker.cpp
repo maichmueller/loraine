@@ -2,7 +2,7 @@
 #include "loraine/core/action_invoker.h"
 
 #include "loraine/core/logic.h"
-#include "loraine/effects/effect.h"
+#include "loraine/core/systems/effect_system.hpp"
 
 // namespace actions {
 //

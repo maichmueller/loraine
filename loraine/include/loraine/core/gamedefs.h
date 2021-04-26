@@ -150,7 +150,7 @@ enum class Keyword {
    CANT_BLOCK,
    CAPTURE,
    CHALLENGER,
-   DYBREAK,
+   DAYBREAK,
    DEEP,
    DOUBLE_ATTACK,
    DRAIN,

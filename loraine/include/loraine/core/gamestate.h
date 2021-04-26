@@ -51,22 +51,6 @@ class GameState {
       _disconnect_impl< events::n_events - 1, registration_time >(entity);
    }
 
-   template < events::EventID event_id, typename... Args >
-   void trigger(Args&&... args)
-   {
-      // create the event corresponding to the ID first
-      auto event = helpers::id_to_event_t< event_id >{std::forward< Args >(args)...};
-      // get the sorted subscribers to this event type
-      auto view = m_registry.view< tag::subscriber< event_id > >();
-      auto scheduled_entities = std::vector< entt::entity >{view.begin(), view.end()};
-      // iterate over the scheduled entities, always popping the next one according to the order
-      // policy of this event
-      while(not scheduled_entities.empty()) {
-         auto next_to_trigger = schedule::next< event_id >(m_registry, event, scheduled_entities);
-         next_to_trigger.first->on_event(event);
-         scheduled_entities.erase(algo::find(scheduled_entities, next_to_trigger.second));
-      }
-   }
 
    [[nodiscard]] inline auto& registry() { return m_registry; }
    [[nodiscard]] inline auto& registry() const { return m_registry; }
@@ -97,8 +81,7 @@ class GameState {
    Status status();
    inline bool is_resolved() const
    {
-      return m_spell_stack.empty() && m_board.battlefield(Team::BLUE).empty()
-             && m_board.battlefield(Team::RED).empty();
+      return m_spell_stack.empty() && m_registry.view<tag::location< Zone::BATTLEFIELD>>().empty();
    }
 
   private:

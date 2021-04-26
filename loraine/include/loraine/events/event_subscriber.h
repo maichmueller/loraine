@@ -2,6 +2,7 @@
 #ifndef LORAINE_EVENT_SUBSCRIBER_H
 #define LORAINE_EVENT_SUBSCRIBER_H
 
+#include "loraine/utils/utils.h"
 
 namespace events {
 
@@ -30,7 +31,7 @@ struct IGameEventListener< Derived, Event >:
     public utils::CRTP< IGameEventListener, Derived, Event > {
    using event_type = Event;
 
-   void on_event(const event_type& event) { this->derived()->on_event(event); }
+   void on_event(const event_type& event) { this->derived()->on_event_impl(event); }
 };
 
 ///**

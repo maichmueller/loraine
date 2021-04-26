@@ -1,7 +1,7 @@
 
 
 #include "loraine/core/board.h"
-#include "loraine/core/components/all.h"
+#include "loraine/core/components.h"
 #include "loraine/utils/utils.h"
 
 std::vector< entt::entity > Board::camp_units(entt::registry& registry, Team team) const

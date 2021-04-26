@@ -1,0 +1,11 @@
+
+
+#ifndef LORAINE_PLAY_CONDITION_HPP
+#define LORAINE_PLAY_CONDITION_HPP
+
+
+struct PlayCondition {
+
+};
+
+#endif  // LORAINE_PLAY_CONDITION_HPP

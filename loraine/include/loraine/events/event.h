@@ -13,13 +13,17 @@
 #include <vector>
 
 #include "event_id.h"
+#include "loraine/utils/utils.h"
+#include "loraine/core/gamedefs.h"
+
+class GameState;
 
 namespace events {
 
 template < class event_id_t, typename... Args >
 class Event: public utils::CRTP< Event, event_id_t, Args... > {
   public:
-   using EventData = std::tuple< Args... >;
+   using EventData = std::tuple< GameState&, Args... >;
 
    Event(Args... args) : m_data{args...} {}
    Event(const Event& event) = default;
@@ -143,15 +147,21 @@ using NightfallEvent =
 /*
  * 1st Arg: entt::entity = The played spell
  */
-
 using PlayEvent = Event<  EventIDType< EventID::PLAY >, Team, entt::entity >;
+
 /*
- * 1st Arg: entt::entity = The recalling spell
+ * 1st Arg: entt::entity = The recalling card
  * 2nd Arg: entt::entity = The recalled card
  */
-
 using RecallEvent =
-   Event<  EventIDType< EventID::RECALL >, Team, entt::entity, entt::entity >;
+Event<  EventIDType< EventID::RECALL >, Team, entt::entity, entt::entity >;
+
+/*
+ * 1st Arg: entt::entity = The striking unit
+ */
+using ReputationEvent =
+Event<  EventIDType< EventID::REPUTATION >, Team, entt::entity>;
+
 /*
  * 1st Arg: long = The round number
  */
@@ -174,7 +184,7 @@ using ScoutEvent = Event<  EventIDType< EventID::SCOUT >, Team >;
 using SlayEvent =
    Event<  EventIDType< EventID::SLAY >, Team, entt::entity, entt::entity >;
 /*
- * 1st ARg: entt::entity = The striking unit
+ * 1st Arg: entt::entity = The striking unit
  * 2nd Arg: entt::entity = The struck unit
  */
 
@@ -188,11 +198,11 @@ using StrikeEvent =
 using StunEvent =
    Event<  EventIDType< EventID::STUN >, Team, entt::entity, entt::entity >;
 /*
- * 1st Arg: const sptr<FieldCard>& = The summoned fieldcard
+ * 1st Arg: entt::entity = The summoned fieldcard
  */
 
 using SummonEvent =
-   Event<  EventIDType< EventID::SUMMON >, Team, const sptr< FieldCard >& >;
+   Event<  EventIDType< EventID::SUMMON >, Team, entt::entity >;
 /*
  * 1st Arg: entt::entity = The supporting unit
  * 2nd Arg: entt::entity = The supported unit

@@ -42,7 +42,7 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
          // the TargetAction is going to take care of this
          hand.erase(std::find(hand.begin(), hand.end(), spell));
          // a burst or focus spell is played immediately if no targeting is required
-         if(spell->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
+         if(spell->has_any_of({Keyword::BURST, Keyword::FOCUS})) {
             state.buffer().action.emplace_back(
                std::make_shared< Action >(PlaySpellFinishAction(team(), true)));
          }
@@ -164,7 +164,7 @@ bool actions::TargetingAction::execute_impl(GameState& state)
    auto assoc_card = t_buffer.back()->associated_card();
    if(t_buffer.size() == 1) {  // effect to choose targets for is last in buffer
       if(assoc_card->is_spell() &&  // effect belongs to a spell
-         assoc_card->has_any_keyword({Keyword::BURST, Keyword::FOCUS})) {
+         assoc_card->has_any_of({Keyword::BURST, Keyword::FOCUS})) {
          // if the effect to target is the last one in the t_buffer, and the get belong
          // to a BURST or FOCUS spell, then a placing with subsequent targeting also triggers
          // playing it
