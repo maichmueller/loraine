@@ -235,7 +235,7 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
    auto& camp = state.board().camp(team());
    if(camp.size() == state.board().max_size_camp()) {
       // we need to choose the unit we want to replace, since the camp is full
-      state.logic()->transition< ReplacingModeInvoker >();
+      state.logic()->transition< ReplacingActionPhase >();
       return false;
    }
    state.buffer().action.emplace_back(
@@ -252,7 +252,7 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
       if(not state.buffer().targeting.empty()) {
          // set the next invoker to be a target mode invoker so that targets are chosen for the
          // get in the buffer
-         state.logic()->transition< TargetModeInvoker >();
+         state.logic()->transition< TargetActionPhase >();
          return false;
       }
    }

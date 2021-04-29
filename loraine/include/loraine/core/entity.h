@@ -18,7 +18,7 @@ class Entity {
    }
 
    template <typename Component, typename...Args>
-   inline auto& add(entt::registry& registry, Args&&...args){
+   inline auto& add(Args&&...args){
       return registry.template emplace<Component>(std::forward<Args>(args)...);
    }
 

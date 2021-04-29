@@ -1,6 +1,6 @@
-#include <core/gamedefs.h>
 
-#include "core/gamestate.h"
+
+#include "loraine/loraine.h"
 
 int main() {
 

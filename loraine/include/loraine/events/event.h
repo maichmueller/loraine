@@ -284,9 +284,9 @@ using UnitDamageEvent = Event<
 //    // default for not providing any template type and therefore simply getting the entire variant
 //    [[nodiscard]] inline auto& detail() const { return m_event_detail; }
 //
-//    constexpr inline EventID label() const
+//    constexpr inline EventID phase() const
 //    {
-//       return std::visit([&](const auto& event) { return event.label; }, m_event_detail);
+//       return std::visit([&](const auto& event) { return event.phase; }, m_event_detail);
 //    }
 //
 //   private:

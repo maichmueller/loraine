@@ -11,10 +11,11 @@
 #include <utility>
 #include <vector>
 
-#include "action_invoker.h"
-#include "board.h"
 #include "config.h"
 #include "gamedefs.h"
+#include "loraine/core/components.h"
+#include "loraine/core/systems/action_sytem.h"
+#include "loraine/core/systems/board_system.h"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 #include "loraine/utils/random.h"
@@ -39,6 +40,10 @@ class GameState {
       random::rng_type rng = random::create_rng());
 
    GameState(const GameState& other);
+
+   template < ActionSystemBase::Phase phase, typename... Args >
+   inline void transition(Args&&... args);
+   void restore_previous_phase();
 
    template < RegistrationTime registration_time >
    inline void connect(entt::entity entity)
@@ -91,7 +96,7 @@ class GameState {
    Config m_config;
    SymArr< entt::entity > m_players;
    Team m_starting_team;
-   Board m_board;
+   BoardSystem m_board;
    /// the shared stack container for the played spells
    std::vector< entt::entity > m_spell_stack = {};
 
@@ -100,8 +105,12 @@ class GameState {
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
 
+   uptr<ActionSystemBase> m_phase;
+   uptr<ActionSystemBase> m_prev_phase = nullptr;
 
    random::rng_type m_rng;
+
+   /// private method impls
 
    template < size_t id, RegistrationTime registration_time >
    void _connect_impl(entt::entity entity);
@@ -114,8 +123,20 @@ template < size_t id, RegistrationTime registration_time >
 void GameState::_connect_impl(entt::entity entity)
 {
    if constexpr(id > 0) {
+      if(m_registry.all_of<EffectVector<events::EventID(id)>>(entity)) {
+         m_registry.emplace<tag::subscriber<events::EventID(id)>>(entity)
+      }
       _connect_impl<id - 1>(entity);
    }
+}
+
+template < ActionSystemBase::Phase phase, typename... Args >
+void GameState::transition(Args&&... args)
+{
+   using PhaseType = helpers::phase_to_type_t<phase>;
+   // move current invoker into previous
+   m_prev_phase = std::move(m_phase);
+   m_phase = std::make_unique< PhaseType >(this, std::forward< Args >(args)...);
 }
 
 #endif  // LORAINE_GAMESTATE_H

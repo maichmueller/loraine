@@ -74,12 +74,12 @@ class EffectSystem: public ILogicSystem {
       }
    }
    template < events::EventID event_id >
-   [[nodiscard]] bool is_consumed(const Effect< event_id >& effect) const
+   [[nodiscard]] inline bool is_consumed(const Effect< event_id >& effect) const
    {
       return effect.first.is_consumed;
    }
    template < events::EventID event_id >
-   [[nodiscard]] bool consume(const Effect< event_id >& effect) const
+   [[nodiscard]] inline bool consume(const Effect< event_id >& effect) const
    {
       return effect.first.is_consumed = true;
    }

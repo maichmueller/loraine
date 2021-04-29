@@ -12,6 +12,7 @@ enum class EventID {
    CAPTURE,  // A unit has captured another unit
    CAST,  // casting spells/skills (activation m_subscribed_events, not committing m_subscribed_events)
    DAYBREAK,  // the played spell is the first to be played in this round
+   DEEP,  // the deck has at most 15 cards left
    DISCARD,  // removing a spell from hand (not playing)
    DRAW_CARD,  // draw a spell (own deck or enemy deck)
    ENLIGHTENMENT,  // reaching 10 mana gems

@@ -57,9 +57,7 @@ GameState::GameState(
              std::move(controllers[1]))}),
       m_starting_team(starting_team),
       m_board(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE),
-      m_logic(std::make_shared< Logic >()),
-      m_attacker(starting_team),
-      m_events(events::build_event_array()),
+      m_attacker(starting_team)
       m_turn(starting_team),
       m_spell_stack(),
       m_rng(rng)
@@ -83,12 +81,13 @@ GameState::GameState(
 GameState::GameState(const GameState& other)
     : m_config(other.m_config),
       m_players(other.m_players),
-      m_events(events::build_event_array()),
       m_starting_team(other.m_starting_team),
       m_board(other.m_board),
-      m_logic(other.m_logic->clone()),
       m_round(other.m_round)
 {
    // TODO: this needs to fully reconnect all cloned event listeners with the correct events
 }
-
+void GameState::restore_previous_phase() {
+   m_phase = std::move(m_prev_phase);
+   m_prev_phase = nullptr;
+}

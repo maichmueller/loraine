@@ -338,7 +338,7 @@ void Logic::resolve()
          retreat_to_camp(defender);
       }
    }
-   transition< DefaultModeInvoker >();
+   transition< DefaultActionPhase >();
 }
 long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
@@ -402,7 +402,7 @@ void Logic::init_attack(Team team)
          trigger_event< events::EventLabel::SUPPORT >(team, attacker_bf[i], attacker_bf[i + 1]);
       }
    }
-   transition< CombatModeInvoker >();
+   transition< CombatActionPhase >();
 }
 void Logic::init_block(Team team)
 {

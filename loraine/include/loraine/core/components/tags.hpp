@@ -20,6 +20,7 @@ struct nexus {
 };
 template < Zone zone >
 struct location {
+   constexpr static auto value = zone;
 };
 struct played {
 };
@@ -29,10 +30,17 @@ struct daybroken {
 };
 template < events::EventID event_id >
 struct subscriber {
-   constexpr static events::EventID id = event_id;
+   constexpr static auto value = event_id;
 };
 template < Keyword kw >
 struct keyword {
+   constexpr static auto value = kw;
+};
+struct death {
+};
+template <Team::Value t>
+struct team {
+   constexpr static auto value = t;
 };
 
 // player tags
@@ -55,8 +63,7 @@ struct has_played {
 };
 struct pass {
 };
-
-struct alive {
+struct deep {
 };
 
 }  // namespace tag

@@ -4,10 +4,12 @@
 #define LORAINE_KEYWORD_SYSTEM_HPP
 
 #include "loraine/core/gamedefs.h"
+#include "loraine/events/event_id.h"
 #include "system.hpp"
 
 class KeywordSystem: public ILogicSystem {
    KeywordSystem(entt::registry& registry) : ILogicSystem(registry) {}
+
 
    template < Keyword keyword >
    void on([[maybe_unused]] entt::registry& registry, entt::entity card)
