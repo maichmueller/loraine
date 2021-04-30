@@ -13,7 +13,7 @@
 #include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"
 #include "loraine/core/systems.h"
-#include "loraine/core/systems/action_sytem.h"
+#include "loraine/core/systems/action_system.h"
 #include "loraine/core/systems/board_system.h"
 #include "loraine/grants/grant.h"
 #include "loraine/utils/random.h"

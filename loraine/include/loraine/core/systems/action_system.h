@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_ACTION_SYTEM_H
-#define LORAINE_ACTION_SYTEM_H
+#ifndef LORAINE_ACTION_SYSTEM_H
+#define LORAINE_ACTION_SYSTEM_H
 
 #include <set>
 #include <utility>
@@ -203,4 +203,4 @@ using phase_to_type_t = typename phase_to_type< p >::type;
 
 }  // namespace helpers
 
-#endif  // LORAINE_ACTION_SYTEM_H
+#endif  // LORAINE_ACTION_SYSTEM_H

@@ -7,7 +7,7 @@
 
 #include <array>
 
-#include "loraine/core/systems/action_sytem.h"
+#include "loraine/core/systems/action_system.h"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 

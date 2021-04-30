@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/action.cpp
-        ${LORAINE_SRC_DIR}/action_invoker.cpp
-        ${LORAINE_SRC_DIR}/board.cpp
+        ${LORAINE_SRC_DIR}/action_system.cpp
+        ${LORAINE_SRC_DIR}/board_system.cpp
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/effectmap.cpp
-        ${LORAINE_SRC_DIR}/effect.cpp
+        ${LORAINE_SRC_DIR}/effect_system.cpp
         ${LORAINE_SRC_DIR}/entity.cpp
         ${LORAINE_SRC_DIR}/event.cpp
         ${LORAINE_SRC_DIR}/gamemode.cpp

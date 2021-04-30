@@ -1,13 +1,14 @@
 
-#include "loraine/core/systems/action_sytem.h"
+#include "loraine/core/systems/action_system.h"
 
 #include "loraine/core/logic.h"
 #include "loraine/core/systems/effect_system.hpp"
+#include "loraine/core/gamestate.h"
 
 
-bool ActionSystemBase::invoke(actions::Action& action)
+bool ActionSystemBase::invoke(GameState& state, actions::Action& action)
 {
-   return action.execute(*m_gamestate->state());
+   return action.execute(state);
 }
 actions::Action ActionSystemBase::request_action(const GameState& state) const
 {
@@ -31,7 +32,7 @@ actions::Action ActionSystemBase::request_action(const GameState& state) const
       }
    }
 }
-actions::Action TargetModeInvoker::request_action(const GameState& state) const
+actions::Action TargetActionPhase::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
    while(true) {
@@ -51,47 +52,47 @@ actions::Action TargetModeInvoker::request_action(const GameState& state) const
       }
    }
 }
-bool TargetModeInvoker::is_valid(const actions::Action& action) const
+bool TargetActionPhase::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > TargetModeInvoker::valid_actions(const GameState& action) const
+std::vector< actions::Action > TargetActionPhase::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }
-bool DefaultModeInvoker::is_valid(const actions::Action& action) const
+bool DefaultActionPhase::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > DefaultModeInvoker::valid_actions(const GameState& action) const
+std::vector< actions::Action > DefaultActionPhase::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }
-bool CombatModeInvoker::is_valid(const actions::Action& action) const
+bool CombatActionPhase::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > CombatModeInvoker::valid_actions(const GameState& action) const
+std::vector< actions::Action > CombatActionPhase::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }
-actions::Action ReplacingModeInvoker::request_action(const GameState& state) const
+actions::Action ReplacingActionPhase::request_action(const GameState& state) const
 {
    return ActionSystemBase::request_action(state);
 }
-bool ReplacingModeInvoker::is_valid(const actions::Action& action) const
+bool ReplacingActionPhase::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > ReplacingModeInvoker::valid_actions(const GameState& action) const
+std::vector< actions::Action > ReplacingActionPhase::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }
-bool MulliganModeInvoker::is_valid(const actions::Action& action) const
+bool MulliganActionPhase::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > MulliganModeInvoker::valid_actions(const GameState& action) const
+std::vector< actions::Action > MulliganActionPhase::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }

@@ -64,7 +64,7 @@ class BoardSystem: public ILogicSystem {
                    }();
       };
 
-      if constexpr(algo::contains({Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
+      if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
          if(same_pos_check()) {
             // the unit's old zone is the units new zone and it is already at the position in which
             // it is supposed to move or the battlefield is full
@@ -74,6 +74,7 @@ class BoardSystem: public ILogicSystem {
       _remove_loc_tags(card);
       pos.index = index;
       m_registry.emplace< tag::location< new_zone > >(card);
+      return true;
    }
 
    /**
@@ -101,16 +102,16 @@ class BoardSystem: public ILogicSystem {
 
    template < Zone zone >
    void add_to_queue(entt::entity card) = delete;
-   template <>
-   void add_to_queue< Zone::CAMP >(entt::entity card);
-   template <>
-   void add_to_queue< Zone::BATTLEFIELD >(entt::entity card);
+//   template <>
+//   void add_to_queue< Zone::CAMP >(entt::entity card);
+//   template <>
+//   void add_to_queue< Zone::BATTLEFIELD >(entt::entity card);
    template < Zone zone >
    void add_to_queue(const std::vector< entt::entity >& units) = delete;
-   template <>
-   void add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& units);
-   template <>
-   void add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::entity >& units);
+//   template <>
+//   void add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& units);
+//   template <>
+//   void add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::entity >& units);
 
   private:
    /// the max number of cards in the camp at any time
@@ -126,7 +127,10 @@ class BoardSystem: public ILogicSystem {
 
    /// internal logic methods
 
-   void _process_camp_queues(entt::registry& registry);
+   template <
+      Zone zone,
+      typename = std::enable_if_t< zone == Zone::CAMP || zone == Zone::BATTLEFIELD > >
+   void _process_queue();
 
    /**
     * @brief Reindexes the entities in a location after a removal.
