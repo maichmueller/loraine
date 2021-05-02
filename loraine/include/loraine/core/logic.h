@@ -16,7 +16,7 @@ class GameState;
 
 //class Logic: public Cloneable< Logic > {
 //  public:
-//   explicit Logic(uptr< ActionSystemBase > act_invoker = std::make_unique< MulliganActionPhase >())
+//   explicit Logic(uptr< ActionPhaseBase > act_invoker = std::make_unique< MulliganActionPhase >())
 //       : m_action_invoker(std::move(act_invoker))
 //   {
 //      m_action_invoker->logic(this);
@@ -34,14 +34,14 @@ class GameState;
 //
 //   // Beginning of LoR logic implementations
 //
-//   ActionSystemBase& action_invoker() { return *m_action_invoker; }
-//   ActionSystemBase& action_invoker() const { return *m_action_invoker; }
+//   ActionPhaseBase& action_invoker() { return *m_action_invoker; }
+//   ActionPhaseBase& action_invoker() const { return *m_action_invoker; }
 //
 //   [[nodiscard]] bool in_combat() const
 //   {
-//      return m_action_invoker->phase() == ActionSystemBase::Phase::COMBAT
-//             || (m_action_invoker->phase() != ActionSystemBase::Phase::DEFAULT
-//                 && m_prev_action_invoker->phase() == ActionSystemBase::Phase::COMBAT);
+//      return m_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT
+//             || (m_action_invoker->phase() != ActionPhaseBase::Phase::DEFAULT
+//                 && m_prev_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT);
 //   };
 //
 //   void request_action() const;
@@ -196,9 +196,9 @@ class GameState;
 //   /// SegFault problems.
 //   GameState* m_state = nullptr;
 //   /// the current action invoker for incoming actions
-//   std::unique_ptr< ActionSystemBase > m_action_invoker;
+//   std::unique_ptr< ActionPhaseBase > m_action_invoker;
 //   /// the previous action invoker for incoming actions
-//   std::unique_ptr< ActionSystemBase > m_prev_action_invoker = nullptr;
+//   std::unique_ptr< ActionPhaseBase > m_prev_action_invoker = nullptr;
 //   /// private logic helpers
 //
 //   /// The member declarations

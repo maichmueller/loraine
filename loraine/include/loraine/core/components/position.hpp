@@ -5,7 +5,9 @@
 
 #include "loraine/core/gamedefs.h"
 
+template < Zone z>
 struct Position {
+   constexpr static auto zone = z;
    /// the index in the current zone
    size_t index;
 };

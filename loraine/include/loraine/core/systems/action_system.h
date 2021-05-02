@@ -11,6 +11,8 @@
 
 class GameState;
 
+class ActionSystem;
+
 /*
  * Class handling the logic of the LoR GameState. It has different modes for handling
  * a given Action object using the 'GameState' pattern (unrelated to class 'GameState').
@@ -35,52 +37,60 @@ class GameState;
  *          i)    mulligan the starting hand cards
  *
  */
-class ActionSystemBase {
+class ActionPhaseBase {
   public:
-   enum Phase { DEFAULT = 0, COMBAT, MULLIGAN, REPLACING, TARGET };
-   ActionSystemBase(Phase phase, std::set< actions::ActionID > accepted_actions)
-       : m_phase(phase), m_accepted_actions(std::move(accepted_actions))
+   ActionPhaseBase(
+      ActionSystem* act_system,
+      actions::Phase phase,
+      std::set< actions::ActionID > accepted_actions)
+       : m_action_system(act_system),
+         m_phase(phase),
+         m_accepted_actions(std::move(accepted_actions))
    {
    }
-   virtual ~ActionSystemBase() = default;
-   ActionSystemBase(const ActionSystemBase& other) = default;
-   ActionSystemBase(ActionSystemBase&& other) = default;
-   ActionSystemBase& operator=(ActionSystemBase&& other) = delete;
-   ActionSystemBase& operator=(const ActionSystemBase& other) = delete;
+   virtual ~ActionPhaseBase() = default;
+   ActionPhaseBase(const ActionPhaseBase& other) = default;
+   ActionPhaseBase(ActionPhaseBase&& other) = default;
+   ActionPhaseBase& operator=(ActionPhaseBase&& other) = delete;
+   ActionPhaseBase& operator=(const ActionPhaseBase& other) = delete;
 
    [[nodiscard]] virtual actions::Action request_action(const GameState& state) const;
-   virtual bool invoke(GameState& state, actions::Action& action);
+   virtual bool invoke(actions::Action& action) = 0;
    [[nodiscard]] virtual bool is_valid(GameState& state, const actions::Action& action) const = 0;
    [[nodiscard]] virtual std::vector< actions::Action > valid_actions(
       const GameState& state) const = 0;
 
    auto& accepted_actions() { return m_accepted_actions; }
    [[nodiscard]] auto& accepted_actions() const { return m_accepted_actions; }
-   virtual ActionSystemBase* clone() = 0;
+   virtual ActionPhaseBase* clone() = 0;
    [[nodiscard]] auto phase() const { return m_phase; }
 
   private:
-   const Phase m_phase;
-   const std::set< actions::ActionID > m_accepted_actions;
-   std::vector< actions::Action > m_action_stack;
+   ActionSystem* m_action_system;
+   actions::Phase m_phase;
+   std::set< actions::ActionID > m_accepted_actions;
 };
 
 template < typename Derived, actions::ActionID... AcceptedActions >
-class ActionPhase: public ActionSystemBase {
+class ActionPhase: public ActionPhaseBase {
   public:
-   using base = ActionSystemBase;
+   using base = ActionPhaseBase;
    using base::base;
 
-   ActionPhase() : base(Derived::phase_id, std::set< actions::ActionID >{AcceptedActions...}) {}
+   ActionPhase(ActionSystem* system)
+       : base(system, Derived::phase_label, std::set< actions::ActionID >{AcceptedActions...})
+   {
+   }
    template < typename... Args >
-   ActionPhase(Args... args)
+   ActionPhase(ActionSystem* system, Args... args)
        : base(
+          system,
           Derived::phase_label,
           std::forward< Args >(args)...,
           std::set< actions::ActionID >{AcceptedActions...})
    {
    }
-   inline ActionSystemBase* clone() override { return new Derived(static_cast< Derived& >(*this)); }
+   inline ActionPhaseBase* clone() override { return new Derived(static_cast< Derived& >(*this)); }
 };
 
 class DefaultActionPhase:
@@ -101,7 +111,6 @@ class DefaultActionPhase:
       actions::ActionID::PLACE_SPELL >;
    using base::base;
 
-   constexpr static Phase phase_label = Phase::DEFAULT;
    bool is_valid(GameState& state, const actions::Action& action) const override;
 
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
@@ -119,7 +128,7 @@ class CombatActionPhase:
       actions::ActionID::PLACE_SPELL >;
    using base::base;
 
-   constexpr static Phase phase_label = Phase::COMBAT;
+   constexpr static actions::Phase phase_label = actions::Phase::COMBAT;
    bool is_valid(GameState& state, const actions::Action& action) const override;
 
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
@@ -137,7 +146,7 @@ class TargetActionPhase:
       actions::ActionID::TARGETING >;
    using base::base;
 
-   constexpr static Phase phase_label = Phase::TARGET;
+   constexpr static actions::Phase phase_label = actions::Phase::TARGET;
    [[nodiscard]] actions::Action request_action(const GameState& state) const override;
    bool is_valid(GameState& state, const actions::Action& action) const override;
 
@@ -148,15 +157,15 @@ class ReplacingActionPhase:
     public ActionPhase<
        ReplacingActionPhase,
        actions::ActionID::CANCEL,
-       actions::ActionID::REPLACE_FIELDCARD > {
+       actions::ActionID::REPLACE > {
   public:
    using base = ActionPhase<
       ReplacingActionPhase,
       actions::ActionID::CANCEL,
-      actions::ActionID::REPLACE_FIELDCARD >;
+      actions::ActionID::REPLACE >;
    using base::base;
 
-   constexpr static Phase phase_label = Phase::REPLACING;
+   constexpr static actions::Phase phase_label = actions::Phase::REPLACING;
    [[nodiscard]] actions::Action request_action(const GameState& state) const override;
    bool is_valid(GameState& state, const actions::Action& action) const override;
 
@@ -168,39 +177,87 @@ class MulliganActionPhase: public ActionPhase< MulliganActionPhase, actions::Act
    using base = ActionPhase< MulliganActionPhase, actions::ActionID::MULLIGAN >;
    using base::base;
 
-   constexpr static Phase phase_label = Phase::MULLIGAN;
+   constexpr static actions::Phase phase_label = actions::Phase::MULLIGAN;
    bool is_valid(GameState& state, const actions::Action& action) const override;
    std::vector< actions::Action > valid_actions(const GameState& action) const override;
 };
 
+class ActionSystem: public ILogicSystem {
+  public:
+   ActionSystem(
+      entt::registry& registry,
+      uptr< ActionPhaseBase >&& phase = std::make_unique< DefaultActionPhase >())
+       : ILogicSystem(registry), m_action_phase(std::move(phase))
+   {
+   }
+   ~ActionSystem() = default;
+   ActionSystem(const ActionSystem& other);
+   ActionSystem(ActionSystem&& other) = default;
+   ActionSystem& operator=(ActionSystem&& other) = delete;
+   ActionSystem& operator=(const ActionSystem& other) = delete;
+
+   [[nodiscard]] inline actions::Action request_action(const GameState& state) const
+   {
+      return m_action_phase->request_action(state);
+   }
+   inline bool invoke(actions::Action& action) { return m_action_phase->invoke(action); }
+   [[nodiscard]] inline bool is_valid(GameState& state, const actions::Action& action) const
+   {
+      return m_action_phase->is_valid(state, action);
+   }
+   [[nodiscard]] inline std::vector< actions::Action > valid_actions(const GameState& state) const;
+
+   template < actions::Phase phase, typename... Args >
+   inline void transition(Args&&... args);
+   void restore_previous_phase();
+
+   auto& accepted_actions() const { return m_action_phase->accepted_actions(); }
+   [[nodiscard]] auto phase() const { return m_action_phase->phase(); }
+
+  private:
+   uptr< ActionPhaseBase > m_action_phase;
+   uptr< ActionPhaseBase > m_prev_phase = nullptr;
+   std::vector< actions::Action > m_action_stack;
+};
+
 namespace helpers {
-template < ActionSystemBase::Phase p >
+template < actions::Phase p >
 struct phase_to_type;
 
 template <>
-struct phase_to_type< ActionSystemBase::Phase::DEFAULT > {
-   constexpr static auto phase = ActionSystemBase::Phase::DEFAULT;
+struct phase_to_type< actions::Phase::DEFAULT > {
+   constexpr static auto phase = actions::Phase::DEFAULT;
    using type = DefaultActionPhase;
 };
 template <>
-struct phase_to_type< ActionSystemBase::Phase::COMBAT > {
-   constexpr static auto phase = ActionSystemBase::Phase::COMBAT;
+struct phase_to_type< actions::Phase::COMBAT > {
+   constexpr static auto phase = actions::Phase::COMBAT;
    using type = CombatActionPhase;
 };
 template <>
-struct phase_to_type< ActionSystemBase::Phase::REPLACING > {
-   constexpr static auto phase = ActionSystemBase::Phase::REPLACING;
+struct phase_to_type< actions::Phase::REPLACING > {
+   constexpr static auto phase = actions::Phase::REPLACING;
    using type = ReplacingActionPhase;
 };
 template <>
-struct phase_to_type< ActionSystemBase::Phase::TARGET > {
-   constexpr static auto phase = ActionSystemBase::Phase::TARGET;
+struct phase_to_type< actions::Phase::TARGET > {
+   constexpr static auto phase = actions::Phase::TARGET;
    using type = TargetActionPhase;
 };
 
-template < ActionSystemBase::Phase p >
+template < actions::Phase p >
 using phase_to_type_t = typename phase_to_type< p >::type;
 
 }  // namespace helpers
+
+template < actions::Phase phase, typename... Args >
+void ActionSystem::transition(Args&&... args)
+{
+   using PhaseType = helpers::phase_to_type_t< phase >;
+   // move current invoker into previous
+   m_prev_phase = std::move(m_action_phase);
+   m_action_phase = std::make_unique< PhaseType >(this, std::forward< Args >(args)...);
+}
+
 
 #endif  // LORAINE_ACTION_SYSTEM_H

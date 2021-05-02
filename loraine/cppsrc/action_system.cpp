@@ -1,16 +1,19 @@
 
 #include "loraine/core/systems/action_system.h"
 
+#include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"
 #include "loraine/core/systems/effect_system.hpp"
-#include "loraine/core/gamestate.h"
 
-
-bool ActionSystemBase::invoke(GameState& state, actions::Action& action)
+void ActionSystem::restore_previous_phase()
 {
-   return action.execute(state);
+   if(m_prev_phase != nullptr) {
+      m_action_phase = std::move(m_prev_phase);
+      m_prev_phase = nullptr;
+   }
 }
-actions::Action ActionSystemBase::request_action(const GameState& state) const
+
+actions::Action ActionPhaseBase::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
    while(true) {
@@ -78,7 +81,7 @@ std::vector< actions::Action > CombatActionPhase::valid_actions(const GameState&
 }
 actions::Action ReplacingActionPhase::request_action(const GameState& state) const
 {
-   return ActionSystemBase::request_action(state);
+   return ActionPhaseBase::request_action(state);
 }
 bool ReplacingActionPhase::is_valid(const actions::Action& action) const
 {

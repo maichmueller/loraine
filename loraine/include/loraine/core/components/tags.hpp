@@ -18,10 +18,6 @@ struct trap {
 };
 struct nexus {
 };
-template < Zone zone >
-struct location {
-   constexpr static auto value = zone;
-};
 struct played {
 };
 struct nightfallen {
@@ -45,13 +41,23 @@ struct team {
 
 // player tags
 
+/// tag to allow finding the entities that mark the players
+struct player {
+};
+/// the player that started the first turn
+struct starting_player {
+};
 struct daybreak {
 };
 struct nightfall {
 };
 struct scout {
 };
+/// the player holds the attack token (i.e. is allowed to initiate a fight)
 struct attack {
+};
+/// the player is the current attacker
+struct attacker {
 };
 struct plunder {
 };

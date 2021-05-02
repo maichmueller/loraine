@@ -53,27 +53,25 @@ class BoardSystem: public ILogicSystem {
    template < Zone new_zone >
    bool move_to(entt::entity card, size_t index)
    {
-      auto pos = m_registry.get< Position >(card);
-      constexpr auto same_pos_check = [&, this]() {
-         return m_registry.all_of< tag::location< new_zone > >(card) && pos.index == index
-                || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
-                      if constexpr(new_zone == Zone::BATTLEFIELD) {
-                         return m_size_max_bf;
-                      }
-                      return m_size_max_camp;
-                   }();
-      };
-
       if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
+         constexpr auto same_pos_check = [&, this]() {
+            return (m_registry.all_of< Position< new_zone > >(card)
+                    && m_registry.get< Position< new_zone > >(card).index == index)
+                   || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
+                         if constexpr(new_zone == Zone::BATTLEFIELD) {
+                            return m_size_max_bf;
+                         }
+                         return m_size_max_camp;
+                      }();
+         };
          if(same_pos_check()) {
             // the unit's old zone is the units new zone and it is already at the position in which
             // it is supposed to move or the battlefield is full
             return false;
          }
       }
-      _remove_loc_tags(card);
-      pos.index = index;
-      m_registry.emplace< tag::location< new_zone > >(card);
+      _remove_pos(card);
+      m_registry.emplace< Position< new_zone > >(card, index);
       return true;
    }
 
@@ -102,16 +100,24 @@ class BoardSystem: public ILogicSystem {
 
    template < Zone zone >
    void add_to_queue(entt::entity card) = delete;
-//   template <>
-//   void add_to_queue< Zone::CAMP >(entt::entity card);
-//   template <>
-//   void add_to_queue< Zone::BATTLEFIELD >(entt::entity card);
+   /// these specializations should be fine according to C++17 std, but GCC complains
+   //   template <>
+   //   void add_to_queue< Zone::CAMP >(entt::entity card);
+   //   template <>
+   //   void add_to_queue< Zone::BATTLEFIELD >(entt::entity card);
    template < Zone zone >
    void add_to_queue(const std::vector< entt::entity >& units) = delete;
-//   template <>
-//   void add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& units);
-//   template <>
-//   void add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::entity >& units);
+   /// these specializations should be fine according to C++17 std, but GCC complains
+   //   template <>
+   //   void add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& units);
+   //   template <>
+   //   void add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::entity >& units);
+
+   template < Zone zone >
+   inline bool empty() const
+   {
+      return m_registry.view< Position< zone > >().empty();
+   }
 
   private:
    /// the max number of cards in the camp at any time
@@ -141,10 +147,10 @@ class BoardSystem: public ILogicSystem {
    template < Zone zone >
    size_t _update_positions()
    {
-      auto zone_view = m_registry.view< tag::location< zone >, Position >();
-      std::vector< Position* > positions;
-      zone_view.each([&](auto& entity, auto& z, auto& pos) { positions.emplace_back(pos); });
-      std::sort(positions.begin(), positions.end(), [](const Position* p1, const Position* p2) {
+      auto pos_view = m_registry.view< Position< zone > >();
+      std::vector< Position< zone >* > positions;
+      pos_view.each([&](auto& entity, auto& pos) { positions.emplace_back(pos); });
+      std::sort(positions.begin(), positions.end(), [](const auto* p1, const auto* p2) {
          return p1->index < p2->index;
       });
       auto c = 0UL;
@@ -164,19 +170,19 @@ class BoardSystem: public ILogicSystem {
     * @param card
     * @return
     */
-   void _remove_loc_tags(entt::entity card) { _remove_loc_tags_impl< Zone(n_zone - 1) >(card); }
+   void _remove_pos(entt::entity card) { _remove_pos_impl< Zone(n_zone - 1) >(card); }
 
    template < Zone zone >
-   void _remove_loc_tags_impl(entt::entity card)
+   void _remove_pos_impl(entt::entity card)
    {
-      if(auto view = m_registry.view< tag::location< zone > >(); view.contains(card)) {
-         m_registry.remove< tag::location< zone > >(card);
+      if(m_registry.view< Position< zone > >().contains(card)) {
+         m_registry.remove< Position< zone > >(card);
          _update_positions< zone >();
          return;
       }
       // if it wasn't this position, then we go on, to the remainder
       if constexpr(static_cast< size_t >(zone) > 0) {
-         _remove_loc_tags_impl< static_cast< Zone >(static_cast< size_t >(zone) - 1) >(card);
+         _remove_pos_impl< static_cast< Zone >(static_cast< size_t >(zone) - 1) >(card);
       }
    }
 };
@@ -187,7 +193,7 @@ size_t BoardSystem::count_if(
    const std::function< bool(entt::registry&, entt::entity) >& filter) const
 {
    size_t sum = 0;
-   for(entt::entity elem : m_registry.view< tag::location< zone > >()) {
+   for(auto elem : m_registry.view< Position< zone > >()) {
       if(filter(m_registry, elem)) {
          sum += 1;
       }
@@ -198,7 +204,7 @@ size_t BoardSystem::count_if(
 template < Team::Value team >
 std::vector< entt::entity > BoardSystem::camp_units() const
 {
-   auto view = m_registry.view< tag::location< Zone::CAMP >, tag::team< team >, tag::unit >();
+   auto view = m_registry.view< Position< Zone::CAMP >, tag::team< team >, tag::unit >();
    return std::vector< entt::entity >{view.begin(), view.end()};
 }
 

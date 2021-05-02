@@ -5,7 +5,10 @@
 #include "loraine/core/logic.h"
 #include "loraine/utils/algorithms.h"
 
-bool actions::PlaceSpellAction::execute_impl(GameState& state)
+using namespace actions;
+
+
+ActionFollowup PlaceSpellAction::execute_impl(GameState& state)
 {
    auto reset_targets = [](std::vector< sptr< IEffect > >& effects) {
       for(auto& effect : effects) {
@@ -59,7 +62,7 @@ bool actions::PlaceSpellAction::execute_impl(GameState& state)
    return false;
 }
 
-bool actions::PlaceUnitAction::execute_impl(GameState& state)
+ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
 {
    auto& bf = state.board().battlefield(team());
    auto& camp = state.board().camp(team());
@@ -87,7 +90,7 @@ bool actions::PlaceUnitAction::execute_impl(GameState& state)
    }
    return false;
 }
-bool actions::DragEnemyAction::execute_impl(GameState& state)
+ActionFollowup DragEnemyAction::execute_impl(GameState& state)
 {
    auto& bf = state.board().battlefield(opponent(team()));
    auto& camp = state.board().camp(opponent(team()));
@@ -106,7 +109,7 @@ bool actions::DragEnemyAction::execute_impl(GameState& state)
    }
    return false;
 }
-bool actions::MulliganAction::execute_impl(GameState& state)
+ActionFollowup MulliganAction::execute_impl(GameState& state)
 {
    Team active_team = state.active_team();
    auto& hand = state.player(active_team).hand();
@@ -126,7 +129,7 @@ bool actions::MulliganAction::execute_impl(GameState& state)
    }
    return true;
 }
-bool actions::CancelAction::execute_impl(GameState& state)
+ActionFollowup CancelAction::execute_impl(GameState& state)
 {
    auto reset_targets = [](std::vector< sptr< IEffect > >& effects) {
       for(auto& effect : effects) {
@@ -155,7 +158,7 @@ bool actions::CancelAction::execute_impl(GameState& state)
 
    return false;  // initiative stays with current player
 }
-bool actions::TargetingAction::execute_impl(GameState& state)
+ActionFollowup TargetingAction::execute_impl(GameState& state)
 {
    // only set the chosen targets to the last element on the targeting t_buffer, which is
    // the one that requested targets
@@ -188,7 +191,7 @@ bool actions::TargetingAction::execute_impl(GameState& state)
    return false;
 }
 
-bool actions::AcceptAction::execute_impl(GameState& state)
+ActionFollowup AcceptAction::execute_impl(GameState& state)
 {
    // check if units have been placed on the battlefield and thus an attack or block was
    // commenced
@@ -223,12 +226,12 @@ bool actions::AcceptAction::execute_impl(GameState& state)
    }
    return true;
 }
-bool actions::PlayAction::execute_impl(GameState& state)
+ActionFollowup PlayAction::execute_impl(GameState& state)
 {
    return true;
 }
 
-bool actions::PlayRequestAction::execute_impl(GameState& state)
+ActionFollowup PlayRequestAction::execute_impl(GameState& state)
 {
    auto field_card = to_fieldcard(state.player(team()).hand().at(m_hand_index));
    state.buffer().play.emplace(field_card);
@@ -258,7 +261,7 @@ bool actions::PlayRequestAction::execute_impl(GameState& state)
    }
    return false;
 }
-bool actions::PlaySpellFinishAction::execute_impl(GameState& state)
+ActionFollowup PlaySpellFinishAction::execute_impl(GameState& state)
 {
    auto& s_buffer = state.buffer().spell;
    // remove the spell to play from the spell buffer stack
@@ -280,7 +283,7 @@ bool actions::PlaySpellFinishAction::execute_impl(GameState& state)
    // we pass initiative if we played the entire stack
    return true;
 }
-bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
+ActionFollowup PlayFieldCardFinishAction::execute_impl(GameState& state)
 {
    auto field_card = state.buffer().play.value();
    state.buffer().play->reset();
@@ -293,7 +296,7 @@ bool actions::PlayFieldCardFinishAction::execute_impl(GameState& state)
    return true;
 }
 
-bool actions::ChoiceAction::execute_impl(GameState& state)
+ActionFollowup ChoiceAction::execute_impl(GameState& state)
 {
    // put choice at first place of the vector buffer
    auto& buffer = state.buffer().choice;
