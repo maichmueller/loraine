@@ -15,7 +15,9 @@ class GameState;
 
 namespace actions {
 
-enum class Phase { DEFAULT = 0, COMBAT, MULLIGAN, REPLACING, TARGET };
+class Action;
+
+enum class Phase { EXPECTING = 0, CHOICE, ATTACK, BLOCK, COMBAT, MULLIGAN, REPLACING, SPELLFIGHT, TARGET };
 
 enum class ActionID {
    ACCEPT,
@@ -33,7 +35,7 @@ enum class ActionID {
    TARGETING
 };
 
-enum class ActionRequestID {
+enum class ActionProposalID {
    ACCEPT,
    CANCEL,
    CHOICE,
@@ -111,6 +113,8 @@ class PlayRequestAction:
    {
    }
    [[nodiscard]] inline auto index() const { return m_hand_index; }
+
+   Action request_space() const;
 
    ActionFollowup execute_impl(GameState& state);
 
@@ -310,11 +314,11 @@ class TargetingAction: public ActionBase< TargetingAction, ActionIDType< ActionI
    std::vector< entt::entity > m_targets;
 };
 
-class ReplacingAction: public ActionBase< ReplacingAction, ActionIDType< ActionID::REPLACE > > {
+class ReplaceAction: public ActionBase< ReplaceAction, ActionIDType< ActionID::REPLACE > > {
   public:
-   using base = ActionBase< ReplacingAction, ActionIDType< ActionID::REPLACE > >;
+   using base = ActionBase< ReplaceAction, ActionIDType< ActionID::REPLACE > >;
 
-   ReplacingAction(Team team, size_t replace_index)
+   ReplaceAction(Team team, size_t replace_index)
        : ActionBase(team), m_replace_index(replace_index)
    {
    }
@@ -338,7 +342,6 @@ class Action {
       PlaceSpellAction,
       PlaceUnitAction,
       PlayAction,
-      PlayRequestAction,
       PlayFieldCardFinishAction,
       PlaySpellFinishAction,
       TargetingAction >;
@@ -382,26 +385,23 @@ class Action {
    ActionVariant m_action_detail;
 };
 
-template < ActionRequestID id_ >
-class ActionRequestIDType {
+template < ActionProposalID id_ >
+class ActionProposalIDType {
   public:
-   constexpr static ActionRequestID id = id_;
+   constexpr static ActionProposalID id = id_;
 };
 
 template < typename Derived, typename ActionT >
-class ActionRequest: public utils::CRTP< ActionRequest, Derived, ActionT > {
-  public:
-   constexpr static ActionRequestID id = ActionT::id;
+struct ActionProposal: public utils::CRTP< ActionProposal, Derived, ActionT > {
+   constexpr static ActionProposalID id = ActionT::id;
 
-   ActionRequest(Team team) noexcept : m_team(team) {}
-
-   [[nodiscard]] inline auto team() const { return m_team; }
+   ActionProposal(Team team) noexcept : team(team) {}
 
    inline Action fulfill() const { return this->derived()->fulfill(); }
 
-  private:
-   Team m_team;
+   Team team;
 };
 
 }  // namespace actions
+
 #endif  // LORAINE_ACTION_H

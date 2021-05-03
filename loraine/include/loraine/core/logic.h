@@ -40,7 +40,7 @@ class GameState;
 //   [[nodiscard]] bool in_combat() const
 //   {
 //      return m_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT
-//             || (m_action_invoker->phase() != ActionPhaseBase::Phase::DEFAULT
+//             || (m_action_invoker->phase() != ActionPhaseBase::Phase::EXPECTING
 //                 && m_prev_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT);
 //   };
 //

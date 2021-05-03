@@ -200,6 +200,7 @@ class ActionSystem: public ILogicSystem {
    {
       return m_action_phase->request_action(state);
    }
+
    inline bool invoke(actions::Action& action) { return m_action_phase->invoke(action); }
    [[nodiscard]] inline bool is_valid(GameState& state, const actions::Action& action) const
    {
@@ -208,11 +209,13 @@ class ActionSystem: public ILogicSystem {
    [[nodiscard]] inline std::vector< actions::Action > valid_actions(const GameState& state) const;
 
    template < actions::Phase phase, typename... Args >
-   inline void transition(Args&&... args);
-   void restore_previous_phase();
+   inline ActionSystem* transition(Args&&... args);
+   ActionSystem* restore_previous_phase();
 
    auto& accepted_actions() const { return m_action_phase->accepted_actions(); }
    [[nodiscard]] auto phase() const { return m_action_phase->phase(); }
+
+
 
   private:
    uptr< ActionPhaseBase > m_action_phase;
@@ -225,8 +228,8 @@ template < actions::Phase p >
 struct phase_to_type;
 
 template <>
-struct phase_to_type< actions::Phase::DEFAULT > {
-   constexpr static auto phase = actions::Phase::DEFAULT;
+struct phase_to_type< actions::Phase::EXPECTING > {
+   constexpr static auto phase = actions::Phase::EXPECTING;
    using type = DefaultActionPhase;
 };
 template <>
@@ -251,13 +254,13 @@ using phase_to_type_t = typename phase_to_type< p >::type;
 }  // namespace helpers
 
 template < actions::Phase phase, typename... Args >
-void ActionSystem::transition(Args&&... args)
+ActionSystem* ActionSystem::transition(Args&&... args)
 {
    using PhaseType = helpers::phase_to_type_t< phase >;
    // move current invoker into previous
    m_prev_phase = std::move(m_action_phase);
    m_action_phase = std::make_unique< PhaseType >(this, std::forward< Args >(args)...);
+   return this;
 }
-
 
 #endif  // LORAINE_ACTION_SYSTEM_H

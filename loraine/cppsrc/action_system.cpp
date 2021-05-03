@@ -5,12 +5,13 @@
 #include "loraine/core/logic.h"
 #include "loraine/core/systems/effect_system.hpp"
 
-void ActionSystem::restore_previous_phase()
+ActionSystem* ActionSystem::restore_previous_phase()
 {
    if(m_prev_phase != nullptr) {
       m_action_phase = std::move(m_prev_phase);
       m_prev_phase = nullptr;
    }
+   return this;
 }
 
 actions::Action ActionPhaseBase::request_action(const GameState& state) const
