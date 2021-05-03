@@ -13,22 +13,22 @@
 struct TestController: public Controller {
    using Controller::Controller;
 
-   std::stack< actions::Action > action_stack;
+   std::stack< input::Action > action_stack;
 
-   actions::Action choose_action(const GameState& state) override
+   input::Action choose_action(const GameState& state) override
    {
       auto a = action_stack.top();
       action_stack.pop();
       return a;
    }
-   actions::Action choose_targets(const GameState& state, const sptr< IEffect >& effect) override
+   input::Action choose_targets(const GameState& state, const sptr< IEffect >& effect) override
    {
       auto a = action_stack.top();
       action_stack.pop();
       return a;
    }
 
-   void add_action(const actions::Action& action) { action_stack.emplace(action); }
+   void add_action(const input::Action& action) { action_stack.emplace(action); }
    void pop() { action_stack.pop(); }
 };
 

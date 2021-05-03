@@ -24,8 +24,8 @@ class Controller {
    Controller& operator=(const Controller& action) noexcept = delete;
    Controller& operator=(Controller&& action) noexcept = delete;
 
-   virtual actions::Action choose_action(const GameState& state) = 0;
-   virtual actions::Action choose_targets(const GameState& state, const TargetSystem& targeter) = 0;
+   virtual input::Action choose_action(const GameState& state) = 0;
+   virtual input::Action choose_targets(const GameState& state, const TargetSystem& targeter) = 0;
 };
 
 #endif  // LORAINE_CONTROLLER_H

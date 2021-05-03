@@ -13,7 +13,7 @@ Logic::Logic(const Logic& other)
 void Logic::request_action() const
 {
    m_state->buffer().action.emplace_back(
-      std::make_shared< actions::Action >(std::move(m_action_invoker->request_action(*state()))));
+      std::make_shared< input::Action >(std::move(m_action_invoker->request_action(*state()))));
 }
 
 void Logic::cast(bool burst)

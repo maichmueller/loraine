@@ -5,7 +5,7 @@
 #include "loraine/core/logic.h"
 #include "loraine/utils/algorithms.h"
 
-using namespace actions;
+using namespace input;
 
 
 ActionFollowup PlaceSpellAction::execute_impl(GameState& state)

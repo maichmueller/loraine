@@ -14,8 +14,8 @@
 #include "config.h"
 #include "gamedefs.h"
 #include "loraine/core/components.h"
-#include "loraine/core/systems/action_system.h"
 #include "loraine/core/systems/board_system.h"
+#include "loraine/core/systems/input_system.h"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 #include "loraine/utils/random.h"
@@ -83,7 +83,7 @@ class GameState {
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
 
-   ActionSystem m_action_system;
+   InputSystem m_action_system;
    BoardSystem m_board;
 
    random::rng_type m_rng;

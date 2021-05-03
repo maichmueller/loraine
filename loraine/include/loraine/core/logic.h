@@ -7,7 +7,7 @@
 
 #include <array>
 
-#include "loraine/core/systems/action_system.h"
+#include "loraine/core/systems/input_system.h"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 
@@ -16,7 +16,7 @@ class GameState;
 
 //class Logic: public Cloneable< Logic > {
 //  public:
-//   explicit Logic(uptr< ActionHandlerBase > act_invoker = std::make_unique< MulliganActionPhase >())
+//   explicit Logic(uptr< InputHandlerBase > act_invoker = std::make_unique< MulliganActionPhase >())
 //       : m_action_invoker(std::move(act_invoker))
 //   {
 //      m_action_invoker->logic(this);
@@ -34,14 +34,14 @@ class GameState;
 //
 //   // Beginning of LoR logic implementations
 //
-//   ActionHandlerBase& action_invoker() { return *m_action_invoker; }
-//   ActionHandlerBase& action_invoker() const { return *m_action_invoker; }
+//   InputHandlerBase& action_invoker() { return *m_action_invoker; }
+//   InputHandlerBase& action_invoker() const { return *m_action_invoker; }
 //
 //   [[nodiscard]] bool in_combat() const
 //   {
-//      return m_action_invoker->phase() == ActionHandlerBase::State::COMBAT
-//             || (m_action_invoker->phase() != ActionHandlerBase::State::IDLE
-//                 && m_prev_action_invoker->phase() == ActionHandlerBase::State::COMBAT);
+//      return m_action_invoker->phase() == InputHandlerBase::State::COMBAT
+//             || (m_action_invoker->phase() != InputHandlerBase::State::IDLE
+//                 && m_prev_action_invoker->phase() == InputHandlerBase::State::COMBAT);
 //   };
 //
 //   void request_action() const;
@@ -196,9 +196,9 @@ class GameState;
 //   /// SegFault problems.
 //   GameState* m_handler = nullptr;
 //   /// the current action invoker for incoming actions
-//   std::unique_ptr< ActionHandlerBase > m_action_invoker;
+//   std::unique_ptr< InputHandlerBase > m_action_invoker;
 //   /// the previous action invoker for incoming actions
-//   std::unique_ptr< ActionHandlerBase > m_prev_action_invoker = nullptr;
+//   std::unique_ptr< InputHandlerBase > m_prev_action_invoker = nullptr;
 //   /// private logic helpers
 //
 //   /// The member declarations
