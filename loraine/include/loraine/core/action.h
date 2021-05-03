@@ -217,6 +217,14 @@ class Action {
    Action(ActionVariant&& action) noexcept : m_action_detail(std::move(action)) {}
 
    template < typename DetailType >
+   inline auto& detail()
+   {
+      return std::get< DetailType >(m_action_detail);
+   }
+   // default for not providing any template type and therefore simply getting the entire variant
+   inline auto& detail() { return m_action_detail; }
+
+   template < typename DetailType >
    [[nodiscard]] inline auto& detail() const
    {
       return std::get< DetailType >(m_action_detail);
@@ -231,6 +239,10 @@ class Action {
    [[nodiscard]] constexpr inline auto id() const
    {
       return std::visit([](const auto& action) { return action.id; }, m_action_detail);
+   }
+   constexpr inline void mark_complete()
+   {
+      std::visit([](auto& action) { action.completed = true; }, m_action_detail);
    }
 
    template < ID id_ >
