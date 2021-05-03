@@ -16,11 +16,11 @@ ActionFollowup PlaceSpellAction::execute_impl(GameState& state)
       }
    };
    auto& hand = state.player(team()).hand();
-   auto spell = to_spell(hand.at(m_hand_index));
+   auto spell = to_spell(hand.at(hand_index));
    auto& effects_to_cast = spell->add_effects(events::EventLabel::CAST);
    auto& spell_stack = state.spell_stack();
    auto& s_buffer = state.buffer().spell;
-   if(m_to_stack) {
+   if(to_stack) {
       // add the spell to the stack and the buffer, this would allow the
       // opponent to also see that a spell might be played
       s_buffer.emplace_back(spell);
@@ -66,8 +66,8 @@ ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
 {
    auto& bf = state.board().battlefield(team());
    auto& camp = state.board().camp(team());
-   if(m_to_bf) {
-      for(auto idx : m_indices_vec) {
+   if(to_bf) {
+      for(auto idx : indices_vec) {
          const auto& field_card = camp[idx];
          bf.emplace_back(to_unit(field_card));
          state.buffer().bf.emplace_back(to_unit(field_card));
@@ -75,9 +75,9 @@ ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
-      algo::remove_by_indices(camp, m_indices_vec);
+      algo::remove_by_indices(camp, indices_vec);
    } else {
-      for(auto idx : m_indices_vec) {
+      for(auto idx : indices_vec) {
          auto unit = bf[idx];
          camp.emplace_back(bf[idx]);
          auto& bf_buffer = state.buffer().bf;
@@ -86,7 +86,7 @@ ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
-      algo::remove_by_indices(bf, m_indices_vec);
+      algo::remove_by_indices(bf, indices_vec);
    }
    return false;
 }
@@ -94,18 +94,18 @@ ActionFollowup DragEnemyAction::execute_impl(GameState& state)
 {
    auto& bf = state.board().battlefield(opponent(team()));
    auto& camp = state.board().camp(opponent(team()));
-   if(m_to_bf) {
-      auto dragged = camp[m_from];
-      bf[m_to] = to_unit(dragged);
-      dragged->move_to(Zone::BATTLEFIELD, m_to);
+   if(to_bf) {
+      auto dragged = camp[from];
+      bf[to] = to_unit(dragged);
+      dragged->move_to(Zone::BATTLEFIELD, to);
       // removing the units from the camp from the end of the vector.
-      camp.erase(std::next(camp.begin(), m_from));
+      camp.erase(std::next(camp.begin(), from));
    } else {
-      auto dragged = bf[m_from];
+      auto dragged = bf[from];
       camp.emplace_back(dragged);
       dragged->move_to(Zone::CAMP, camp.size() - 1);
       // removing the units from the camp from the end of the vector.
-      bf.erase(std::next(bf.begin(), m_from));
+      bf.erase(std::next(bf.begin(), from));
    }
    return false;
 }
@@ -115,15 +115,15 @@ ActionFollowup MulliganAction::execute_impl(GameState& state)
    auto& hand = state.player(active_team).hand();
    auto& deck = state.player(active_team).deck();
    // return those cards for replacement back into the deck
-   for(auto i = 0; i < m_replace.size(); ++i) {
-      if(m_replace[i]) {
+   for(auto i = 0; i < replace.size(); ++i) {
+      if(replace[i]) {
          deck.shuffle_into(hand[i], state.rng(), 0);
       }
    }
    // replace the marked cards with newly drawn cards
    random::shuffle_inplace(deck, state.rng());
-   for(auto i = 0; i < m_replace.size(); ++i) {
-      if(m_replace[i]) {
+   for(auto i = 0; i < replace.size(); ++i) {
+      if(replace[i]) {
          hand[i] = deck.pop();
       }
    }
@@ -163,7 +163,7 @@ ActionFollowup TargetingAction::execute_impl(GameState& state)
    // only set the chosen targets to the last element on the targeting t_buffer, which is
    // the one that requested targets
    auto& t_buffer = state.buffer().targeting;
-   t_buffer.back()->targets(m_targets);
+   t_buffer.back()->targets(targets);
    auto assoc_card = t_buffer.back()->associated_card();
    if(t_buffer.size() == 1) {  // effect to choose targets for is last in buffer
       if(assoc_card->is_spell() &&  // effect belongs to a spell
@@ -226,14 +226,14 @@ ActionFollowup AcceptAction::execute_impl(GameState& state)
    }
    return true;
 }
-ActionFollowup PlayAction::execute_impl(GameState& state)
+ActionFollowup PlayFieldcardAction::execute_impl(GameState& state)
 {
    return true;
 }
 
 ActionFollowup PlayRequestAction::execute_impl(GameState& state)
 {
-   auto field_card = to_fieldcard(state.player(team()).hand().at(m_hand_index));
+   auto field_card = to_fieldcard(state.player(team()).hand().at(hand_index));
    state.buffer().play.emplace(field_card);
    auto& camp = state.board().camp(team());
    if(camp.size() == state.board().max_size_camp()) {
@@ -300,7 +300,7 @@ ActionFollowup ChoiceAction::execute_impl(GameState& state)
 {
    // put choice at first place of the vector buffer
    auto& buffer = state.buffer().choice;
-   buffer.begin()->swap(*std::next(buffer.begin(), m_choice));
+   buffer.begin()->swap(*std::next(buffer.begin(), choice));
    buffer.erase(std::next(buffer.begin(), 1), buffer.end());
    return false;
 }

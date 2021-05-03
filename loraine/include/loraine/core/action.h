@@ -17,8 +17,6 @@ namespace actions {
 
 class Action;
 
-enum class Phase { EXPECTING = 0, CHOICE, ATTACK, BLOCK, COMBAT, MULLIGAN, REPLACING, SPELLFIGHT, TARGET };
-
 enum class ActionID {
    ACCEPT,
    CANCEL,
@@ -27,25 +25,12 @@ enum class ActionID {
    PLACE_UNIT,
    PLACE_SPELL,
    MULLIGAN,
+   PASS,
    PLAY_FIELDCARD,
-   PLAY_FINISH,
    PLAY_SPELL,
-   PLAY_REQUEST,
    REPLACE,
-   TARGETING
-};
-
-enum class ActionProposalID {
-   ACCEPT,
-   CANCEL,
-   CHOICE,
-   DRAG_ENEMY,
-   PLACE_UNIT,
-   PLACE_SPELL,
-   MULLIGAN,
-   PLAY,
-   REPLACE,
-   TARGETING
+   TARGETING,
+   SKIP
 };
 
 enum class ActionRank { PRIMITIVE = 0, MACRO };
@@ -68,267 +53,164 @@ class ActionIDType {
    constexpr static ActionRank rank = _determine_rank();
 };
 
-using ActionFollowup = std::pair< Phase, bool >;
+template < ActionID id_ >
+struct ActionBase {
+   constexpr static ActionID id = id_;
 
-template < typename Derived, typename ActionT >
-class ActionBase: public utils::CRTP< ActionBase, Derived, ActionT > {
-  public:
-   constexpr static ActionID id = ActionT::id;
-   constexpr static ActionID rank = ActionT::rank;
+   ActionBase(Team team) noexcept : team(team) {}
 
-   explicit ActionBase(Team team) noexcept : m_team(team) {}
-
-   [[nodiscard]] inline auto team() const { return m_team; }
-   inline void mark_complete() { m_completed = true; }
-
-   inline ActionFollowup execute(GameState& state) { return this->derived()->execute_impl(state); }
-
-  private:
-   Team m_team;
-   bool m_completed = false;
+   Team team;
+   bool completed = false;
 };
 
 /**
  * This is the action for accepting the outcome of whatever
  * the current state is. Counts as pass if nothing has been done
  */
-class AcceptAction: public ActionBase< AcceptAction, ActionIDType< ActionID::ACCEPT > > {
-  public:
-   using base = ActionBase< AcceptAction, ActionIDType< ActionID::ACCEPT > >;
+struct AcceptAction: public ActionBase< ActionID::ACCEPT > {
+   using base = ActionBase< ActionID::ACCEPT >;
    using base::base;
-
-   ActionFollowup execute_impl(GameState& state);
 };
 
 /**
  * Action for playing a fieldcard
  */
-class PlayRequestAction:
-    public ActionBase< PlayRequestAction, ActionIDType< ActionID::PLAY_REQUEST > > {
-  public:
-   using base = ActionBase< PlayRequestAction, ActionIDType< ActionID::PLAY_REQUEST > >;
+struct PlayFieldcardAction: public ActionBase< ActionID::PLAY_FIELDCARD > {
+   using base = ActionBase< ActionID::PLAY_FIELDCARD >;
 
-   explicit PlayRequestAction(Team team, size_t hand_index) noexcept
-       : ActionBase(team), m_hand_index(hand_index)
+   PlayFieldcardAction(Team team, entt::entity card) noexcept
+       : ActionBase(team), card(card), target_index(std::nullopt)
    {
    }
-   [[nodiscard]] inline auto index() const { return m_hand_index; }
-
-   Action request_space() const;
-
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   // the index of the spell in hand to play
-   size_t m_hand_index;
-};
-/**
- * Action for finishing up playing a fieldcard
- */
-class PlayFieldCardFinishAction:
-    public ActionBase< PlayFieldCardFinishAction, ActionIDType< ActionID::PLAY_FINISH > > {
-  public:
-   using base = ActionBase< PlayFieldCardFinishAction, ActionIDType< ActionID::PLAY_FINISH > >;
-
-   PlayFieldCardFinishAction(Team team, std::optional< size_t > camp_index = std::nullopt) noexcept
-       : ActionBase(team), m_camp_index(camp_index)
-   {
-   }
-   [[nodiscard]] inline auto index() const { return m_camp_index; }
-
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   std::optional< size_t > m_camp_index;
-};
-/**
- * Action for finishing up playing a fieldcard
- */
-class PlaySpellFinishAction:
-    public ActionBase< PlaySpellFinishAction, ActionIDType< ActionID::PLAY_FINISH > > {
-  public:
-   using base = ActionBase< PlaySpellFinishAction, ActionIDType< ActionID::PLAY_FINISH > >;
-
-   explicit PlaySpellFinishAction(Team team, bool burst) noexcept : ActionBase(team), m_burst(burst)
-   {
-   }
-   [[nodiscard]] auto burst() const { return m_burst; }
-
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   bool m_burst;
-};
-
-/**
- * Action for playing a fieldcard
- */
-class PlayAction: public ActionBase< PlayAction, ActionIDType< ActionID::PLAY_FIELDCARD > > {
-  public:
-   using base = ActionBase< PlayAction, ActionIDType< ActionID::PLAY_FIELDCARD > >;
-
-   PlayAction(Team team, size_t hand_index) noexcept
-       : ActionBase(team), m_hand_index(hand_index), m_target_index(std::nullopt)
-   {
-   }
-   PlayAction(Team team, size_t hand_index, size_t target_index) noexcept
-       : ActionBase(team), m_hand_index(hand_index), m_target_index(target_index)
+   PlayFieldcardAction(Team team, entt::entity card, size_t target_index) noexcept
+       : ActionBase(team), card(card), target_index(target_index)
    {
    }
 
-   [[nodiscard]] inline auto index() const { return m_hand_index; }
-
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
    // the index of the fieldcard in hand to play
-   size_t m_hand_index;
+   entt::entity card;
    // the index in the camp to place the fieldcard (should be set automatically, unless full)
-   std::optional< size_t > m_target_index;
+   std::optional< size_t > target_index;
+};
+
+/**
+ * Action for playing spells
+ */
+struct PlaySpellAction: public ActionBase< ActionID::PLAY_SPELL > {
+   using base = ActionBase< ActionID::PLAY_SPELL >;
+
+   PlaySpellAction(Team team, const std::vector< entt::entity >& spells) noexcept
+       : ActionBase(team), spells(spells)
+   {
+   }
+
+   // the spells to play
+   std::vector< entt::entity > spells;
 };
 
 /**
  * Action for playing a fieldcard
  */
-class ChoiceAction: public ActionBase< ChoiceAction, ActionIDType< ActionID::CHOICE > > {
-  public:
-   using base = ActionBase< ChoiceAction, ActionIDType< ActionID::CHOICE > >;
+struct ChoiceAction: public ActionBase< ActionID::CHOICE > {
+   using base = ActionBase< ActionID::CHOICE >;
 
    ChoiceAction(Team team, size_t n_choices, size_t choice) noexcept
-       : ActionBase(team), m_nr_choices(n_choices), m_choice(choice)
+       : ActionBase(team), n_choices(n_choices), choice(choice)
    {
    }
-   [[nodiscard]] inline auto n_choices() const { return m_nr_choices; }
-   [[nodiscard]] inline auto choice() const { return m_choice; }
 
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   size_t m_nr_choices;
-   size_t m_choice;
+   size_t n_choices;
+   size_t choice;
 };
 
-class CancelAction: public ActionBase< CancelAction, ActionIDType< ActionID::CANCEL > > {
-  public:
-   using base = ActionBase< CancelAction, ActionIDType< ActionID::CANCEL > >;
+struct CancelAction: public ActionBase< ActionID::CANCEL > {
+   using base = ActionBase< ActionID::CANCEL >;
    using base::base;
-
-   ActionFollowup execute_impl(GameState& state);
 };
 
-class PlaceSpellAction:
-    public ActionBase< PlaceSpellAction, ActionIDType< ActionID::PLACE_SPELL > > {
+struct PlaceSpellAction: public ActionBase< ActionID::PLACE_SPELL > {
   public:
-   using base = ActionBase< PlaceSpellAction, ActionIDType< ActionID::PLACE_SPELL > >;
+   using base = ActionBase< ActionID::PLACE_SPELL >;
 
    PlaceSpellAction(Team team, size_t hand_index, bool to_stack) noexcept
-       : ActionBase(team), m_hand_index(hand_index), m_to_stack(to_stack)
+       : ActionBase(team), hand_index(hand_index), to_stack(to_stack)
    {
    }
-   [[nodiscard]] inline auto index() const { return m_hand_index; }
-   [[nodiscard]] inline auto to_stack() const { return m_to_stack; }
 
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
    // the index of the spell in hand to place
-   size_t m_hand_index;
-   bool m_to_stack;
+   size_t hand_index;
+   bool to_stack;
 };
 
-class PlaceUnitAction: public ActionBase< PlaceUnitAction, ActionIDType< ActionID::PLACE_UNIT > > {
+struct PlaceUnitAction: public ActionBase< ActionID::PLACE_UNIT > {
    // Action for moving units either from the camp (index-based) onto the battlefield or from the
    // battlefield onto the camp
-  public:
-   using base = ActionBase< PlaceUnitAction, ActionIDType< ActionID::PLACE_UNIT > >;
+   using base = ActionBase< ActionID::PLACE_UNIT >;
 
    PlaceUnitAction(Team team, bool to_bf, std::vector< size_t > indices_vec)
-       : ActionBase(team), m_to_bf(to_bf), m_indices_vec(std::move(indices_vec))
+       : ActionBase(team), to_bf(to_bf), indices_vec(std::move(indices_vec))
    {
    }
-   [[nodiscard]] inline auto to_bf() const { return m_to_bf; }
-   [[nodiscard]] inline auto indices_vec() const { return m_indices_vec; }
 
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   bool m_to_bf;
-   std::vector< size_t > m_indices_vec;
+   bool to_bf;
+   std::vector< size_t > indices_vec;
 };
 
-class DragEnemyAction: public ActionBase< DragEnemyAction, ActionIDType< ActionID::DRAG_ENEMY > > {
+struct DragEnemyAction: public ActionBase< ActionID::DRAG_ENEMY > {
    // Drags an opponent unit either from the camp onto the battlefield (e.g. via challenger or
    // vulnerable keyword) or vice versa.
-  public:
-   using base = ActionBase< DragEnemyAction, ActionIDType< ActionID::DRAG_ENEMY > >;
+   using base = ActionBase< ActionID::DRAG_ENEMY >;
 
    DragEnemyAction(Team team, bool to_bf, size_t from, size_t to) noexcept
-       : ActionBase(team), m_to_bf(to_bf), m_from(from), m_to(to)
+       : ActionBase(team), to_bf(to_bf), from(from), to(to)
    {
    }
-   [[nodiscard]] inline auto to_bf() const { return m_to_bf; }
-   [[nodiscard]] inline auto from() const { return m_from; }
-   [[nodiscard]] inline auto to() const { return m_to; }
 
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
-   bool m_to_bf;
-   size_t m_from;
-   size_t m_to;
+   bool to_bf;
+   size_t from;
+   size_t to;
 };
 
 /**
- * Action for deciding which cards to m_replace in the initial draw
+ * Action for deciding which cards to replace in the initial draw
  */
-class MulliganAction: public ActionBase< MulliganAction, ActionIDType< ActionID::MULLIGAN > > {
+struct MulliganAction: public ActionBase< ActionID::MULLIGAN > {
   public:
-   using base = ActionBase< MulliganAction, ActionIDType< ActionID::MULLIGAN > >;
+   using base = ActionBase< ActionID::MULLIGAN >;
 
    explicit MulliganAction(Team team, std::vector< bool > replace)
-       : ActionBase(team), m_replace(std::move(replace))
+       : ActionBase(team), replace(std::move(replace))
    {
    }
-   [[nodiscard]] inline auto replace_decisions() const { return m_replace; }
-   ActionFollowup execute_impl(GameState& state);
 
-  private:
    // the positions on the battlefield the units take
-   std::vector< bool > m_replace;
+   std::vector< bool > replace;
 };
 
-class TargetingAction: public ActionBase< TargetingAction, ActionIDType< ActionID::TARGETING > > {
-  public:
-   using base = ActionBase< TargetingAction, ActionIDType< ActionID::TARGETING > >;
+struct TargetingAction: public ActionBase< ActionID::TARGETING > {
+   using base = ActionBase< ActionID::TARGETING >;
 
    TargetingAction(Team team, std::vector< entt::entity > targets)
-       : ActionBase(team), m_targets(std::move(targets))
+       : ActionBase(team), targets(std::move(targets))
    {
    }
-   [[nodiscard]] inline auto targets() const { return m_targets; }
-
-   ActionFollowup execute_impl(GameState& state);
-
-  private:
    // the selected targets
-   std::vector< entt::entity > m_targets;
+   std::vector< entt::entity > targets;
 };
 
-class ReplaceAction: public ActionBase< ReplaceAction, ActionIDType< ActionID::REPLACE > > {
-  public:
-   using base = ActionBase< ReplaceAction, ActionIDType< ActionID::REPLACE > >;
+struct ReplaceAction: public ActionBase< ActionID::REPLACE > {
+   using base = ActionBase< ActionID::REPLACE >;
 
-   ReplaceAction(Team team, size_t replace_index)
-       : ActionBase(team), m_replace_index(replace_index)
+   ReplaceAction(Team team, size_t replace_index) : ActionBase(team), replace_index(replace_index)
    {
    }
-   [[nodiscard]] inline auto index() const { return m_replace_index; }
 
-   ActionFollowup execute_impl(GameState& state);
+   // the selected target
+   size_t replace_index;
+};
 
-  private:
-   // the selected targets
-   size_t m_replace_index;
+struct SkipAction: public ActionBase< ActionID::SKIP > {
+   using base = ActionBase< ActionID::SKIP >;
 };
 
 class Action {
@@ -341,13 +223,13 @@ class Action {
       MulliganAction,
       PlaceSpellAction,
       PlaceUnitAction,
-      PlayAction,
-      PlayFieldCardFinishAction,
-      PlaySpellFinishAction,
-      TargetingAction >;
+      PlayFieldcardAction,
+      PlaySpellAction,
+      TargetingAction,
+      SkipAction >;
 
   public:
-   explicit Action(ActionVariant action) noexcept : m_action_detail(std::move(action)) {}
+   Action(ActionVariant&& action) noexcept : m_action_detail(std::move(action)) {}
 
    template < typename DetailType >
    [[nodiscard]] inline auto& detail() const
@@ -359,47 +241,22 @@ class Action {
 
    [[nodiscard]] inline auto team() const
    {
-      return std::visit([](const auto& action) { return action.team(); }, m_action_detail);
+      return std::visit([](const auto& action) { return action.team; }, m_action_detail);
    }
    [[nodiscard]] constexpr inline auto id() const
    {
       return std::visit([](const auto& action) { return action.id; }, m_action_detail);
    }
-   inline ActionFollowup execute(GameState& state)
+
+   template < ActionID id_ >
+   [[nodiscard]] constexpr inline bool is() const
    {
-      return std::visit([&](auto& action) { return action.execute(state); }, m_action_detail);
+      return id() == id_;
    }
-   [[nodiscard]] bool is_accept() const { return id() == ActionID::ACCEPT; }
-   [[nodiscard]] bool is_cancellation() const { return id() == ActionID::CANCEL; }
-   [[nodiscard]] bool is_choice() const { return id() == ActionID::CHOICE; }
-   [[nodiscard]] bool is_dragging_enemy() const { return id() == ActionID::DRAG_ENEMY; }
-   [[nodiscard]] bool is_mulligan() const { return id() == ActionID::MULLIGAN; }
-   [[nodiscard]] bool is_placing_spell() const { return id() == ActionID::PLACE_SPELL; }
-   [[nodiscard]] bool is_placing_unit() const { return id() == ActionID::PLACE_UNIT; }
-   [[nodiscard]] bool is_play_finish() const { return id() == ActionID::PLAY_FINISH; }
-   [[nodiscard]] bool is_play_request() const { return id() == ActionID::PLAY_REQUEST; }
-   [[nodiscard]] bool is_targeting() const { return id() == ActionID::TARGETING; }
 
   private:
    // the type of action performed
    ActionVariant m_action_detail;
-};
-
-template < ActionProposalID id_ >
-class ActionProposalIDType {
-  public:
-   constexpr static ActionProposalID id = id_;
-};
-
-template < typename Derived, typename ActionT >
-struct ActionProposal: public utils::CRTP< ActionProposal, Derived, ActionT > {
-   constexpr static ActionProposalID id = ActionT::id;
-
-   ActionProposal(Team team) noexcept : team(team) {}
-
-   inline Action fulfill() const { return this->derived()->fulfill(); }
-
-   Team team;
 };
 
 }  // namespace actions

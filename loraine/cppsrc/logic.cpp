@@ -4,7 +4,7 @@
 #include "loraine/core/gamestate.h"
 
 Logic::Logic(const Logic& other)
-    : m_state(other.m_state),
+    : m_state(other.m_handler),
       m_action_invoker(other.m_action_invoker->clone()),
       m_prev_action_invoker(other.m_prev_action_invoker->clone())
 {
@@ -259,7 +259,7 @@ bool Logic::invoke_actions()
    while(not action_buffer.empty()) {
       auto& action = action_buffer.back();
       m_state->commit_to_history(std::make_unique< ActionRecord >(action));
-      flip_initiative = m_action_invoker->invoke(*action);
+      flip_initiative = m_action_invoker->handle(*action);
       action_buffer.pop_back();
    }
    return flip_initiative;
@@ -338,7 +338,7 @@ void Logic::resolve()
          retreat_to_camp(defender);
       }
    }
-   transition< DefaultActionPhase >();
+   transition< IdleActionHandler >();
 }
 long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {
@@ -475,7 +475,7 @@ void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 // std::vector< sptr< Card > > Logic::_draw_n_cards(Team team, int n)
 //{
 //   std::vector< sptr< Card > > hand(n);
-//   auto& deck = m_state->deck(team);
+//   auto& deck = m_handler->deck(team);
 //   choose_inplace(deck, n);
 //   for(int i = 0; i < n; ++i) {
 //      hand[i] = deck[i];
@@ -488,17 +488,17 @@ void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 //{
 //   std::array< std::vector< sptr< Card > >, 2 > hands{hand_blue, hand_red};
 //
-//   auto mull_act_blue = m_agents[BLUE]->choose_mulligan(*m_state, hand_blue);
-//   auto mull_act_red = m_agents[RED]->choose_mulligan(*m_state, hand_red);
+//   auto mull_act_blue = m_agents[BLUE]->choose_mulligan(*m_handler, hand_blue);
+//   auto mull_act_red = m_agents[RED]->choose_mulligan(*m_handler, hand_red);
 //
-//   std::array< std::array< bool, INITIAL_HAND_SIZE >, 2 > m_replace = {
+//   std::array< std::array< bool, INITIAL_HAND_SIZE >, 2 > replace = {
 //      mull_act_blue->replace_decisions(), mull_act_red->replace_decisions()};
 //
 //   for(int p = BLUE; p != RED; ++p) {
 //      auto& curr_hand = hands.at(p);
 //      GameState::HandType new_hand;
 //      auto nr_cards_to_replace = 0;
-//      auto replace_for_p = m_replace.at(p);
+//      auto replace_for_p = replace.at(p);
 //      auto hand_size = curr_hand.size();
 //      for(auto i = 0U; i < hand_size; ++i) {
 //         if(replace_for_p.at(i)) {
@@ -516,7 +516,7 @@ void Logic::strike_nexus(const sptr< Unit >& striking_unit, long dmg)
 //            new_hand.at(i) = curr_hand.at(i);
 //         }
 //      }
-//      m_state->hand(new_hand, Team(p));
+//      m_handler->hand(new_hand, Team(p));
 //   }
 //}
 void Logic::_end_round()
@@ -630,7 +630,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 }
 // void Logic::summon(const sptr< Unit >& unit, bool to_bf)
 //{
-//   m_state->board()->add_to_camp_queue(unit);
+//   m_handler->board()->add_to_camp_queue(unit);
 //   Team team = unit->mutables().team;
 //   process_camp_queue(team);
 //   m_event_listener.register_card(unit);
@@ -639,8 +639,8 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 // void Logic::summon_to_battlefield(const sptr< Unit >& unit)
 //{
 //   Team team = unit->mutables().team;
-//   auto bf = m_state->board()->battlefield(team);
-//   auto curr_unit_count = m_state->board()->count_occupied_spots(team, false);
+//   auto bf = m_handler->board()->battlefield(team);
+//   auto curr_unit_count = m_handler->board()->count_occupied_spots(team, false);
 //   if(curr_unit_count < BATTLEFIELD_SIZE) {
 //      auto index_to_place = std::max(static_cast< long >(curr_unit_count - 1), 0L);
 //      bf.at(index_to_place) = unit;
@@ -655,7 +655,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //{
 //   Team team = unit->mutables().team;
 //   auto copied_unit = std::make_shared< Unit >(*unit);
-//   m_state->board()->add_to_camp_queue(unit);
+//   m_handler->board()->add_to_camp_queue(unit);
 //   process_camp_queue(team);
 //   _copy_grants(unit->all_grants(), copied_unit);
 //   m_event_listener.register_card(copied_unit);
@@ -668,7 +668,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //   std::vector< Target > targets;
 //
 //   auto filter_lambda = [&](Team team) {
-//      auto bf = m_state->board()->battlefield(team);
+//      auto bf = m_handler->board()->battlefield(team);
 //      for(size_t i = 0; i < BATTLEFIELD_SIZE; ++i) {
 //         if(const auto& opt_unit = bf.at(i); has_value(opt_unit) && filter(Target(opt_unit))) {
 //            targets.emplace_back(Target(opt_unit));
@@ -691,7 +691,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //   std::vector< Target > targets;
 //
 //   auto filter_lambda = [&](Team team) {
-//      auto camp = m_state->board()->camp(team);
+//      auto camp = m_handler->board()->camp(team);
 //      for(const auto& unit : camp) {
 //         if(filter(Target(unit))) {
 //            targets.emplace_back(Target(unit));
@@ -713,7 +713,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //   std::vector< Target > targets;
 //
 //   auto filter_lambda = [&](Team team) {
-//      auto hand = m_state->hand(team);
+//      auto hand = m_handler->hand(team);
 //      for(const auto& spell : hand) {
 //         if(filter(Target(spell))) {
 //            targets.emplace_back(Target(spell));
@@ -736,7 +736,7 @@ void Logic::summon(const sptr< FieldCard >& card, std::optional< size_t > replac
 //   std::vector< Target > targets;
 //
 //   auto filter_lambda = [&](Team team) {
-//      auto deck = m_state->deck(team);
+//      auto deck = m_handler->deck(team);
 //      for(const auto& spell : deck) {
 //         if(filter(Target(spell))) {
 //            targets.emplace_back(Target(spell));

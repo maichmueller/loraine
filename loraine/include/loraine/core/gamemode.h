@@ -28,7 +28,7 @@ class GameMode {
    {
    }
 //   GameMode(const Config& cfg, SymArr<std::vector<CardToken> > decks, SymArr<sptr<Controller>> controllers)
-//      : m_state(cfg, decks, controllers)
+//      : m_handler(cfg, decks, controllers)
 //   {
 //   }
 

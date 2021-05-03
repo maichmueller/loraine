@@ -16,7 +16,7 @@ class GameState;
 
 //class Logic: public Cloneable< Logic > {
 //  public:
-//   explicit Logic(uptr< ActionPhaseBase > act_invoker = std::make_unique< MulliganActionPhase >())
+//   explicit Logic(uptr< ActionHandlerBase > act_invoker = std::make_unique< MulliganActionPhase >())
 //       : m_action_invoker(std::move(act_invoker))
 //   {
 //      m_action_invoker->logic(this);
@@ -28,20 +28,20 @@ class GameState;
 //   Logic& operator=(const Logic& rhs) = delete;
 //   ~Logic() override = default;
 //
-//   void state(GameState& state) { m_state = &state; }
-//   auto state() { return m_state; }
-//   [[nodiscard]] auto state() const { return m_state; }
+//   void state(GameState& state) { m_handler = &state; }
+//   auto state() { return m_handler; }
+//   [[nodiscard]] auto state() const { return m_handler; }
 //
 //   // Beginning of LoR logic implementations
 //
-//   ActionPhaseBase& action_invoker() { return *m_action_invoker; }
-//   ActionPhaseBase& action_invoker() const { return *m_action_invoker; }
+//   ActionHandlerBase& action_invoker() { return *m_action_invoker; }
+//   ActionHandlerBase& action_invoker() const { return *m_action_invoker; }
 //
 //   [[nodiscard]] bool in_combat() const
 //   {
-//      return m_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT
-//             || (m_action_invoker->phase() != ActionPhaseBase::Phase::EXPECTING
-//                 && m_prev_action_invoker->phase() == ActionPhaseBase::Phase::COMBAT);
+//      return m_action_invoker->phase() == ActionHandlerBase::State::COMBAT
+//             || (m_action_invoker->phase() != ActionHandlerBase::State::IDLE
+//                 && m_prev_action_invoker->phase() == ActionHandlerBase::State::COMBAT);
 //   };
 //
 //   void request_action() const;
@@ -194,11 +194,11 @@ class GameState;
 //   /// The associated state ptr, to be set in a delayed manner after state construction
 //   /// The logic object's lifetime is bound to the GameState object, so there should be no
 //   /// SegFault problems.
-//   GameState* m_state = nullptr;
+//   GameState* m_handler = nullptr;
 //   /// the current action invoker for incoming actions
-//   std::unique_ptr< ActionPhaseBase > m_action_invoker;
+//   std::unique_ptr< ActionHandlerBase > m_action_invoker;
 //   /// the previous action invoker for incoming actions
-//   std::unique_ptr< ActionPhaseBase > m_prev_action_invoker = nullptr;
+//   std::unique_ptr< ActionHandlerBase > m_prev_action_invoker = nullptr;
 //   /// private logic helpers
 //
 //   /// The member declarations
@@ -238,7 +238,7 @@ class GameState;
 //template < events::EventLabel event_label, typename... Params >
 //void Logic::trigger_event(Params&&... params)
 //{
-//   auto& event = m_state->event(event_label);
+//   auto& event = m_handler->event(event_label);
 //   event.detail< helpers::label_to_event_t< event_label > >().fire(
 //      *state(), std::forward< Params >(params)...);
 //}
@@ -250,7 +250,7 @@ class GameState;
 ////{
 ////   const auto elabel = static_cast< events::EventLabel >(E);
 ////   if(card->has_effect(elabel)) {
-////      auto& event = m_state->event(elabel);
+////      auto& event = m_handler->event(elabel);
 ////      for(auto& effect : card->effects(elabel)) {
 ////         using EventType = helpers::label_to_event_t< elabel >;
 ////         using EffectType = helpers::eventlabel_to_effect_t< elabel >;
@@ -269,7 +269,7 @@ class GameState;
 ////{
 ////    const auto elabel = static_cast< events::EventLabel >(E);
 ////    if(card->has_effect(elabel)) {
-////       auto& event = m_state->event(elabel);
+////       auto& event = m_handler->event(elabel);
 ////       for(auto& effect : card->effects(elabel)) {
 ////          using EffectType = helpers::eventlabel_to_effect_t< elabel >;
 ////          dynamic_cast< EffectType& >(*effect).disconnect();
@@ -288,7 +288,7 @@ class GameState;
 //   static_assert(
 //      utils::is_any_v<
 //         NewInvokerType,
-//         DefaultActionPhase,
+//         IdleActionHandler,
 //         CombatActionPhase,
 //         MulliganActionPhase,
 //         ReplacingActionPhase,

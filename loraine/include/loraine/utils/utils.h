@@ -4,10 +4,41 @@
 #include <optional>
 #include <tuple>
 #include <variant>
+#include <set>
 
 #include "random.h"
 #include "algorithms.h"
 #include "types.h"
+
+
+template < typename Key, typename Compare, typename Allocator >
+std::set< Key, Compare, Allocator > operator+(
+   std::set< Key, Compare, Allocator >& set1,
+   const std::set< Key, Compare, Allocator >& set2)
+{
+   std::merge(set1.begin(), set1.end(),set2.begin(), set2.end(), std::back_inserter(set1));
+   return set1;
+}
+
+template < typename Key, typename Compare, typename Allocator >
+std::set< Key, Compare, Allocator > operator+(
+   const std::set< Key, Compare, Allocator >& set1,
+   const std::set< Key, Compare, Allocator >& set2)
+{
+   decltype(set1) out = set1;
+   return out + set2;
+}
+template < typename Key, typename Compare, typename Allocator >
+std::set< Key, Compare, Allocator > operator+(
+   std::set< Key, Compare, Allocator >&& set1,
+   std::set< Key, Compare, Allocator >&& set2)
+{
+   return set1 + set2;
+}
+
+
+
+
 
 template < typename T, typename Allocator >
 std::vector< T, Allocator >& operator+(

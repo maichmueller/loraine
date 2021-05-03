@@ -20,16 +20,16 @@ TEST_F(ActionTest, move_unit)
    state.logic()->draw_card(Team::RED);
 
    controller_blue->add_action(actions::Action(
-      actions::PlayAction(Team::BLUE, 0)));
+      actions::PlayFieldcardAction(Team::BLUE, 0)));
 
    controller_blue->add_action(actions::Action(
-      actions::PlayAction(Team::BLUE, 0)));
+      actions::PlayFieldcardAction(Team::BLUE, 0)));
 
    controller_blue->add_action(actions::Action(
-      actions::PlayAction(Team::BLUE,  0)));
+      actions::PlayFieldcardAction(Team::BLUE,  0)));
 
    controller_blue->add_action(actions::Action(
-      actions::PlayAction(Team::BLUE,  0)));
+      actions::PlayFieldcardAction(Team::BLUE,  0)));
 
 
    controller_blue->add_action(actions::Action(actions::PlaceUnitAction(Team::BLUE, true, {0, 2})));

@@ -7,14 +7,14 @@
 
 ActionSystem* ActionSystem::restore_previous_phase()
 {
-   if(m_prev_phase != nullptr) {
-      m_action_phase = std::move(m_prev_phase);
-      m_prev_phase = nullptr;
+   if(m_prev_handler != nullptr) {
+      m_handler = std::move(m_prev_handler);
+      m_prev_handler = nullptr;
    }
    return this;
 }
 
-actions::Action ActionPhaseBase::request_action(const GameState& state) const
+actions::Action ActionHandlerBase::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
    while(true) {
@@ -64,11 +64,11 @@ std::vector< actions::Action > TargetActionPhase::valid_actions(const GameState&
 {
    return std::vector< actions::Action >();
 }
-bool DefaultActionPhase::is_valid(const actions::Action& action) const
+bool IdleActionHandler::is_valid(const actions::Action& action) const
 {
    return false;
 }
-std::vector< actions::Action > DefaultActionPhase::valid_actions(const GameState& action) const
+std::vector< actions::Action > IdleActionHandler::valid_actions(const GameState& action) const
 {
    return std::vector< actions::Action >();
 }
@@ -82,7 +82,7 @@ std::vector< actions::Action > CombatActionPhase::valid_actions(const GameState&
 }
 actions::Action ReplacingActionPhase::request_action(const GameState& state) const
 {
-   return ActionPhaseBase::request_action(state);
+   return ActionHandlerBase::request_action(state);
 }
 bool ReplacingActionPhase::is_valid(const actions::Action& action) const
 {
