@@ -66,7 +66,7 @@ struct random {
    }
    template < typename T, typename Allocator, class RNG >
    static std::vector< T, Allocator >
-   choose(const std::vector< T, Allocator >& vec, RNG&& rng, int n = 1)
+   choose(const std::vector< T, Allocator >& vec, RNG&& rng, int n)
    {
       std::vector< size_t > indices(vec.size());
       std::iota(indices.begin(), indices.end(), 0);
@@ -77,6 +77,15 @@ struct random {
          out.emplace_back(vec[idx]);
       }
       return out;
+   }
+   template < typename T, typename Allocator, class RNG >
+   static T&
+   choose(const std::vector< T, Allocator >& vec, RNG&& rng)
+   {
+      std::vector< size_t > indices(vec.size());
+      std::iota(indices.begin(), indices.end(), 0);
+      shuffle_inplace_limited(indices.begin(), indices.end(), n, std::forward< RNG >(rng));
+      return vec[indices[0]];
    }
 
 };

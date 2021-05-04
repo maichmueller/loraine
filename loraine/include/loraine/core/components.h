@@ -5,6 +5,7 @@
 #include "loraine/core/components/ability.hpp"
 #include "loraine/core/components/card_attributes.hpp"
 #include "loraine/core/components/condition.hpp"
+#include "loraine/core/components/controller.hpp"
 #include "loraine/core/components/keywordmap.hpp"
 #include "loraine/core/components/mana_resource.hpp"
 #include "loraine/core/components/position.hpp"

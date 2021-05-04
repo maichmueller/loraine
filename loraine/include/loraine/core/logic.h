@@ -40,7 +40,7 @@ class GameState;
 //   [[nodiscard]] bool in_combat() const
 //   {
 //      return m_action_invoker->phase() == InputHandlerBase::State::COMBAT
-//             || (m_action_invoker->phase() != InputHandlerBase::State::IDLE
+//             || (m_action_invoker->phase() != InputHandlerBase::State::INITIATIVE
 //                 && m_prev_action_invoker->phase() == InputHandlerBase::State::COMBAT);
 //   };
 //
@@ -288,7 +288,7 @@ class GameState;
 //   static_assert(
 //      utils::is_any_v<
 //         NewInvokerType,
-//         IdleActionHandler,
+//         InitiativeInputHandler,
 //         CombatActionPhase,
 //         MulliganActionPhase,
 //         ReplacingActionPhase,

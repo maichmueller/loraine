@@ -14,17 +14,7 @@ class InputHandlerBase;
 
 class InputSystem: public ILogicSystem {
   public:
-   enum class State {
-      IDLE = 0,
-      CHOICE,
-      ATTACK,
-      BLOCK,
-      COMBAT,
-      MULLIGAN,
-      REPLACING,
-      SPELLFIGHT,
-      TARGET
-   };
+   enum class State { INITIATIVE = 0, CHOICE, ATTACK, BLOCK, COMBAT, MULLIGAN, REPLACE, TARGET };
 
    InputSystem(entt::registry& registry, uptr< InputHandlerBase >&& handler)
        : ILogicSystem(registry), m_handler(std::move(handler))
@@ -43,7 +33,7 @@ class InputSystem: public ILogicSystem {
 
    template < class NewStateType, typename... Args >
    InputSystem* transition(Args&&... args);
-   InputSystem* restore_previous_handler();
+   InputSystem* restore_handler();
 
    auto& accepted_actions() const;
    [[nodiscard]] auto handler() const;
@@ -72,11 +62,11 @@ class InputHandlerBase {
    InputHandlerBase& operator=(const InputHandlerBase& other) = delete;
 
    [[nodiscard]] virtual input::Action request_action(const GameState& state) const;
-   virtual bool handle(input::Action& action)
+   virtual void handle(input::Action& action)
    {
-      throw std::logic_error("Action handlers passed the action up to the base");
+      throw std::logic_error("Input handlers passed the action up to the base");
    }
-   [[nodiscard]] virtual bool is_valid(GameState& state, const input::Action& action) const = 0;
+   [[nodiscard]] virtual bool is_valid(const GameState& state, const input::Action& action) const = 0;
    [[nodiscard]] virtual std::vector< input::Action > valid_actions(
       const GameState& state) const = 0;
 
@@ -92,17 +82,17 @@ class InputHandlerBase {
 };
 
 template < typename Derived, input::ID... AcceptedActions >
-class ActionHandler: public InputHandlerBase {
+class InputHandler: public InputHandlerBase {
   public:
    using base = InputHandlerBase;
    using base::base;
 
-   ActionHandler(InputSystem* system)
+   InputHandler(InputSystem* system)
        : base(system, Derived::state_id, std::set< input::ID >{AcceptedActions...})
    {
    }
    template < typename... Args >
-   ActionHandler(InputSystem* system, Args... args)
+   InputHandler(InputSystem* system, Args... args)
        : base(
           system,
           Derived::state_id,
@@ -111,7 +101,7 @@ class ActionHandler: public InputHandlerBase {
    {
    }
 
-   [[nodiscard]] virtual bool is_valid(GameState& state, const input::Action& action) const = 0;
+   [[nodiscard]] virtual bool is_valid(const GameState& state, const input::Action& action) const = 0;
    [[nodiscard]] virtual std::vector< input::Action > valid_actions(
       const GameState& state) const = 0;
 
@@ -119,12 +109,12 @@ class ActionHandler: public InputHandlerBase {
 };
 
 template < typename Derived, input::ID... AcceptedActions >
-class SpellAllowingActionHandler: public ActionHandler< Derived, AcceptedActions... > {
+class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
   public:
-   using base = ActionHandler< Derived, AcceptedActions... >;
+   using base = InputHandler< Derived, AcceptedActions... >;
    using base::base;
 
-   SpellAllowingActionHandler(InputSystem* system)
+   SpellInputHandler(InputSystem* system)
        : base(
           system,
           Derived::state_id,
@@ -136,7 +126,7 @@ class SpellAllowingActionHandler: public ActionHandler< Derived, AcceptedActions
    {
    }
    template < typename... Args >
-   SpellAllowingActionHandler(InputSystem* system, Args... args)
+   SpellInputHandler(InputSystem* system, Args... args)
        : base(
           system,
           Derived::state_id,
@@ -151,76 +141,122 @@ class SpellAllowingActionHandler: public ActionHandler< Derived, AcceptedActions
 
   protected:
    /// handlers for specific actions. Does not transition the state, so any sub class using these
-   /// handlers will need to transition themselves
+   /// handlers will need to transition themselves. These do not need to be used, thus are optional!
    void handle(const input::PlaceSpellAction& action);
    void handle(const input::PlayFieldcardAction& action);
    void handle(const input::AcceptAction& action);
 };
 
-class IdleActionHandler:
-    public SpellAllowingActionHandler<
-       IdleActionHandler,
+class InitiativeInputHandler:
+    public SpellInputHandler<
+       InitiativeInputHandler,
        input::ID::PASS,
        input::ID::PLAY_FIELDCARD,
-       input::ID::DRAG_ENEMY,
        input::ID::PLACE_UNIT > {
   public:
-   using base = SpellAllowingActionHandler<
-      IdleActionHandler,
+   using base = SpellInputHandler<
+      InitiativeInputHandler,
       input::ID::PASS,
       input::ID::PLAY_FIELDCARD,
+      input::ID::PLACE_UNIT >;
+   using base::base;
+
+   constexpr static InputSystem::State state_id = InputSystem::State::INITIATIVE;
+
+   virtual void handle(input::Action& action) override;
+   bool is_valid( const GameState& state, const input::Action& action) const override;
+
+   std::vector< input::Action > valid_actions(const GameState& action) const override;
+};
+
+class CombatInputHandler: public SpellInputHandler< CombatInputHandler > {
+  public:
+   using base = SpellInputHandler< CombatInputHandler >;
+   using base::base;
+
+   constexpr static InputSystem::State state_id = InputSystem::State::COMBAT;
+
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const  GameState& state, const input::Action& action) const override;
+
+   std::vector< input::Action > valid_actions(const GameState& action) const override;
+};
+
+class AttackInputHandler:
+    public SpellInputHandler< AttackInputHandler, input::ID::DRAG_ENEMY, input::ID::PLACE_UNIT > {
+  public:
+   using base = SpellInputHandler<
+      AttackInputHandler,
       input::ID::DRAG_ENEMY,
       input::ID::PLACE_UNIT >;
    using base::base;
 
-   constexpr static InputSystem::State state_id = InputSystem::State::IDLE;
-
-   bool is_valid(GameState& state, const input::Action& action) const override;
+   constexpr static InputSystem::State state_id = InputSystem::State::ATTACK;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 
-class TargetActionHandler:
-    public ActionHandler<
-       TargetActionHandler,
-       input::ID::ACCEPT,
-       input::ID::CANCEL,
-       input::ID::TARGETING > {
+class BlockInputHandler: public SpellInputHandler< BlockInputHandler, input::ID::PLACE_UNIT > {
   public:
-   using base = ActionHandler<
-      TargetActionHandler,
-      input::ID::ACCEPT,
-      input::ID::CANCEL,
-      input::ID::TARGETING >;
+   using base = SpellInputHandler< BlockInputHandler, input::ID::PLACE_UNIT >;
+   using base::base;
+
+   constexpr static InputSystem::State state_id = InputSystem::State::BLOCK;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
+
+   std::vector< input::Action > valid_actions(const GameState& action) const override;
+};
+
+class TargetInputHandler:
+    public InputHandler< TargetInputHandler, input::ID::CANCEL, input::ID::TARGETING > {
+  public:
+   using base = InputHandler< TargetInputHandler, input::ID::CANCEL, input::ID::TARGETING >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::TARGET;
-   [[nodiscard]] input::Action request_action(const GameState& state) const override;
-   bool is_valid(GameState& state, const input::Action& action) const override;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 
-class ReplacingActionHandler:
-    public ActionHandler< ReplacingActionHandler, input::ID::CANCEL, input::ID::REPLACE > {
+class ChoiceInputHandler:
+    public InputHandler< ChoiceInputHandler, input::ID::SKIP, input::ID::CHOICE > {
   public:
-   using base = ActionHandler< ReplacingActionHandler, input::ID::CANCEL, input::ID::REPLACE >;
+   using base = InputHandler< ChoiceInputHandler, input::ID::SKIP, input::ID::CHOICE >;
    using base::base;
 
-   constexpr static InputSystem::State state_id = InputSystem::State::REPLACING;
-   [[nodiscard]] input::Action request_action(const GameState& state) const override;
-   bool is_valid(GameState& state, const input::Action& action) const override;
+   constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 
-class MulliganActionHandler: public ActionHandler< MulliganActionHandler, input::ID::MULLIGAN > {
+class ReplaceInputHandler:
+    public InputHandler< ReplaceInputHandler, input::ID::CANCEL, input::ID::REPLACE > {
   public:
-   using base = ActionHandler< MulliganActionHandler, input::ID::MULLIGAN >;
+   using base = InputHandler< ReplaceInputHandler, input::ID::CANCEL, input::ID::REPLACE >;
+   using base::base;
+
+   constexpr static InputSystem::State state_id = InputSystem::State::REPLACE;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
+
+   std::vector< input::Action > valid_actions(const GameState& action) const override;
+};
+
+class MulliganInputHandler: public InputHandler< MulliganInputHandler, input::ID::MULLIGAN > {
+  public:
+   using base = InputHandler< MulliganInputHandler, input::ID::MULLIGAN >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::MULLIGAN;
-   bool is_valid(GameState& state, const input::Action& action) const override;
+   virtual void handle(input::Action& action) override;
+   bool is_valid(const GameState& state, const input::Action& action) const override;
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 

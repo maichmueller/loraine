@@ -338,7 +338,7 @@ void Logic::resolve()
          retreat_to_camp(defender);
       }
    }
-   transition< IdleActionHandler >();
+   transition< InitiativeInputHandler >();
 }
 long Logic::strike(const sptr< Unit >& unit_att, sptr< Unit >& unit_def)
 {

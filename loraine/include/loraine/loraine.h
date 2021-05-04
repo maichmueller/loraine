@@ -3,9 +3,9 @@
 #ifndef LORAINE_LORAINE_H
 #define LORAINE_LORAINE_H
 
-#include "controller.h"
 #include "loraine/core/action.h"
 #include "loraine/core/components.h"
+#include "loraine/core/components/controller.hpp"
 #include "loraine/core/config.h"
 #include "loraine/core/deck.h"
 #include "loraine/core/gamedefs.h"

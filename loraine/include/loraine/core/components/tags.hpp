@@ -47,6 +47,9 @@ struct player {
 /// the player that started the first turn
 struct starting_player {
 };
+/// the player whose turn is currently going
+struct active_player {
+};
 struct daybreak {
 };
 struct nightfall {
