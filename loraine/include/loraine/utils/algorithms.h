@@ -4,8 +4,8 @@
 #define LORAINE_ALGORITHMS_H
 
 #include <algorithm>
+#include <stdexcept>
 #include <utility>
-
 
 namespace algo {
 
@@ -39,10 +39,37 @@ auto find_indices(const Container& container, const std::vector< T >& elems) -> 
    return indices;
 }
 
+//// constexpr versions of the std functions (would need c++20 to be constexpr)
+//template < typename InputIter, typename T >
+//constexpr auto find(InputIter begin, InputIter end, const T& elem) noexcept
+//{
+//   for(; begin != end; ++begin) {
+//      if constexpr(*begin == elem)
+//         return begin;
+//   }
+//   return end;
+//}
+//
+//template < typename InputIter, typename Predicate >
+//constexpr auto find_if(InputIter begin, InputIter end, Predicate pred) noexcept
+//{
+//   for(; begin != end; ++begin) {
+//      if(pred(*begin))
+//         return begin;
+//   }
+//   return end;
+//}
+//
 template < typename Container, typename T >
-inline auto find(const Container& container, const T& elem) noexcept
+inline constexpr auto find(const Container& container, const T& elem) noexcept
 {
    return std::find(container.begin(), container.end(), elem);
+}
+
+template < typename Container, typename Predicate >
+inline constexpr auto find_if(const Container& container, Predicate pred) noexcept
+{
+   return std::find_if(container.begin(), container.end(), pred);
 }
 
 template < typename Container, typename T >
@@ -100,17 +127,19 @@ inline void remove_element(Container& container, const T& elem)
 template < class InputIt, class UnaryPredicate >
 inline constexpr bool any_of(InputIt first, InputIt last, UnaryPredicate p)
 {
-   return std::find_if(first, last, p) != last;
+   return find_if(first, last, p) != last;
 }
 
 template < class Container, class UnaryPredicate >
 inline constexpr bool any_of(const Container& container, UnaryPredicate p)
 {
-   return std::find_if(container.begin(), container.end(), p) != container.end();
+   return find_if(container.begin(), container.end(), p) != container.end();
 }
 
 template < class Container >
-inline constexpr bool contains(const Container& container, const typename Container::value_type& value)
+inline constexpr bool contains(
+   const Container& container,
+   const typename Container::value_type& value)
 {
    return std::find(container.begin(), container.end(), value) != container.end();
 }
@@ -153,15 +182,18 @@ inline Container transform(Predicate f, const Container& container, OutIter out_
 }
 
 template < typename Predicate, typename Container >
-inline std::vector< std::invoke_result_t<Predicate> > apply(Predicate f, const Container& container)
+inline std::vector< std::invoke_result_t< Predicate > > apply(
+   Predicate f,
+   const Container& container)
 {
-   std::vector< std::invoke_result_t<Predicate> > results;
+   std::vector< std::invoke_result_t< Predicate > > results;
    std::transform(container.begin(), container.end(), std::back_inserter(results), f);
    return container;
 }
 
 template < typename Predicate, typename Container, typename OutContainer >
-inline OutContainer apply(Predicate f, const Container& container, const OutContainer&& container_out)
+inline OutContainer
+apply(Predicate f, const Container& container, const OutContainer&& container_out)
 {
    std::transform(container.begin(), container.end(), std::back_inserter(container_out), f);
    return container_out;

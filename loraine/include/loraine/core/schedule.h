@@ -28,7 +28,10 @@ entt::entity next(
       EffectVector< EventType::id > >();  // we need their specific effects
 
    // store the effects that are to be returned in an interrim vector to sort them by position
-   using effect_pos_pair = std::tuple< Position, EffectVector< EventType::id >, entt::entity >;
+   // TODO: Adding Zone::CAMP here is only a temporary workaround! This needs to be identified
+   //  better, as in what scheduling rules there may be
+   using effect_pos_pair = std::
+      tuple< Position< Zone::CAMP >, EffectVector< EventType::id >, entt::entity >;
    auto pair_comp = [](const auto& pair1, const auto& pair2) {
       auto& pos1 = pair1.second;
       auto& pos2 = pair2.second;

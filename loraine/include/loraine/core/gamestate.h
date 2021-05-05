@@ -26,14 +26,14 @@ class GameState {
   public:
    GameState(
       const Config& cfg,
-      SymArr< Deck > decks,
+//      SymArr< Deck > decks,
       SymArr< sptr< Controller > > controllers,
       Team starting_team,
       random::rng_type rng = random::create_rng());
 
    GameState(
       const Config& cfg,
-      SymArr< Deck > decks,
+//      SymArr< Deck > decks,
       SymArr< sptr< Controller > > controllers,
       random::rng_type rng = random::create_rng());
 

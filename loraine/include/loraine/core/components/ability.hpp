@@ -5,6 +5,8 @@
 #include "loraine/effects/effectdefs.hpp"
 #include "loraine/events/event_id.h"
 
+#include <functional>
+
 class GameState;
 
 template < events::EventID event_id >

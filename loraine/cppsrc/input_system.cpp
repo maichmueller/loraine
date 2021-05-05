@@ -34,8 +34,8 @@ input::Action InputHandlerBase::request_action(const GameState& state) const
       if(n_invalid_choices > state.config().INVALID_ACTIONS_LIMIT) {
          // TODO: Add punishment reward option to agent for RL agents for choosing invalid moves too
          //  often?
-         // choose random available action
-         return random::choose(m_action_system->valid_actions(state), state.rng());
+         //  Let player lose instead!
+         throw std::logic_error("Too many illegal actions chosen.");
       }
    }
 }
@@ -60,8 +60,7 @@ input::Action TargetInputHandler::request_action(const GameState& state) const
       if(n_invalid_choices > state.config().INVALID_ACTIONS_LIMIT) {
          // TODO: Add punishment reward option to agent for RL agents for choosing invalid moves too
          //  often?
-         // choose random available action
-         return random::choose(m_action_system->valid_actions(state), state.rng());
+         throw std::logic_error("Too many illegal actions chosen.");
       }
    }
 }

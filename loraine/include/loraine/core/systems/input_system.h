@@ -198,6 +198,7 @@ class AttackInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::ATTACK;
+
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
 
@@ -210,6 +211,7 @@ class BlockInputHandler: public SpellInputHandler< BlockInputHandler, input::ID:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::BLOCK;
+
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
 
@@ -223,6 +225,7 @@ class TargetInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::TARGET;
+
    input::Action request_action(const GameState& state) const override;
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
@@ -237,6 +240,7 @@ class ChoiceInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
+
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
 
@@ -250,6 +254,7 @@ class ReplaceInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::REPLACE;
+
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
 
@@ -262,6 +267,7 @@ class MulliganInputHandler: public InputHandler< MulliganInputHandler, input::ID
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::MULLIGAN;
+
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
    std::vector< input::Action > valid_actions(const GameState& action) const override;
@@ -270,9 +276,17 @@ class MulliganInputHandler: public InputHandler< MulliganInputHandler, input::ID
 template < class NewStateType, typename... Args >
 InputSystem* InputSystem::transition(Args&&... args)
 {
-   //   using PhaseType = helpers::phase_to_type_t< phase >;
    static_assert(
-      utils::is_any_v< NewStateType, All Types here >,
+      utils::is_any_v<
+         NewStateType,
+         InitiativeInputHandler,
+         AttackInputHandler,
+         BlockInputHandler,
+         ChoiceInputHandler,
+         CombatInputHandler,
+         TargetInputHandler,
+         ReplaceInputHandler,
+         MulliganInputHandler >,
       "New Action System State type not supported.");
    // move current invoker into previous
    m_prev_handler = std::move(m_handler);

@@ -4,6 +4,7 @@
 #define LORAINE_CARD_ATTRIBUTES_HPP
 
 #include "loraine/core/gamedefs.h"
+#include <entt/entt.hpp>
 
 /**
  * Abstract base class (abc) for LOR cards.

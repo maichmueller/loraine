@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.15)
 
 set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/action.cpp
-        ${LORAINE_SRC_DIR}/action_system.cpp
         ${LORAINE_SRC_DIR}/board_system.cpp
         ${LORAINE_SRC_DIR}/input_system.cpp
         ${LORAINE_SRC_DIR}/config.cpp
@@ -15,7 +14,6 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/gamestate.cpp
         ${LORAINE_SRC_DIR}/grant.cpp
         ${LORAINE_SRC_DIR}/grantmodifier.cpp
-        ${LORAINE_SRC_DIR}/logic.cpp
 
         ${LORAINE_SRC_DIR}/reputation_system.cpp
         )

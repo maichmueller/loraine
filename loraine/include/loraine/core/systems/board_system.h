@@ -154,12 +154,14 @@ class BoardSystem: public ILogicSystem {
    template < Zone zone >
    size_t _update_positions()
    {
-      auto pos_view = m_registry.view< Position< zone > >();
       std::vector< Position< zone >* > positions;
-      pos_view.each([&](auto& entity, auto& pos) { positions.emplace_back(pos); });
+      m_registry.view< Position< zone > >().each(
+         [&](auto& pos) { positions.emplace_back(&pos); });
+
       std::sort(positions.begin(), positions.end(), [](const auto* p1, const auto* p2) {
          return p1->index < p2->index;
       });
+
       auto c = 0UL;
       for(auto* pos : positions) {
          pos->index = c++;
@@ -247,7 +249,7 @@ template < Zone new_zone >
 bool BoardSystem::move_to(entt::entity card, size_t index)
 {
    if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
-      constexpr auto same_pos_check = [&, this]() {
+      auto same_pos_check = [&, this]() {
          return (m_registry.all_of< Position< new_zone > >(card)
                  && m_registry.get< Position< new_zone > >(card).index == index)
                 || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
@@ -273,12 +275,15 @@ bool BoardSystem::move_to(
    const std::vector< entt::entity >& cards,
    const std::vector< size_t >& indices)
 {
-   if(cards.size() != indices.size()) {
-      throw std::invalid_argument("Indices and cards vector have different lenghts.");
+   auto size = cards.size();
+   if(size != indices.size()) {
+      throw std::invalid_argument("Indices and cards vector have different lengths.");
    }
-   for(auto i = 0; i < cards.size(); ++i) {
-      move_to< new_zone >(cards[i], indices[i]);
+   std::vector< bool > out(size);
+   for(auto i = 0; i < size; ++i) {
+      out.emplace_back(move_to< new_zone >(cards[i], indices[i]));
    }
+   return std::accumulate(out.begin(), out.end(), 0) == size;
 }
 
 template < Zone new_zone >
@@ -286,13 +291,13 @@ bool BoardSystem::move_to(const std::vector< entt::entity >& cards)
 {
    std::vector< size_t > indices;
    std::iota(indices.begin(), indices.end(), m_size_cache[static_cast< size_t >(new_zone)]);
-   move_to< new_zone >(cards, indices);
+   return move_to< new_zone >(cards, indices);
 }
 
 template < Zone zone >
 entt::entity BoardSystem::at(size_t index)
 {
-   boundary_check< zone >();
+   boundary_check< zone >(index);
    std::optional< entt::entity > e = std::nullopt;
    for(auto entity : m_registry.view< Position< zone > >()) {
       if(m_registry.get< Position< zone > >(entity).index == index) {
@@ -305,7 +310,5 @@ entt::entity BoardSystem::at(size_t index)
    }
    return e.value();
 }
-
-
 
 #endif  // LORAINE_BOARD_SYSTEM_H
