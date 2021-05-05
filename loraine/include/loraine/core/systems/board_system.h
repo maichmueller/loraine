@@ -37,6 +37,7 @@ class BoardSystem: public ILogicSystem {
    {
    }
 
+   // TODO: make this update the correct previous zone of the moved entity too!
    template < Zone zone >
    inline void on_move()
    {
@@ -49,30 +50,20 @@ class BoardSystem: public ILogicSystem {
     * This method will update the position indices of the previously allocated zone of the card.
     * The Position component of each card should stay up-to-date this way for every move.
     */
-  public:
    template < Zone new_zone >
-   bool move_to(entt::entity card, size_t index)
+   bool move_to(entt::entity card, size_t index);
+   template < Zone new_zone >
+   bool move_to(const std::vector< entt::entity >& cards, const std::vector< size_t >& indices);
+   template < Zone new_zone >
+   bool move_to(const std::vector< entt::entity >& cards);
+
+   template < Zone zone >
+   entt::entity at(size_t index);
+
+   template < Zone zone >
+   size_t size()
    {
-      if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
-         constexpr auto same_pos_check = [&, this]() {
-            return (m_registry.all_of< Position< new_zone > >(card)
-                    && m_registry.get< Position< new_zone > >(card).index == index)
-                   || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
-                         if constexpr(new_zone == Zone::BATTLEFIELD) {
-                            return m_size_max_bf;
-                         }
-                         return m_size_max_camp;
-                      }();
-         };
-         if(same_pos_check()) {
-            // the unit's old zone is the units new zone and it is already at the position in which
-            // it is supposed to move or the battlefield is full
-            return false;
-         }
-      }
-      _remove_pos(card);
-      m_registry.emplace< Position< new_zone > >(card, index);
-      return true;
+      return m_size_cache[static_cast< size_t >(zone)];
    }
 
    /**
@@ -80,7 +71,7 @@ class BoardSystem: public ILogicSystem {
     * @param team Team,
     *   the team whose units should be counted
     * @param in_camp bool,
-    *   whether to count the units in the cmap or on the battlefield
+    *   whether to count the units in the camp or on the battlefield
     * @param filter Callable,
     *   the filter to use on the units. Can be used to search for units with specific attributes
     * @return size_t,
@@ -137,6 +128,22 @@ class BoardSystem: public ILogicSystem {
       Zone zone,
       typename = std::enable_if_t< zone == Zone::CAMP || zone == Zone::BATTLEFIELD > >
    void _process_queue();
+
+   template < Zone zone >
+   void boundary_check(size_t index) const
+   {
+      if constexpr(Zone::CAMP == zone) {
+         if(not (index < m_size_max_camp)) {
+            throw std::out_of_range(
+               "An idex that is greater than the maximum camp size was demanded.");
+         }
+      } else if constexpr(Zone::BATTLEFIELD == zone) {
+         if(not (index < m_size_max_bf)) {
+            throw std::out_of_range(
+               "An idex that is greater than the maximum battlefield size was demanded.");
+         }
+      }
+   }
 
    /**
     * @brief Reindexes the entities in a location after a removal.
@@ -213,11 +220,13 @@ void BoardSystem::add_to_queue< Zone::CAMP >(entt::entity card)
 {
    m_q_camp[m_registry.get< Team >(card)].emplace(card);
 }
+
 template <>
 void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(entt::entity card)
 {
    m_q_bf[m_registry.get< Team >(card)].emplace(card);
 }
+
 template <>
 void BoardSystem::add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& units)
 {
@@ -225,6 +234,7 @@ void BoardSystem::add_to_queue< Zone::CAMP >(const std::vector< entt::entity >& 
       add_to_queue< Zone::CAMP >(unit);
    }
 }
+
 template <>
 void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::entity >& units)
 {
@@ -232,5 +242,70 @@ void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::ent
       add_to_queue< Zone::BATTLEFIELD >(unit);
    }
 }
+
+template < Zone new_zone >
+bool BoardSystem::move_to(entt::entity card, size_t index)
+{
+   if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
+      constexpr auto same_pos_check = [&, this]() {
+         return (m_registry.all_of< Position< new_zone > >(card)
+                 && m_registry.get< Position< new_zone > >(card).index == index)
+                || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
+                      if constexpr(new_zone == Zone::BATTLEFIELD) {
+                         return m_size_max_bf;
+                      }
+                      return m_size_max_camp;
+                   }();
+      };
+      if(same_pos_check()) {
+         // the unit's old zone is the units new zone and it is already at the position in which
+         // it is supposed to move or the battlefield is full
+         return false;
+      }
+   }
+   _remove_pos(card);
+   m_registry.emplace< Position< new_zone > >(card, index);
+   return true;
+}
+
+template < Zone new_zone >
+bool BoardSystem::move_to(
+   const std::vector< entt::entity >& cards,
+   const std::vector< size_t >& indices)
+{
+   if(cards.size() != indices.size()) {
+      throw std::invalid_argument("Indices and cards vector have different lenghts.");
+   }
+   for(auto i = 0; i < cards.size(); ++i) {
+      move_to< new_zone >(cards[i], indices[i]);
+   }
+}
+
+template < Zone new_zone >
+bool BoardSystem::move_to(const std::vector< entt::entity >& cards)
+{
+   std::vector< size_t > indices;
+   std::iota(indices.begin(), indices.end(), m_size_cache[static_cast< size_t >(new_zone)]);
+   move_to< new_zone >(cards, indices);
+}
+
+template < Zone zone >
+entt::entity BoardSystem::at(size_t index)
+{
+   boundary_check< zone >();
+   std::optional< entt::entity > e = std::nullopt;
+   for(auto entity : m_registry.view< Position< zone > >()) {
+      if(m_registry.get< Position< zone > >(entity).index == index) {
+         e = entity;
+         break;
+      }
+   }
+   if(not utils::has_value(e)) {
+      throw std::logic_error("The demanded index was not assigned to any entity.");
+   }
+   return e.value();
+}
+
+
 
 #endif  // LORAINE_BOARD_SYSTEM_H

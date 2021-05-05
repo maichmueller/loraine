@@ -4,6 +4,7 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/action.cpp
         ${LORAINE_SRC_DIR}/action_system.cpp
         ${LORAINE_SRC_DIR}/board_system.cpp
+        ${LORAINE_SRC_DIR}/input_system.cpp
         ${LORAINE_SRC_DIR}/config.cpp
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/effectmap.cpp

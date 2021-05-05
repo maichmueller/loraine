@@ -62,11 +62,12 @@ class InputHandlerBase {
    InputHandlerBase& operator=(const InputHandlerBase& other) = delete;
 
    [[nodiscard]] virtual input::Action request_action(const GameState& state) const;
-   virtual void handle(input::Action& action)
+   virtual void handle(input::Action& action, GameState& state)
    {
       throw std::logic_error("Input handlers passed the action up to the base");
    }
-   [[nodiscard]] virtual bool is_valid(const GameState& state, const input::Action& action) const = 0;
+   [[nodiscard]] virtual bool is_valid(const input::Action& action, const GameState& state)
+      const = 0;
    [[nodiscard]] virtual std::vector< input::Action > valid_actions(
       const GameState& state) const = 0;
 
@@ -75,8 +76,12 @@ class InputHandlerBase {
    virtual InputHandlerBase* clone() = 0;
    [[nodiscard]] auto state_id() const { return m_state_id; }
 
-  private:
+  protected:
    InputSystem* m_action_system;
+
+   void change_turn(GameState& state);
+
+  private:
    InputSystem::State m_state_id;
    std::set< input::ID > m_accepted_actions;
 };
@@ -101,7 +106,8 @@ class InputHandler: public InputHandlerBase {
    {
    }
 
-   [[nodiscard]] virtual bool is_valid(const GameState& state, const input::Action& action) const = 0;
+   [[nodiscard]] virtual bool is_valid(const input::Action& action, const GameState& state)
+      const = 0;
    [[nodiscard]] virtual std::vector< input::Action > valid_actions(
       const GameState& state) const = 0;
 
@@ -163,8 +169,8 @@ class InitiativeInputHandler:
 
    constexpr static InputSystem::State state_id = InputSystem::State::INITIATIVE;
 
-   virtual void handle(input::Action& action) override;
-   bool is_valid( const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -176,8 +182,8 @@ class CombatInputHandler: public SpellInputHandler< CombatInputHandler > {
 
    constexpr static InputSystem::State state_id = InputSystem::State::COMBAT;
 
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const  GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -192,8 +198,8 @@ class AttackInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::ATTACK;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -204,8 +210,8 @@ class BlockInputHandler: public SpellInputHandler< BlockInputHandler, input::ID:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::BLOCK;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -217,8 +223,9 @@ class TargetInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::TARGET;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   input::Action request_action(const GameState& state) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -230,8 +237,8 @@ class ChoiceInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -243,8 +250,8 @@ class ReplaceInputHandler:
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::REPLACE;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
@@ -255,8 +262,8 @@ class MulliganInputHandler: public InputHandler< MulliganInputHandler, input::ID
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::MULLIGAN;
-   virtual void handle(input::Action& action) override;
-   bool is_valid(const GameState& state, const input::Action& action) const override;
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 

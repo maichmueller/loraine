@@ -22,6 +22,7 @@
 #include "loraine/utils/types.h"
 
 class GameState {
+
   public:
    GameState(
       const Config& cfg,
@@ -38,8 +39,6 @@ class GameState {
 
    GameState(const GameState& other);
 
-
-
    template < RegistrationTime registration_time >
    inline void connect(entt::entity entity)
    {
@@ -54,28 +53,34 @@ class GameState {
    [[nodiscard]] inline auto& registry() { return m_registry; }
    [[nodiscard]] inline auto& registry() const { return m_registry; }
 
+   [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
+   [[nodiscard]] inline auto player(Team team) const { return m_player_entities[team]; }
+   [[nodiscard]] inline auto active_player() const { return m_player_entities[active_team()]; }
+
    [[nodiscard]] inline auto& round() { return m_round; }
    [[nodiscard]] inline auto round() const { return m_round; }
 
    inline auto& turn() { return m_turn; }
    [[nodiscard]] inline auto turn() const { return m_turn; }
 
-
-   [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
-
    [[nodiscard]] auto& config() const { return m_config; }
    [[nodiscard]] inline auto& rng() { return m_rng; }
    [[nodiscard]] inline auto& rng() const { return m_rng; }
 
+   template < typename >
+   auto& get() = delete;
+
    Status status();
    inline bool is_resolved() const
    {
-      return  m_board.empty< Zone::SPELLSTACK >() && m_board.empty< Zone::BATTLEFIELD >();
+      return m_board_system.empty< Zone::SPELLSTACK >()
+             && m_board_system.empty< Zone::BATTLEFIELD >();
    }
 
   private:
    // the registry holding all the game entities
    entt::registry m_registry;
+   SymArr< entt::entity > m_player_entities;
 
    Config m_config;
 
@@ -84,7 +89,7 @@ class GameState {
    Status m_status = Status::ONGOING;
 
    InputSystem m_action_system;
-   BoardSystem m_board;
+   BoardSystem m_board_system;
 
    random::rng_type m_rng;
 
@@ -108,5 +113,9 @@ void GameState::_connect_impl(entt::entity entity)
    }
 }
 
+template <>
+auto& GameState::get< InputSystem >() { return m_action_system;}
+template <>
+auto& GameState::get< BoardSystem >() { return m_board_system;}
 
 #endif  // LORAINE_GAMESTATE_H

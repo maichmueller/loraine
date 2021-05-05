@@ -22,14 +22,13 @@ InputSystem* InputSystem::restore_handler()
 input::Action InputHandlerBase::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
-   std::optional< input::Action > action = std::nullopt;
    auto& registry = state.registry();
    while(true) {
-      registry.view< tag::active_player, Controller >().each(
-         [&](auto entity, auto& controller) { action = controller.choose_action_func(state); });
+      input::Action action = registry.get< Controller >(state.active_player())
+                                .choose_action_func(state);
 
-      if(is_valid(state, action.value())) {
-         return action.value();
+      if(is_valid(action, state)) {
+         return action;
       }
       n_invalid_choices++;
       if(n_invalid_choices > state.config().INVALID_ACTIONS_LIMIT) {
@@ -40,67 +39,60 @@ input::Action InputHandlerBase::request_action(const GameState& state) const
       }
    }
 }
+void InputHandlerBase::change_turn(GameState& state)
+{
+   state.turn()++;
+}
+
 input::Action TargetInputHandler::request_action(const GameState& state) const
 {
    int n_invalid_choices = 0;
+   auto& registry = state.registry();
    while(true) {
-      auto action = state.player(state.active_team())
-                       .controller()
-                       ->choose_targets(state, state.buffer().targeting.back());
+      input::Action action = registry.get< Controller >(state.active_player())
+                                .choose_targets_func(state, state.target_system());
       ;
 
-      if(is_valid(action)) {
+      if(is_valid(action, state)) {
          return action;
       }
       n_invalid_choices++;
       if(n_invalid_choices > state.config().INVALID_ACTIONS_LIMIT) {
          // TODO: Add punishment reward option to agent for RL agents for choosing invalid moves too
          //  often?
-         return input::Action(input::CancelAction(state.active_team()));
+         // choose random available action
+         return random::choose(m_action_system->valid_actions(state), state.rng());
       }
    }
 }
-bool TargetActionPhase::is_valid(const input::Action& action) const
+void InitiativeInputHandler::handle(input::Action& action, GameState& state)
 {
-   return false;
-}
-std::vector< input::Action > TargetActionPhase::valid_actions(const GameState& action) const
-{
-   return std::vector< input::Action >();
-}
-bool InitiativeInputHandler::is_valid(const input::Action& action) const
-{
-   return false;
-}
-std::vector< input::Action > InitiativeInputHandler::valid_actions(const GameState& action) const
-{
-   return std::vector< input::Action >();
-}
-bool CombatActionPhase::is_valid(const input::Action& action) const
-{
-   return false;
-}
-std::vector< input::Action > CombatActionPhase::valid_actions(const GameState& action) const
-{
-   return std::vector< input::Action >();
-}
-input::Action ReplacingActionPhase::request_action(const GameState& state) const
-{
-   return InputHandlerBase::request_action(state);
-}
-bool ReplacingActionPhase::is_valid(const input::Action& action) const
-{
-   return false;
-}
-std::vector< input::Action > ReplacingActionPhase::valid_actions(const GameState& action) const
-{
-   return std::vector< input::Action >();
-}
-bool MulliganActionPhase::is_valid(const input::Action& action) const
-{
-   return false;
-}
-std::vector< input::Action > MulliganActionPhase::valid_actions(const GameState& action) const
-{
-   return std::vector< input::Action >();
+   auto& registry = state.registry();
+   switch(action.id()) {
+      case input::ID::PASS: {
+         registry.emplace< tag::pass >(state.player(action.team()));
+         change_turn(state);
+      }
+      case input::ID::PLACE_UNIT: {
+         auto& action_detail = action.detail< input::PlaceUnitAction >();
+         if(action_detail.to_bf) {
+            auto& bsystem = state.get< BoardSystem >();
+            for(auto idx : action_detail.indices_vec) {
+               auto entity = bsystem.at<Zone::CAMP>(idx);
+               bsystem.move_to<Zone::BATTLEFIELD>(entity, idx);
+            }
+         }
+      }
+      case input::ID::PLACE_SPELL: {
+      }
+      case input::ID::PLAY_SPELL: {
+      }
+      case input::ID::PLAY_FIELDCARD: {
+      }
+      case input::ID::ACCEPT: {
+      }
+      default: {
+         throw std::logic_error("The passed action was not valid for the current handler.");
+      }
+   }
 }

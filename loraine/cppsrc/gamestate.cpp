@@ -56,7 +56,7 @@ GameState::GameState(
              decks[1],
              std::move(controllers[1]))}),
       m_starting_team(starting_team),
-      m_board(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE),
+      m_board_system(cfg.CAMP_SIZE, cfg.BATTLEFIELD_SIZE),
       m_attacker(starting_team)
       m_turn(starting_team),
       m_spell_stack(),
@@ -82,7 +82,7 @@ GameState::GameState(const GameState& other)
     : m_config(other.m_config),
       m_players(other.m_players),
       m_starting_team(other.m_starting_team),
-      m_board(other.m_board),
+      m_board_system(other.m_board_system),
       m_round(other.m_round)
 {
    // TODO: this needs to fully reconnect all cloned event listeners with the correct events

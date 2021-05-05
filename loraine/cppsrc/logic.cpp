@@ -259,7 +259,7 @@ bool Logic::invoke_actions()
    while(not action_buffer.empty()) {
       auto& action = action_buffer.back();
       m_state->commit_to_history(std::make_unique< ActionRecord >(action));
-      flip_initiative = m_action_invoker->handle(*action);
+      flip_initiative = m_action_invoker->handle(*action, < #initializer # >);
       action_buffer.pop_back();
    }
    return flip_initiative;

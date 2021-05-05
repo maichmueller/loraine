@@ -23,7 +23,7 @@ class TargetSystem;
 //   virtual input::Action choose_targets(const GameState& state, const TargetSystem& targeter) = 0;
 //};
 
-class Controller {
+struct Controller {
    std::function< input::Action(const GameState&) > choose_action_func;
    std::function< input::Action(const GameState&, const TargetSystem&) > choose_targets_func;
 };
