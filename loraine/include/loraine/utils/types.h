@@ -27,6 +27,10 @@ using wptr = std::weak_ptr< T >;
 template < typename T >
 using SymArr = std::array< T, 2 >;
 
+class Inconstructible {
+   Inconstructible() = delete;
+};
+
 /// Code to enable classes to have fully correct std::shared_ptr clone methods using CRTP and
 /// inheritance. This convoluted pattern is needed since std::shared_ptr<Base> and
 /// std::shared_ptr<EventT> are not covariant types and thus cannot be used to simply chagne the

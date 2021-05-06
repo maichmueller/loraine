@@ -5,7 +5,7 @@
 #include <set>
 #include <utility>
 
-#include "loraine/core/action.h"
+#include "loraine/core/action.hpp"
 #include "loraine/utils/types.h"
 #include "system.hpp"
 

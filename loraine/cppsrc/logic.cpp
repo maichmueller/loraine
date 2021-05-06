@@ -1,6 +1,6 @@
 #include "loraine/core/logic.h"
 
-#include "loraine/core/action.h"
+#include "loraine/core/action.hpp"
 #include "loraine/core/gamestate.h"
 
 Logic::Logic(const Logic& other)

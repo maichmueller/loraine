@@ -2,7 +2,7 @@
 #ifndef LORAINE_REPUTATION_HPP
 #define LORAINE_REPUTATION_HPP
 
-class Reputation {
+struct Reputation {
    size_t counter = 0;
 };
 

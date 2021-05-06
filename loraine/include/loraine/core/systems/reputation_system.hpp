@@ -7,9 +7,9 @@
 #include "system.hpp"
 
 class ReputationSystem: public ILogicSystem {
+   ReputationSystem() = default;
 
    void on_event(const events::StrikeEvent& event);
-
 };
 
 #endif  // LORAINE_REPUTATION_SYSTEM_HPP

@@ -15,6 +15,7 @@ class KeywordMap {
    }
 
    [[nodiscard]] inline bool has(Keyword kword) const { return m_kw_arr.at(_to_int(kword)); }
+
    template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
    [[nodiscard]] inline bool has_any_of(Container kwords) const
    {
@@ -38,7 +39,7 @@ class KeywordMap {
 
    /// members
 
-   /// a bit-map of
+   /// a bit-map of n_keywords length
    std::array< bool, n_keywords > m_kw_arr;
 
    /// private methods

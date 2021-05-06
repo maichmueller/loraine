@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_BOARD_SYSTEM_H
-#define LORAINE_BOARD_SYSTEM_H
+#ifndef LORAINE_BOARD_SYSTEM_HPP
+#define LORAINE_BOARD_SYSTEM_HPP
 
 #include <entt/entt.hpp>
 #include <functional>
@@ -9,7 +9,7 @@
 #include <utility>
 #include <variant>
 
-#include "loraine/core/components.h"
+#include "loraine/core/components.hpp"
 #include "loraine/core/gamedefs.h"
 #include "loraine/core/systems/system.hpp"
 #include "loraine/utils/utils.h"
@@ -18,30 +18,19 @@ class BoardSystem: public ILogicSystem {
   public:
    using Queue = std::queue< entt::entity >;
 
-   BoardSystem(entt::registry& registry, size_t camp_size, size_t bf_size)
-       : ILogicSystem(registry), m_size_max_camp(camp_size), m_size_max_bf(bf_size)
-   {
-   }
+   BoardSystem(uint camp_size, uint bf_size) : m_size_max_camp(camp_size), m_size_max_bf(bf_size) {}
 
    BoardSystem(
-      entt::registry& registry,
-      size_t camp_size,
-      size_t bf_size,
+      GameState& state,
+      uint camp_size,
+      uint bf_size,
       SymArr< Queue > camp_queues,
       SymArr< Queue > bf_queues)
-       : ILogicSystem(registry),
-         m_size_max_camp(camp_size),
+       : m_size_max_camp(camp_size),
          m_size_max_bf(bf_size),
          m_q_camp(std::move(camp_queues)),
          m_q_bf(std::move(bf_queues))
    {
-   }
-
-   // TODO: make this update the correct previous zone of the moved entity too!
-   template < Zone zone >
-   inline void on_move()
-   {
-      m_size_cache[static_cast< size_t >(zone)] += 1;
    }
 
    /**
@@ -51,14 +40,14 @@ class BoardSystem: public ILogicSystem {
     * The Position component of each card should stay up-to-date this way for every move.
     */
    template < Zone new_zone >
-   bool move_to(entt::entity card, size_t index);
+   bool move_to(entt::entity card, uint index);
    template < Zone new_zone >
-   bool move_to(const std::vector< entt::entity >& cards, const std::vector< size_t >& indices);
+   bool move_to(const std::vector< entt::entity >& cards, const std::vector< uint >& indices);
    template < Zone new_zone >
    bool move_to(const std::vector< entt::entity >& cards);
 
    template < Zone zone >
-   entt::entity at(size_t index);
+   entt::entity at(uint index);
 
    template < Zone zone >
    size_t size()
@@ -67,18 +56,18 @@ class BoardSystem: public ILogicSystem {
    }
 
    /**
-    * Counts the units in the camp or the battlefield, subject to a filter on
+    * Counts the units in the camp or the battlefield, subject to a filter on_add
     * @param team Team,
     *   the team whose units should be counted
     * @param in_camp bool,
-    *   whether to count the units in the camp or on the battlefield
+    *   whether to count the units in the camp or on_add the battlefield
     * @param filter Callable,
-    *   the filter to use on the units. Can be used to search for units with specific attributes
+    *   the filter to use on_add the units. Can be used to search for units with specific attributes
     * @return size_t,
     *   the count
     */
    template < Zone zone >
-   [[nodiscard]] size_t count_if(
+   [[nodiscard]] uint count_if(
       Team team,
       const std::function< bool(entt::registry&, entt::entity) >& filter) const;
 
@@ -107,16 +96,16 @@ class BoardSystem: public ILogicSystem {
    template < Zone zone >
    inline bool empty() const
    {
-      return m_registry.view< Position< zone > >().empty();
+      return m_registry->view< Position< zone > >().empty();
    }
 
   private:
    /// the max number of cards in the camp at any time
-   size_t m_size_max_camp;
-   /// the max number of units on the battlefield at any time
-   size_t m_size_max_bf;
+   uint m_size_max_camp;
+   /// the max number of units on_add the battlefield at any time
+   uint m_size_max_bf;
    // the ContainerType holding all entities
-   std::array< size_t, n_zone > m_size_cache = {0};
+   std::array< uint, n_zone > m_size_cache = {0};
    /// the queue for adding new cards to the camp
    SymArr< Queue > m_q_camp = {};
    // the queue for newly summoned units on the battlefield
@@ -130,7 +119,7 @@ class BoardSystem: public ILogicSystem {
    void _process_queue();
 
    template < Zone zone >
-   void boundary_check(size_t index) const
+   void boundary_check(uint index) const
    {
       if constexpr(Zone::CAMP == zone) {
          if(not (index < m_size_max_camp)) {
@@ -152,19 +141,20 @@ class BoardSystem: public ILogicSystem {
     * @return
     */
    template < Zone zone >
-   size_t _update_positions()
+   uint _update_positions()
    {
-      std::vector< Position< zone >* > positions;
-      m_registry.view< Position< zone > >().each(
-         [&](auto& pos) { positions.emplace_back(&pos); });
+      auto view = m_registry->view< Position< zone > >();
+      std::vector< std::pair< entt::entity, uint > > card_pos;
+      view.each([&](auto card, auto& pos) { card_pos.emplace_back({card, pos.index}); });
 
-      std::sort(positions.begin(), positions.end(), [](const auto* p1, const auto* p2) {
-         return p1->index < p2->index;
+      std::sort(card_pos.begin(), card_pos.end(), [](const auto& p1, const auto& p2) {
+         return p1.second < p2.second;
       });
 
       auto c = 0UL;
-      for(auto* pos : positions) {
-         pos->index = c++;
+      auto updater = [&](Position< zone >& position) { position.index = c++; };
+      for(auto [card, _] : card_pos) {
+         m_registry->patch< Position< zone > >(card, updater);
       }
       m_size_cache[static_cast< size_t >(zone)] = c;
       return c;
@@ -184,8 +174,8 @@ class BoardSystem: public ILogicSystem {
    template < Zone zone >
    void _remove_pos_impl(entt::entity card)
    {
-      if(m_registry.view< Position< zone > >().contains(card)) {
-         m_registry.remove< Position< zone > >(card);
+      if(m_registry->view< Position< zone > >().contains(card)) {
+         m_registry->remove< Position< zone > >(card);
          _update_positions< zone >();
          return;
       }
@@ -197,13 +187,13 @@ class BoardSystem: public ILogicSystem {
 };
 
 template < Zone zone >
-size_t BoardSystem::count_if(
+uint BoardSystem::count_if(
    Team team,
    const std::function< bool(entt::registry&, entt::entity) >& filter) const
 {
-   size_t sum = 0;
-   for(auto elem : m_registry.view< Position< zone > >()) {
-      if(filter(m_registry, elem)) {
+   uint sum = 0;
+   for(auto elem : m_registry->view< Position< zone > >()) {
+      if(filter(*m_registry, elem)) {
          sum += 1;
       }
    }
@@ -213,20 +203,20 @@ size_t BoardSystem::count_if(
 template < Team::Value team >
 std::vector< entt::entity > BoardSystem::camp_units() const
 {
-   auto view = m_registry.view< Position< Zone::CAMP >, tag::team< team >, tag::unit >();
+   auto view = m_registry->view< Position< Zone::CAMP >, tag::team< team >, tag::unit >();
    return std::vector< entt::entity >{view.begin(), view.end()};
 }
 
 template <>
 void BoardSystem::add_to_queue< Zone::CAMP >(entt::entity card)
 {
-   m_q_camp[m_registry.get< Team >(card)].emplace(card);
+   m_q_camp[m_registry->get< Team >(card)].emplace(card);
 }
 
 template <>
 void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(entt::entity card)
 {
-   m_q_bf[m_registry.get< Team >(card)].emplace(card);
+   m_q_bf[m_registry->get< Team >(card)].emplace(card);
 }
 
 template <>
@@ -246,13 +236,13 @@ void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(const std::vector< entt::ent
 }
 
 template < Zone new_zone >
-bool BoardSystem::move_to(entt::entity card, size_t index)
+bool BoardSystem::move_to(entt::entity card, uint index)
 {
-   if constexpr(algo::contains(std::array{Zone::BATTLEFIELD, Zone::CAMP}, new_zone)) {
+   if constexpr(Zone::BATTLEFIELD == new_zone || Zone::CAMP == new_zone) {
       auto same_pos_check = [&, this]() {
-         return (m_registry.all_of< Position< new_zone > >(card)
-                 && m_registry.get< Position< new_zone > >(card).index == index)
-                || m_size_cache[static_cast< size_t >(new_zone)] == [&]() {
+         return (m_registry->all_of< Position< new_zone > >(card)
+                 && m_registry->get< Position< new_zone > >(card).index == index)
+                || m_size_cache[static_cast< uint >(new_zone)] == [&]() {
                       if constexpr(new_zone == Zone::BATTLEFIELD) {
                          return m_size_max_bf;
                       }
@@ -266,18 +256,18 @@ bool BoardSystem::move_to(entt::entity card, size_t index)
       }
    }
    _remove_pos(card);
-   m_registry.emplace< Position< new_zone > >(card, index);
+   m_registry->emplace< Position< new_zone > >(card, index);
    return true;
 }
 
 template < Zone new_zone >
 bool BoardSystem::move_to(
    const std::vector< entt::entity >& cards,
-   const std::vector< size_t >& indices)
+   const std::vector< uint >& indices)
 {
    auto size = cards.size();
    if(size != indices.size()) {
-      throw std::invalid_argument("Indices and cards vector have different lengths.");
+      throw std::invalid_argument("Indices and cards vectors have different lengths.");
    }
    std::vector< bool > out(size);
    for(auto i = 0; i < size; ++i) {
@@ -289,18 +279,18 @@ bool BoardSystem::move_to(
 template < Zone new_zone >
 bool BoardSystem::move_to(const std::vector< entt::entity >& cards)
 {
-   std::vector< size_t > indices;
-   std::iota(indices.begin(), indices.end(), m_size_cache[static_cast< size_t >(new_zone)]);
+   std::vector< uint > indices;
+   std::iota(indices.begin(), indices.end(), m_size_cache[static_cast< uint >(new_zone)]);
    return move_to< new_zone >(cards, indices);
 }
 
 template < Zone zone >
-entt::entity BoardSystem::at(size_t index)
+entt::entity BoardSystem::at(uint index)
 {
    boundary_check< zone >(index);
    std::optional< entt::entity > e = std::nullopt;
-   for(auto entity : m_registry.view< Position< zone > >()) {
-      if(m_registry.get< Position< zone > >(entity).index == index) {
+   for(auto entity : m_registry->view< Position< zone > >()) {
+      if(m_registry->get< Position< zone > >(entity).index == index) {
          e = entity;
          break;
       }
@@ -311,4 +301,4 @@ entt::entity BoardSystem::at(size_t index)
    return e.value();
 }
 
-#endif  // LORAINE_BOARD_SYSTEM_H
+#endif  // LORAINE_BOARD_SYSTEM_HPP

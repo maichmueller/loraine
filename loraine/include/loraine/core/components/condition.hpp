@@ -6,7 +6,7 @@ class GameState;
 
 /**
  * A std::function< bool(GameState&) > wrapper, which should be used to
- * determine whether a condition on the state is fulfilled;
+ * determine whether a condition on_add the state is fulfilled;
  *
  * This can be used for cards when wanting to determine, whether it can be played.
  * @tparam Derived

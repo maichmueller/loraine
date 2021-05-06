@@ -3,17 +3,17 @@
 #ifndef LORAINE_LORAINE_H
 #define LORAINE_LORAINE_H
 
-#include "loraine/core/action.h"
-#include "loraine/core/components.h"
+#include "loraine/core/action.hpp"
+#include "loraine/core/components.hpp"
 #include "loraine/core/components/controller.hpp"
-#include "loraine/core/config.h"
-#include "loraine/core/deck.h"
+#include "loraine/core/config.hpp"
+#include "loraine/core/deck.hpp"
 #include "loraine/core/gamedefs.h"
 #include "loraine/core/gamemode.h"
 #include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"
 #include "loraine/core/systems.h"
-#include "loraine/core/systems/board_system.h"
+#include "loraine/core/systems/board_system.hpp"
 #include "loraine/core/systems/input_system.h"
 #include "loraine/grants/grant.h"
 #include "loraine/utils/random.h"

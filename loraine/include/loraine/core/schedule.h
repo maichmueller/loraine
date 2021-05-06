@@ -3,7 +3,7 @@
 
 #include <queue>
 
-#include "loraine/core/components.h"
+#include "loraine/core/components.hpp"
 #include "loraine/utils/utils.h"
 
 namespace schedule {

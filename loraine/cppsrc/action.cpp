@@ -1,5 +1,5 @@
 
-#include "loraine/core/action.h"
+#include "loraine/core/action.hpp"
 
 #include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"

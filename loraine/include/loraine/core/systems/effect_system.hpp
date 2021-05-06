@@ -4,7 +4,7 @@
 
 #include <entt/entt.hpp>
 
-#include "loraine/core/components.h"
+#include "loraine/core/components.hpp"
 #include "loraine/core/gamedefs.h"
 #include "loraine/core/schedule.h"
 #include "loraine/effects/effectdefs.hpp"
@@ -18,10 +18,9 @@ class GameState;
 /**
  * The base class for effects in the game.
  */
-template < typename Event >
 class EffectSystem: public ILogicSystem {
   public:
-   EffectSystem(entt::registry& registry) : ILogicSystem(registry) {}
+   EffectSystem(GameState& state) : ILogicSystem(state) {}
 
    template < events::EventID event_id, typename... Args >
    void trigger(Args&&... args)
@@ -29,12 +28,12 @@ class EffectSystem: public ILogicSystem {
       // create the event corresponding to the ID first
       auto event = helpers::id_to_event_t< event_id >{std::forward< Args >(args)...};
       // get the subscribers to this event type
-      auto view = m_registry.view< tag::subscriber< event_id > >();
+      auto view = m_registry->view< tag::subscriber< event_id > >();
       auto scheduled_entities = std::vector< entt::entity >{view.begin(), view.end()};
       // iterate over the scheduled entities, always popping the next one according to the order
       // policy of this event
       while(not scheduled_entities.empty()) {
-         auto next_to_trigger = schedule::next< event_id >(m_registry, event, scheduled_entities);
+         auto next_to_trigger = schedule::next(m_registry, scheduled_entities, event);
          next_to_trigger.first->on_event(event);
          scheduled_entities.erase(algo::find(scheduled_entities, next_to_trigger.second));
       }
@@ -83,7 +82,6 @@ class EffectSystem: public ILogicSystem {
    {
       return effect.first.is_consumed = true;
    }
-
 };
 
 #endif  // LORAINE_EFFECT_SYSTEM_HPP

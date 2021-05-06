@@ -4,6 +4,7 @@
 #include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"
 #include "loraine/core/systems/effect_system.hpp"
+#include "loraine/core/systems/board_system.hpp"
 
 input::Action InputSystem::request_action(const GameState& state) const
 {
@@ -77,8 +78,8 @@ void InitiativeInputHandler::handle(input::Action& action, GameState& state)
          if(action_detail.to_bf) {
             auto& bsystem = state.get< BoardSystem >();
             for(auto idx : action_detail.indices_vec) {
-               auto entity = bsystem.at<Zone::CAMP>(idx);
-               bsystem.move_to<Zone::BATTLEFIELD>(entity, idx);
+               auto entity = bsystem->at<Zone::CAMP>(idx);
+               bsystem->move_to<Zone::BATTLEFIELD>(entity, idx);
             }
          }
       }

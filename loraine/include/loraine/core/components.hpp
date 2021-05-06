@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_COMPONENTS_H
-#define LORAINE_COMPONENTS_H
+#ifndef LORAINE_COMPONENTS_HPP
+#define LORAINE_COMPONENTS_HPP
 
 #include "loraine/core/components/ability.hpp"
 #include "loraine/core/components/card_attributes.hpp"
@@ -15,4 +15,4 @@
 #include "loraine/core/components/stat_power.hpp"
 #include "loraine/core/components/tags.hpp"
 
-#endif  // LORAINE_COMPONENTS_H
+#endif  // LORAINE_COMPONENTS_HPP

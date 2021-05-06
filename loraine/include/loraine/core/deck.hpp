@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_DECK_H
-#define LORAINE_DECK_H
+#ifndef LORAINE_DECK_HPP
+#define LORAINE_DECK_HPP
 
 #include <entt/entt.hpp>
 #include <set>
@@ -231,4 +231,4 @@ std::vector< entt::entity > Deck::find(Predicate f) const
    return _find_cards(f);
 }
 
-#endif  // LORAINE_DECK_H
+#endif  // LORAINE_DECK_HPP

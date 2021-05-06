@@ -2,10 +2,15 @@
 
 #include "loraine/core/gamestate.h"
 
-#include <loraine/utils/algorithms.h>
+#include <loraine/utils/utils.h>
+#include "loraine/core/systems.h"
 
-#include "loraine/core/action.h"
-#include "loraine/core/logic.h"
+
+bool GameState::is_resolved() const
+{
+   return m_sys_board->empty< Zone::SPELLSTACK >()
+          && m_sys_board->empty< Zone::BATTLEFIELD >();
+}
 
 //void GameState::commit_to_history(uptr< Record >&& record)
 //{

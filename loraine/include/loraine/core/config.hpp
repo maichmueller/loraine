@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_CONFIG_H
-#define LORAINE_CONFIG_H
+#ifndef LORAINE_CONFIG_HPP
+#define LORAINE_CONFIG_HPP
 
 #include <filesystem>
 #include <string>
@@ -114,4 +114,4 @@ struct Config {
    }
 };
 
-#endif  // LORAINE_CONFIG_H
+#endif  // LORAINE_CONFIG_HPP

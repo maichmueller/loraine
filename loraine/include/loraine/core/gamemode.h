@@ -7,7 +7,7 @@
 #include <optional>
 #include <utility>
 
-#include "config.h"
+#include "config.hpp"
 #include "gamedefs.h"
 #include "gamestate.h"
 #include "loraine/core/components/controller.hpp"

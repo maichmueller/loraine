@@ -11,29 +11,27 @@
 #include <utility>
 #include <vector>
 
-#include "config.h"
+#include "config.hpp"
 #include "gamedefs.h"
-#include "loraine/core/components.h"
-#include "loraine/core/systems/board_system.h"
-#include "loraine/core/systems/input_system.h"
+#include "loraine/core/components.hpp"
+#include "loraine/core/systems_fwd.hpp"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 #include "loraine/utils/random.h"
 #include "loraine/utils/types.h"
 
 class GameState {
-
   public:
    GameState(
       const Config& cfg,
-//      SymArr< Deck > decks,
+      //      SymArr< Deck > decks,
       SymArr< sptr< Controller > > controllers,
       Team starting_team,
       random::rng_type rng = random::create_rng());
 
    GameState(
       const Config& cfg,
-//      SymArr< Deck > decks,
+      //      SymArr< Deck > decks,
       SymArr< sptr< Controller > > controllers,
       random::rng_type rng = random::create_rng());
 
@@ -71,11 +69,7 @@ class GameState {
    auto& get() = delete;
 
    Status status();
-   inline bool is_resolved() const
-   {
-      return m_board_system.empty< Zone::SPELLSTACK >()
-             && m_board_system.empty< Zone::BATTLEFIELD >();
-   }
+   bool is_resolved() const;
 
   private:
    // the registry holding all the game entities
@@ -88,8 +82,12 @@ class GameState {
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
 
-   InputSystem m_action_system;
-   BoardSystem m_board_system;
+   uptr<InputSystem> m_sys_action;
+   uptr<BoardSystem> m_sys_board;
+   uptr<EffectSystem> m_sys_effect;
+   uptr<HealthStatSystem> m_sys_health;
+   uptr<PowerStatSystem> m_sys_power;
+   uptr<ManaStatSystem> m_sys_mana;
 
    random::rng_type m_rng;
 
@@ -114,8 +112,19 @@ void GameState::_connect_impl(entt::entity entity)
 }
 
 template <>
-auto& GameState::get< InputSystem >() { return m_action_system;}
+auto& GameState::get< InputSystem >()
+{
+   return m_sys_action;
+}
 template <>
-auto& GameState::get< BoardSystem >() { return m_board_system;}
+auto& GameState::get< BoardSystem >()
+{
+   return m_sys_board;
+}
+template <>
+auto& GameState::get< EffectSystem >()
+{
+   return m_sys_effect;
+}
 
 #endif  // LORAINE_GAMESTATE_H

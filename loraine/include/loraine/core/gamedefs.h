@@ -140,6 +140,7 @@ enum struct Region {
 
 constexpr const size_t n_regions = static_cast< size_t >(Region::TARGON) + 1;
 
+
 enum class Keyword {
    ALLEGIANCE = 0,  // define the starting value, necessary for indexing.
    ATTACK,

@@ -2,17 +2,22 @@
 #ifndef LORAINE_STAT_POWER_SYSTEM_HPP
 #define LORAINE_STAT_POWER_SYSTEM_HPP
 
-#include "loraine/core/components.h"
+#include "loraine/core/components.hpp"
 #include "system.hpp"
 
-class PowerStatSystem : public ILogicSystem {
-   PowerStatSystem(entt::registry& registry) : ILogicSystem(registry) {}
-
-   uint buff(entt::entity entity, entt::entity source, long amount)
+class PowerStatSystem: public ILogicSystem {
+   PowerStatSystem() = default;
+   uint buff(entt::entity unit, entt::entity source, long amount)
    {
-      m_registry.get< Buffer >(entity).execute(m_registry, entity, source, amount);
+      auto buff = m_registry->get< Buffer >(unit).executor(*m_registry, unit, source, amount);
+      m_registry->patch< PowerStat >(unit, update);
+      return buff;
    }
 
-
+  private:
+   static inline void update(PowerStat& comp)
+   {
+      comp.power_cache = std::max(0L, comp.power_delta + comp.power_ref);
+   }
 };
 #endif  // LORAINE_STAT_POWER_SYSTEM_HPP

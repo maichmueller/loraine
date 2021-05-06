@@ -1,5 +1,5 @@
 
-#include "loraine/core/deck.h"
+#include "loraine/core/deck.hpp"
 
 #include <algorithm>
 #include <sstream>

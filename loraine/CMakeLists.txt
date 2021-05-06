@@ -8,12 +8,12 @@ set(LIBRARY_SOURCES
         ${LORAINE_SRC_DIR}/deck.cpp
         ${LORAINE_SRC_DIR}/effectmap.cpp
         ${LORAINE_SRC_DIR}/effect_system.cpp
-        ${LORAINE_SRC_DIR}/entity.cpp
         ${LORAINE_SRC_DIR}/event.cpp
         ${LORAINE_SRC_DIR}/gamemode.cpp
         ${LORAINE_SRC_DIR}/gamestate.cpp
         ${LORAINE_SRC_DIR}/grant.cpp
         ${LORAINE_SRC_DIR}/grantmodifier.cpp
+        ${LORAINE_SRC_DIR}/system.cpp
 
         ${LORAINE_SRC_DIR}/reputation_system.cpp
         )

@@ -1,8 +1,8 @@
 
 
-#include "loraine/core/systems/board_system.h"
+#include "loraine/core/systems/board_system.hpp"
 
-#include "loraine/core/components.h"
+#include "loraine/core/components.hpp"
 #include "loraine/utils/utils.h"
 
 std::vector< entt::entity > BoardSystem::camp_units(Team team) const
@@ -13,6 +13,7 @@ std::vector< entt::entity > BoardSystem::camp_units(Team team) const
       return camp_units<Team::RED>();
    }
 }
+
 
 
 

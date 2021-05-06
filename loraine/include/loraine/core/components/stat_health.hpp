@@ -3,7 +3,7 @@
 #define LORAINE_STAT_HEALTH_HPP
 
 struct HealthStat {
-   /// the health of the card on creation
+   /// the health of the card on_add creation
    long health_ref;
    /// the actual health at the moment
    unsigned int health_cache;
@@ -18,59 +18,53 @@ struct HealthStat {
 namespace detail {
 
 struct default_damager {
-   static size_t
+   static uint
    operation(entt::registry& registry, entt::entity damaged_unit, entt::entity source, uint amount)
    {
       auto& comp = registry.get< HealthStat >(damaged_unit);
       auto effective_damage = std::min(comp.health_cache, amount);
       comp.damage += effective_damage;
-      update(comp);
       return effective_damage;
    }
 
-   static inline void update(HealthStat& comp)
-   {
-      comp.health_cache = std::max(
-         0L, comp.health_ref + comp.health_delta + comp.health_delta_temp + comp.damage);
-   }
 };
 
 struct default_healer {
-   static size_t
+   static uint
    operation(entt::registry& registry, entt::entity healed_unit, entt::entity source, uint amount)
    {
       auto& comp = registry.get< HealthStat >(healed_unit);
       auto effective_healing = std::min(amount, comp.damage);
       comp.damage -= effective_healing;
-      update(comp);
       return effective_healing;
    }
 
-   static inline void update(HealthStat& comp)
-   {
-      comp.health_cache = std::max(
-         0L, comp.health_ref + comp.health_delta + comp.health_delta_temp + comp.damage);
-   }
+
 };
 
 }  // namespace detail
 
 struct Damager {
-   using FuncType = std::function< size_t(
-      entt::registry& registry,
-      entt::entity damaged_unit,
-      entt::entity source,
-      size_t amount) >;
-   FuncType execute = &detail::default_damager::operation;
+   using FuncType = std::function<
+      long(entt::registry& registry, entt::entity unit, entt::entity source, long amount) >;
+
+   Damager() : executor() { reset(); }
+   Damager(FuncType f) : executor(f) {}
+
+   inline void reset() { executor = &detail::default_damager::operation; }
+
+   FuncType executor;
 };
 
 struct Healer {
-   using FuncType = std::function< size_t(
-      entt::registry& registry,
-      entt::entity healed_unit,
-      entt::entity source,
-      size_t amount) >;
-   FuncType execute = &detail::default_healer::operation;
-};
+   using FuncType = std::function<
+      long(entt::registry& registry, entt::entity unit, entt::entity source, long amount) >;
 
+   Healer() : executor() { reset(); }
+   Healer(FuncType f) : executor(f) {}
+
+   inline void reset() { executor = &detail::default_healer::operation; }
+
+   FuncType executor;
+};
 #endif  // LORAINE_STAT_HEALTH_HPP

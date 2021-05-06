@@ -1,7 +1,7 @@
 
 
-#ifndef LORAINE_ACTION_H
-#define LORAINE_ACTION_H
+#ifndef LORAINE_ACTION_HPP
+#define LORAINE_ACTION_HPP
 
 #include <entt/entt.hpp>
 #include <map>
@@ -258,4 +258,4 @@ class Action {
 
 }  // namespace input
 
-#endif  // LORAINE_ACTION_H
+#endif  // LORAINE_ACTION_HPP
