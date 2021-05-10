@@ -18,19 +18,16 @@ namespace input {
 class Action;
 
 enum class ID {
-   ACCEPT,
+   BUTTONPRESS,
+   ADVANCE_UNIT,
    CANCEL,
    CHOICE,
    DRAG_ENEMY,
-   PLACE_UNIT,
    PLACE_SPELL,
    MULLIGAN,
-   PASS,
    PLAY_FIELDCARD,
-   PLAY_SPELL,
-   REPLACE,
-   TARGETING,
-   SKIP
+   RETREAT_UNIT,
+   TARGETING
 };
 
 template < ID action_id >
@@ -49,11 +46,11 @@ struct ActionBase {
 };
 
 /**
- * This is the action for accepting the outcome of whatever
- * the current state is. Counts as pass if nothing has been done
+ * This is the action for whatever happens when the is pressed in the game.
+ * What this action does precisely depends on the specific circumstances.
  */
-struct AcceptAction: public ActionBase< ID::ACCEPT > {
-   using base = ActionBase< ID::ACCEPT >;
+struct ButtonPressAction: public ActionBase< ID::BUTTONPRESS > {
+   using base = ActionBase< ID::BUTTONPRESS >;
    using base::base;
 };
 
@@ -78,20 +75,6 @@ struct PlayFieldcardAction: public ActionBase< ID::PLAY_FIELDCARD > {
    std::optional< size_t > target_index;
 };
 
-/**
- * Action for playing spells
- */
-struct PlaySpellAction: public ActionBase< ID::PLAY_SPELL > {
-   using base = ActionBase< ID::PLAY_SPELL >;
-
-   PlaySpellAction(Team team, const std::vector< entt::entity >& spells) noexcept
-       : ActionBase(team), spells(spells)
-   {
-   }
-
-   // the spells to play
-   std::vector< entt::entity > spells;
-};
 
 /**
  * Action for playing a fieldcard
@@ -127,18 +110,16 @@ struct PlaceSpellAction: public ActionBase< ID::PLACE_SPELL > {
    bool to_stack;
 };
 
-struct PlaceUnitAction: public ActionBase< ID::PLACE_UNIT > {
-   // Action for moving units either from the camp (index-based) onto the battlefield or from the
-   // battlefield onto the camp
-   using base = ActionBase< ID::PLACE_UNIT >;
+struct AdvanceUnitAction: public ActionBase< ID::ADVANCE_UNIT > {
+   // Action for moving units from the camp (index-based) onto the battlefield
+   using base = ActionBase< ID::ADVANCE_UNIT >;
 
-   PlaceUnitAction(Team team, bool to_bf, std::vector< size_t > indices_vec)
-       : ActionBase(team), to_bf(to_bf), indices_vec(std::move(indices_vec))
+   AdvanceUnitAction(Team team, std::vector< size_t > indices_vec)
+       : ActionBase(team), indices(std::move(indices_vec))
    {
    }
 
-   bool to_bf;
-   std::vector< size_t > indices_vec;
+   std::vector< size_t > indices;
 };
 
 struct DragEnemyAction: public ActionBase< ID::DRAG_ENEMY > {
@@ -183,35 +164,32 @@ struct TargetingAction: public ActionBase< ID::TARGETING > {
    std::vector< entt::entity > targets;
 };
 
-struct ReplaceAction: public ActionBase< ID::REPLACE > {
-   using base = ActionBase< ID::REPLACE >;
 
-   ReplaceAction(Team team, size_t replace_index) : ActionBase(team), replace_index(replace_index)
+struct RetreatUnitAction: public ActionBase< ID::RETREAT_UNIT > {
+   // Action for moving units from the battlefield (index-based) back to the camp
+   using base = ActionBase< ID::RETREAT_UNIT >;
+
+   RetreatUnitAction(Team team, std::vector< size_t > indices_vec)
+       : ActionBase(team), indices(std::move(indices_vec))
    {
    }
-
-   // the selected target
-   size_t replace_index;
+   std::vector< size_t > indices;
 };
 
-struct SkipAction: public ActionBase< ID::SKIP > {
-   using base = ActionBase< ID::SKIP >;
-};
 
 class Action {
   private:
    using ActionVariant = std::variant<
-      AcceptAction,
+      ButtonPressAction,
       CancelAction,
       ChoiceAction,
       DragEnemyAction,
       MulliganAction,
       PlaceSpellAction,
-      PlaceUnitAction,
+      AdvanceUnitAction,
       PlayFieldcardAction,
-      PlaySpellAction,
-      TargetingAction,
-      SkipAction >;
+      RetreatUnitAction,
+      TargetingAction>;
 
   public:
    Action(ActionVariant&& action) noexcept : m_action_detail(std::move(action)) {}

@@ -4,38 +4,11 @@
 #include <cstddef>
 #include <cstdint>
 
-/**
- * @brief Enum class wrapper
- */
-struct Team {
-   enum Value : uint8_t { BLUE = 0, RED };
-   constexpr static const size_t n_team = static_cast< size_t >(RED) + 1;
+#include "loraine/utils/utils.h"
 
-   Team(Value v) : value(v) {}
-   Team(bool v) : value(v ? RED : BLUE) {}
+enum struct Team { BLUE = 0, RED };
 
-   template < typename IntType, typename = std::enable_if_t< std::is_integral_v< IntType > > >
-   inline operator IntType() const
-   {
-      return static_cast< IntType >(value);
-   }
-
-   template < typename IntType, typename = std::enable_if_t< std::is_integral_v< IntType > > >
-   inline auto operator+(IntType i) const
-   {
-      return static_cast< IntType >(value) + i;
-   }
-
-   inline Team opponent(Team team) const { return 1 - uint8_t(team); }
-
-   inline bool operator==(const Team& other) const { return value == other.value; }
-   inline bool operator!=(const Team& other) const { return value != other.value; }
-   inline bool operator==(const Value& other) const { return value == other; }
-   inline bool operator!=(const Value& other) const { return value != other; }
-
-  public:
-   Value value;
-};
+Team opponent(Team t) { return Team(1 - as_int(t));}
 
 constexpr const size_t n_teams = static_cast< size_t >(Team::RED) + 1;
 

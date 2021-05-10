@@ -62,12 +62,12 @@ ActionFollowup PlaceSpellAction::execute_impl(GameState& state)
    return false;
 }
 
-ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
+ActionFollowup AdvanceUnitAction::execute_impl(GameState& state)
 {
    auto& bf = state.board().battlefield(team());
    auto& camp = state.board().camp(team());
    if(to_bf) {
-      for(auto idx : indices_vec) {
+      for(auto idx : indices) {
          const auto& field_card = camp[idx];
          bf.emplace_back(to_unit(field_card));
          state.buffer().bf.emplace_back(to_unit(field_card));
@@ -75,9 +75,9 @@ ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
-      algo::remove_by_indices(camp, indices_vec);
+      algo::remove_by_indices(camp, indices);
    } else {
-      for(auto idx : indices_vec) {
+      for(auto idx : indices) {
          auto unit = bf[idx];
          camp.emplace_back(bf[idx]);
          auto& bf_buffer = state.buffer().bf;
@@ -86,7 +86,7 @@ ActionFollowup PlaceUnitAction::execute_impl(GameState& state)
       }
       // removing the units from the camp from the end of the vector. This method should be fast
       // enough for small vector sizes
-      algo::remove_by_indices(bf, indices_vec);
+      algo::remove_by_indices(bf, indices);
    }
    return false;
 }
@@ -191,7 +191,7 @@ ActionFollowup TargetingAction::execute_impl(GameState& state)
    return false;
 }
 
-ActionFollowup AcceptAction::execute_impl(GameState& state)
+ActionFollowup ButtonPressAction::execute_impl(GameState& state)
 {
    // check if units have been placed on the battlefield and thus an attack or block was
    // commenced

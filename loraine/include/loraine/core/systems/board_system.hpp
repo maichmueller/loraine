@@ -52,7 +52,7 @@ class BoardSystem: public ILogicSystem {
    template < Zone zone >
    size_t size()
    {
-      return m_size_cache[static_cast< size_t >(zone)];
+      return m_size_cache[utils::as_int(zone)];
    }
 
    /**
@@ -74,7 +74,7 @@ class BoardSystem: public ILogicSystem {
    [[nodiscard]] auto max_size_bf() const { return m_size_max_bf; }
    [[nodiscard]] auto max_size_camp() const { return m_size_max_camp; }
 
-   template < Team::Value team >
+   template < Team team >
    [[nodiscard]] std::vector< entt::entity > camp_units() const;
    [[nodiscard]] std::vector< entt::entity > camp_units(Team team) const;
 
@@ -97,6 +97,19 @@ class BoardSystem: public ILogicSystem {
    inline bool empty() const
    {
       return m_registry->view< Position< zone > >().empty();
+   }
+   template < Zone zone, Team t >
+   inline bool empty() const
+   {
+      return m_registry->group< Position< zone >, tag::team< t > >().empty();
+   }
+   template < Zone zone >
+   inline bool empty(Team team) const
+   {
+      if(team == Team::BLUE) {
+         return empty< zone, Team::BLUE >();
+      }
+      return empty< zone, Team::RED >();
    }
 
   private:

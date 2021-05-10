@@ -52,8 +52,14 @@ class GameState {
    [[nodiscard]] inline auto& registry() const { return m_registry; }
 
    [[nodiscard]] inline auto active_team() const { return Team(m_turn % 2); }
-   [[nodiscard]] inline auto player(Team team) const { return m_player_entities[team]; }
-   [[nodiscard]] inline auto active_player() const { return m_player_entities[active_team()]; }
+   [[nodiscard]] inline auto player(Team team) const
+   {
+      return m_player_entities[utils::as_int(team)];
+   }
+   [[nodiscard]] inline auto active_player() const
+   {
+      return m_player_entities[utils::as_int(active_team())];
+   }
 
    [[nodiscard]] inline auto& round() { return m_round; }
    [[nodiscard]] inline auto round() const { return m_round; }
@@ -82,12 +88,12 @@ class GameState {
    size_t m_round = 0;
    Status m_status = Status::ONGOING;
 
-   uptr<InputSystem> m_sys_action;
-   uptr<BoardSystem> m_sys_board;
-   uptr<EffectSystem> m_sys_effect;
-   uptr<HealthStatSystem> m_sys_health;
-   uptr<PowerStatSystem> m_sys_power;
-   uptr<ManaStatSystem> m_sys_mana;
+   uptr< InputSystem > m_sys_action;
+   uptr< BoardSystem > m_sys_board;
+   uptr< EffectSystem > m_sys_effect;
+   uptr< HealthStatSystem > m_sys_health;
+   uptr< PowerStatSystem > m_sys_power;
+   uptr< ManaStatSystem > m_sys_mana;
 
    random::rng_type m_rng;
 
@@ -114,17 +120,17 @@ void GameState::_connect_impl(entt::entity entity)
 template <>
 auto& GameState::get< InputSystem >()
 {
-   return m_sys_action;
+   return *m_sys_action;
 }
 template <>
 auto& GameState::get< BoardSystem >()
 {
-   return m_sys_board;
+   return *m_sys_board;
 }
 template <>
 auto& GameState::get< EffectSystem >()
 {
-   return m_sys_effect;
+   return *m_sys_effect;
 }
 
 #endif  // LORAINE_GAMESTATE_H

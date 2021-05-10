@@ -28,7 +28,7 @@ TEST_F(ActionTest, move_unit)
    controller_blue->add_action(input::Action(input::PlayFieldcardAction(Team::BLUE,  0)));
 
 
-   controller_blue->add_action(input::Action(input::PlaceUnitAction(Team::BLUE, true, {0, 2})));
+   controller_blue->add_action(input::Action(input::AdvanceUnitAction(Team::BLUE, true, {0, 2})));
 
    auto& camp_blue = state.board().camp(Team::BLUE);
    auto& camp_red = state.board().camp(Team::RED);

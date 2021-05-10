@@ -50,7 +50,7 @@ class InputHandlerBase {
       InputSystem* act_system,
       InputSystem::State state_id,
       std::set< input::ID > accepted_actions)
-       : m_action_system(act_system),
+       : m_input_system(act_system),
          m_state_id(state_id),
          m_accepted_actions(std::move(accepted_actions))
    {
@@ -77,7 +77,7 @@ class InputHandlerBase {
    [[nodiscard]] auto state_id() const { return m_state_id; }
 
   protected:
-   InputSystem* m_action_system;
+   InputSystem* m_input_system;
 
    void change_turn(GameState& state);
 
@@ -127,7 +127,7 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
           std::set< input::ID >{
              input::ID::PLACE_SPELL,
              input::ID::PLAY_SPELL,
-             input::ID::ACCEPT,
+             input::ID::BUTTONPRESS,
              AcceptedActions...})
    {
    }
@@ -140,7 +140,7 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
           std::set< input::ID >{
              input::ID::PLACE_SPELL,
              input::ID::PLAY_SPELL,
-             input::ID::ACCEPT,
+             input::ID::BUTTONPRESS,
              AcceptedActions...})
    {
    }
@@ -148,23 +148,20 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
   protected:
    /// handlers for specific actions. Does not transition the state, so any sub class using these
    /// handlers will need to transition themselves. These do not need to be used, thus are optional!
-   void handle(const input::PlaceSpellAction& action);
-   void handle(const input::PlayFieldcardAction& action);
-   void handle(const input::AcceptAction& action);
+   void handle(input::PlaceSpellAction& action, GameState& state);
+   void handle(input::ButtonPressAction& action, GameState& state);
 };
 
 class InitiativeInputHandler:
     public SpellInputHandler<
        InitiativeInputHandler,
-       input::ID::PASS,
        input::ID::PLAY_FIELDCARD,
-       input::ID::PLACE_UNIT > {
+       input::ID::ADVANCE_UNIT > {
   public:
    using base = SpellInputHandler<
       InitiativeInputHandler,
-      input::ID::PASS,
       input::ID::PLAY_FIELDCARD,
-      input::ID::PLACE_UNIT >;
+      input::ID::ADVANCE_UNIT >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::INITIATIVE;
@@ -189,12 +186,17 @@ class CombatInputHandler: public SpellInputHandler< CombatInputHandler > {
 };
 
 class AttackInputHandler:
-    public SpellInputHandler< AttackInputHandler, input::ID::DRAG_ENEMY, input::ID::PLACE_UNIT > {
+    public SpellInputHandler<
+       AttackInputHandler,
+       input::ID::DRAG_ENEMY,
+       input::ID::ADVANCE_UNIT,
+       input::ID::RETREAT_UNIT > {
   public:
    using base = SpellInputHandler<
       AttackInputHandler,
       input::ID::DRAG_ENEMY,
-      input::ID::PLACE_UNIT >;
+      input::ID::ADVANCE_UNIT,
+      input::ID::RETREAT_UNIT >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::ATTACK;
@@ -205,9 +207,9 @@ class AttackInputHandler:
    std::vector< input::Action > valid_actions(const GameState& action) const override;
 };
 
-class BlockInputHandler: public SpellInputHandler< BlockInputHandler, input::ID::PLACE_UNIT > {
+class BlockInputHandler: public SpellInputHandler< BlockInputHandler, input::ID::ADVANCE_UNIT > {
   public:
-   using base = SpellInputHandler< BlockInputHandler, input::ID::PLACE_UNIT >;
+   using base = SpellInputHandler< BlockInputHandler, input::ID::ADVANCE_UNIT >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::BLOCK;
@@ -234,26 +236,12 @@ class TargetInputHandler:
 };
 
 class ChoiceInputHandler:
-    public InputHandler< ChoiceInputHandler, input::ID::SKIP, input::ID::CHOICE > {
+    public InputHandler< ChoiceInputHandler, input::ID::CHOICE > {
   public:
-   using base = InputHandler< ChoiceInputHandler, input::ID::SKIP, input::ID::CHOICE >;
+   using base = InputHandler< ChoiceInputHandler, input::ID::CHOICE >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
-
-   void handle(input::Action& action, GameState& state) override;
-   bool is_valid(const input::Action& action, const GameState& state) const override;
-
-   std::vector< input::Action > valid_actions(const GameState& action) const override;
-};
-
-class ReplaceInputHandler:
-    public InputHandler< ReplaceInputHandler, input::ID::CANCEL, input::ID::REPLACE > {
-  public:
-   using base = InputHandler< ReplaceInputHandler, input::ID::CANCEL, input::ID::REPLACE >;
-   using base::base;
-
-   constexpr static InputSystem::State state_id = InputSystem::State::REPLACE;
 
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
@@ -285,7 +273,6 @@ InputSystem* InputSystem::transition(Args&&... args)
          ChoiceInputHandler,
          CombatInputHandler,
          TargetInputHandler,
-         ReplaceInputHandler,
          MulliganInputHandler >,
       "New Action System State type not supported.");
    // move current invoker into previous

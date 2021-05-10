@@ -32,9 +32,13 @@ template < Keyword kw >
 struct keyword {
    constexpr static auto value = kw;
 };
-struct death {
+// tag to show that a unit was killed
+struct slain {
 };
-template <Team::Value t>
+// tag to show that a card was destroyed
+struct obliterated {
+};
+template <Team t>
 struct team {
    constexpr static auto value = t;
 };

@@ -11,6 +11,7 @@
 #include "types.h"
 
 
+
 template < typename Key, typename Compare, typename Allocator >
 std::set< Key, Compare, Allocator > operator+(
    std::set< Key, Compare, Allocator >& set1,
@@ -88,6 +89,21 @@ std::vector< T, Allocator >& operator+(
 
 namespace utils {
 
+template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
+int as_int(T value) { return static_cast<int>(value);}
+
+
+/**
+ * @brief A class to push around lists of types.
+ * @tparam Type Types provided by the type list.
+ */
+template<typename... Type>
+struct type_list {
+   /*! @brief Type list type. */
+   using type = type_list;
+   /*! @brief Compile-time number of elements in the type list. */
+   static constexpr auto size = sizeof...(Type);
+};
 
 template < template < typename... > class, typename >
 struct pass_args;
@@ -106,11 +122,6 @@ struct is_any: std::disjunction< std::is_same< T, Ts >... > {
 template < class T, class... Ts >
 inline constexpr bool is_any_v = is_any< T, Ts... >::value;
 
-template < class T, class... Ts >
-struct are_same: std::conjunction< std::is_same< T, Ts >... > {
-};
-template < class T, class... Ts >
-inline constexpr bool are_same_v = are_same< T, Ts... >::value;
 
 template < std::size_t I, class T >
 struct variant_element;
