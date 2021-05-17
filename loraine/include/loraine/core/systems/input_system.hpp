@@ -1,6 +1,6 @@
 
-#ifndef LORAINE_INPUT_SYSTEM_H
-#define LORAINE_INPUT_SYSTEM_H
+#ifndef LORAINE_INPUT_SYSTEM_HPP
+#define LORAINE_INPUT_SYSTEM_HPP
 
 #include <set>
 #include <utility>
@@ -16,10 +16,7 @@ class InputSystem: public ILogicSystem {
   public:
    enum class State { INITIATIVE = 0, CHOICE, ATTACK, BLOCK, COMBAT, MULLIGAN, REPLACE, TARGET };
 
-   InputSystem(entt::registry& registry, uptr< InputHandlerBase >&& handler)
-       : ILogicSystem(registry), m_handler(std::move(handler))
-   {
-   }
+   InputSystem(uptr< InputHandlerBase >&& handler) : m_handler(std::move(handler)) {}
    ~InputSystem() = default;
    InputSystem(const InputSystem& other);
    InputSystem(InputSystem&& other) = default;
@@ -96,15 +93,6 @@ class InputHandler: public InputHandlerBase {
        : base(system, Derived::state_id, std::set< input::ID >{AcceptedActions...})
    {
    }
-   template < typename... Args >
-   InputHandler(InputSystem* system, Args... args)
-       : base(
-          system,
-          Derived::state_id,
-          std::forward< Args >(args)...,
-          std::set< input::ID >{AcceptedActions...})
-   {
-   }
 
    [[nodiscard]] virtual bool is_valid(const input::Action& action, const GameState& state)
       const = 0;
@@ -124,11 +112,7 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
        : base(
           system,
           Derived::state_id,
-          std::set< input::ID >{
-             input::ID::PLACE_SPELL,
-             input::ID::PLAY_SPELL,
-             input::ID::BUTTONPRESS,
-             AcceptedActions...})
+          std::set< input::ID >{input::ID::PLACE_SPELL, input::ID::BUTTONPRESS, AcceptedActions...})
    {
    }
    template < typename... Args >
@@ -137,11 +121,7 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
           system,
           Derived::state_id,
           std::forward< Args >(args)...,
-          std::set< input::ID >{
-             input::ID::PLACE_SPELL,
-             input::ID::PLAY_SPELL,
-             input::ID::BUTTONPRESS,
-             AcceptedActions...})
+          std::set< input::ID >{input::ID::PLACE_SPELL, input::ID::BUTTONPRESS, AcceptedActions...})
    {
    }
 
@@ -226,19 +206,52 @@ class TargetInputHandler:
    using base = InputHandler< TargetInputHandler, input::ID::CANCEL, input::ID::TARGETING >;
    using base::base;
 
+   TargetInputHandler(InputSystem* system, const std::vector< Targeter >& targeter)
+       : base(system), m_targeter(targeter)
+   {
+   }
+
    constexpr static InputSystem::State state_id = InputSystem::State::TARGET;
+
+   template < events::EventID... ids >
+   static std::vector< Targeter* > select_manual_targeters(GameState& state, entt::entity card);
 
    input::Action request_action(const GameState& state) const override;
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
 
    std::vector< input::Action > valid_actions(const GameState& action) const override;
+
+  private:
+   std::vector< Targeter > m_targeter;
+
+   template < events::EventID first_id, events::EventID... rest_ids >
+   static bool _select_manual_targeters_impl(
+      entt::registry& registry,
+      entt::entity card,
+      std::vector< Targeter* >& targeter_vec);
 };
 
-class ChoiceInputHandler:
-    public InputHandler< ChoiceInputHandler, input::ID::CHOICE > {
+class ChoiceInputHandler: public InputHandler< ChoiceInputHandler, input::ID::CHOICE > {
   public:
    using base = InputHandler< ChoiceInputHandler, input::ID::CHOICE >;
+   using base::base;
+
+   constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
+
+   void handle(input::Action& action, GameState& state) override;
+   bool is_valid(const input::Action& action, const GameState& state) const override;
+
+   std::vector< input::Action > valid_actions(const GameState& action) const override;
+};
+
+class SkippableChoiceInputHandler:
+    public InputHandler< SkippableChoiceInputHandler, input::ID::BUTTONPRESS, input::ID::CHOICE > {
+  public:
+   using base = InputHandler<
+      SkippableChoiceInputHandler,
+      input::ID::BUTTONPRESS,
+      input::ID::CHOICE >;
    using base::base;
 
    constexpr static InputSystem::State state_id = InputSystem::State::CHOICE;
@@ -271,14 +284,72 @@ InputSystem* InputSystem::transition(Args&&... args)
          AttackInputHandler,
          BlockInputHandler,
          ChoiceInputHandler,
+         SkippableChoiceInputHandler,
          CombatInputHandler,
          TargetInputHandler,
          MulliganInputHandler >,
-      "New Action System State type not supported.");
+      "New Input-System type unknown.");
    // move current invoker into previous
    m_prev_handler = std::move(m_handler);
    m_handler = std::make_unique< NewStateType >(this, std::forward< Args >(args)...);
    return this;
 }
 
-#endif  // LORAINE_INPUT_SYSTEM_H
+#include "loraine/core/gamestate.h"
+#include "loraine/core/systems/board_system.hpp"
+#include "loraine/core/systems/play_system.hpp"
+
+template < events::EventID... ids >
+std::vector< Targeter* > TargetInputHandler::select_manual_targeters(
+   GameState& state,
+   entt::entity card)
+{
+   std::vector< Targeter* > targeter_vec;
+   auto& registry = state.registry();
+   if(registry.any_of< EffectVector< ids >... >(card)) {
+      _select_manual_targeters_impl< ids... >(state, card, targeter_vec);
+   }
+   return targeter_vec;
+}
+
+template < events::EventID first_id, events::EventID... rest_ids >
+bool TargetInputHandler::_select_manual_targeters_impl(
+   entt::registry& registry,
+   entt::entity card,
+   std::vector< Targeter* >& targeter_vec)
+{
+   if(registry.all_of< EffectVector< first_id > >(card)) {
+      for(const auto& effect : registry.get< EffectVector< first_id > >(card)) {
+         if(utils::has_value(effect.first.targeter)
+            && effect.first.targeter.value().mode == Targeter::Mode::MANUAL) {
+            targeter_vec.emplace_back(&effect.first.targeter.value());
+         }
+      }
+   }
+   _select_manual_targeters_impl< rest_ids... >(registry, card, targeter_vec);
+}
+
+template < typename Derived, input::ID... AcceptedActions >
+void SpellInputHandler< Derived, AcceptedActions... >::handle(
+   input::PlaceSpellAction& action,
+   GameState& state)
+{
+   auto& board_system = state.get< BoardSystem >();
+   auto& play_system = state.get< SummonSystem >();
+   auto spell = board_system.at< Zone::HAND >(action.hand_index);
+
+   // TODO: The actual game does not fully move the card, until the targeting is done. If during the
+   //  targeting, the player cancels placing the spell, then the spell is moved back into the hand
+   //  AT THE POSITION IT HELD BEFORE! Only once the spell has been fully placed, i.e. including
+   //  any targeting duties, is the spell moved completely from hand onto the stack and returns to
+   //  the end of the hand, if returned from the spell stack.
+
+   board_system.move_to< Zone::SPELLSTACK >(spell, board_system.size< Zone::SPELLSTACK >());
+   play_system.to_play_queue(spell);
+
+   base::m_input_system->template transition< TargetInputHandler >(
+      state.registry().get< Targeter >(spell),
+      TargetInputHandler::select_manual_targeters< events::EventID::CAST >(state, spell));
+}
+
+#endif  // LORAINE_INPUT_SYSTEM_HPP

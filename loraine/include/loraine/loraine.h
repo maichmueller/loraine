@@ -14,7 +14,7 @@
 #include "loraine/core/logic.h"
 #include "loraine/core/systems.h"
 #include "loraine/core/systems/board_system.hpp"
-#include "loraine/core/systems/input_system.h"
+#include "loraine/core/systems/input_system.hpp"
 #include "loraine/grants/grant.h"
 #include "loraine/utils/random.h"
 #include "loraine/utils/types.h"

@@ -20,7 +20,7 @@ class GameState;
  */
 class EffectSystem: public ILogicSystem {
   public:
-   EffectSystem(GameState& state) : ILogicSystem(state) {}
+   EffectSystem() = default;
 
    template < events::EventID event_id, typename... Args >
    void trigger(Args&&... args)
@@ -33,17 +33,17 @@ class EffectSystem: public ILogicSystem {
       // iterate over the scheduled entities, always popping the next one according to the order
       // policy of this event
       while(not scheduled_entities.empty()) {
-         auto next_to_trigger = schedule::next(m_registry, scheduled_entities, event);
-         next_to_trigger.first->on_event(event);
-         scheduled_entities.erase(algo::find(scheduled_entities, next_to_trigger.second));
+         auto entity_to_trigger = schedule::next(*m_registry, scheduled_entities, event);
+         m_registry->get<Ability<event_id>>(entity_to_trigger).impl(event);
+         scheduled_entities.erase(algo::find(scheduled_entities, entity_to_trigger));
       }
    }
 
    template < events::EventID event_id >
    void give_effect(entt::entity entity, const Effect< event_id >& effect)
    {
-      if(m_registry.all_of< EffectVector< event_id > >(entity)) {
-         m_registry.patch< EffectVector< event_id > >(
+      if(m_registry->all_of< EffectVector< event_id > >(entity)) {
+         m_registry->patch< EffectVector< event_id > >(
             entity, [&effect](auto& eff_vec) { eff_vec.emplace_back(effect); });
       }
    }
@@ -66,9 +66,9 @@ class EffectSystem: public ILogicSystem {
    template < events::EventID event_id >
    [[nodiscard]] bool has_unconsumed_effects(entt::entity entity) const
    {
-      if(m_registry.all_of< EffectVector< event_id > >(entity)) {
+      if(m_registry->all_of< EffectVector< event_id > >(entity)) {
          return algo::any_of(
-            m_registry.get< EffectVector< event_id > >(entity),
+            m_registry->get< EffectVector< event_id > >(entity),
             [entity](const auto& effect) { return effect.first.is_consumed; });
       }
    }

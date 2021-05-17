@@ -21,7 +21,6 @@ class BoardSystem: public ILogicSystem {
    BoardSystem(uint camp_size, uint bf_size) : m_size_max_camp(camp_size), m_size_max_bf(bf_size) {}
 
    BoardSystem(
-      GameState& state,
       uint camp_size,
       uint bf_size,
       SymArr< Queue > camp_queues,
@@ -41,6 +40,8 @@ class BoardSystem: public ILogicSystem {
     */
    template < Zone new_zone >
    bool move_to(entt::entity card, uint index);
+   template < Zone new_zone >
+   bool move_to(entt::entity card);
    template < Zone new_zone >
    bool move_to(const std::vector< entt::entity >& cards, const std::vector< uint >& indices);
    template < Zone new_zone >
@@ -154,23 +155,46 @@ class BoardSystem: public ILogicSystem {
     * @return
     */
    template < Zone zone >
-   uint _update_positions()
+   void _update_positions()
    {
       auto view = m_registry->view< Position< zone > >();
-      std::vector< std::pair< entt::entity, uint > > card_pos;
-      view.each([&](auto card, auto& pos) { card_pos.emplace_back({card, pos.index}); });
+      if constexpr(zone != Zone::BATTLEFIELD) {
+         std::vector< std::pair< entt::entity, uint > > card_pos;
+         view.each([&](auto card, auto& pos) { card_pos.emplace_back(std::pair{card, pos.index}); });
 
-      std::sort(card_pos.begin(), card_pos.end(), [](const auto& p1, const auto& p2) {
-         return p1.second < p2.second;
-      });
+         std::sort(card_pos.begin(), card_pos.end(), [](const auto& p1, const auto& p2) {
+            return p1.second < p2.second;
+         });
 
-      auto c = 0UL;
-      auto updater = [&](Position< zone >& position) { position.index = c++; };
-      for(auto [card, _] : card_pos) {
-         m_registry->patch< Position< zone > >(card, updater);
+         auto c = 0UL;
+         auto updater = [&](Position< zone >& position) { position.index = c++; };
+         for(auto [card, _] : card_pos) {
+            m_registry->patch< Position< zone > >(card, updater);
+         }
+         m_size_cache[utils::as_int(zone)] = c;
+      } else {
+         // for the battlefield we simple update the count of what units remain, because there is no
+         // sense of a stack on it
+         m_size_cache[utils::as_int(zone)] = view.size();
       }
-      m_size_cache[static_cast< size_t >(zone)] = c;
-      return c;
+   }
+
+   /**
+    * @brief Moves all other positions greater than 'from' one position up.
+    *
+    * @tparam zone
+    * @param pos_of_interest
+    */
+   template < Zone zone >
+   void _shift_pos(uint pos_of_interest)
+   {
+      auto view = m_registry->view< Position< zone > >();
+      view.each([&](auto card, auto& pos) {
+         if(pos.index >= pos_of_interest) {
+            pos.index += 1;
+         }
+      });
+      m_size_cache[utils::as_int(zone)] += 1;
    }
 
    /**
@@ -213,7 +237,7 @@ uint BoardSystem::count_if(
    return sum;
 }
 
-template < Team::Value team >
+template < Team team >
 std::vector< entt::entity > BoardSystem::camp_units() const
 {
    auto view = m_registry->view< Position< Zone::CAMP >, tag::team< team >, tag::unit >();
@@ -223,13 +247,13 @@ std::vector< entt::entity > BoardSystem::camp_units() const
 template <>
 void BoardSystem::add_to_queue< Zone::CAMP >(entt::entity card)
 {
-   m_q_camp[m_registry->get< Team >(card)].emplace(card);
+   m_q_camp[utils::as_int(m_registry->get< Team >(card))].emplace(card);
 }
 
 template <>
 void BoardSystem::add_to_queue< Zone::BATTLEFIELD >(entt::entity card)
 {
-   m_q_bf[m_registry->get< Team >(card)].emplace(card);
+   m_q_bf[utils::as_int(m_registry->get< Team >(card))].emplace(card);
 }
 
 template <>
@@ -266,6 +290,12 @@ bool BoardSystem::move_to(entt::entity card, uint index)
          // the unit's old zone is the units new zone and it is already at the position in which
          // it is supposed to move or the battlefield is full
          return false;
+      }
+   } else {
+      if(index < m_size_cache[utils::as_int(new_zone)]) {
+         // if the current index is taken at the moment, then we need to move all current entities
+         // one position up to make space for this entity
+         _shift_pos< new_zone >(index);
       }
    }
    _remove_pos(card);
@@ -312,6 +342,11 @@ entt::entity BoardSystem::at(uint index)
       throw std::logic_error("The demanded index was not assigned to any entity.");
    }
    return e.value();
+}
+template < Zone new_zone >
+bool BoardSystem::move_to(entt::entity card)
+{
+   return move_to<new_zone>(card, size<new_zone>());
 }
 
 #endif  // LORAINE_BOARD_SYSTEM_HPP

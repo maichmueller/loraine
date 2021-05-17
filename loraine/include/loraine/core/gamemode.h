@@ -23,10 +23,10 @@ class GameMode {
 
    void run_game();
 
-   GameMode(const Config& cfg, SymArr<Deck > decks, SymArr<sptr<Controller>> controllers)
-      : m_state(cfg, decks, controllers)
-   {
-   }
+//   GameMode(const Config& cfg, SymArr<Deck > decks, SymArr<sptr<Controller>> controllers)
+//      : m_state(cfg, decks, controllers)
+//   {
+//   }
 //   GameMode(const Config& cfg, SymArr<std::vector<CardToken> > decks, SymArr<sptr<Controller>> controllers)
 //      : m_handler(cfg, decks, controllers)
 //   {

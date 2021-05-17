@@ -7,7 +7,7 @@
 
 #include <array>
 
-#include "loraine/core/systems/input_system.h"
+#include "loraine/core/systems/input_system.hpp"
 #include "loraine/events/event_id.h"
 #include "loraine/events/event_subscriber.h"
 

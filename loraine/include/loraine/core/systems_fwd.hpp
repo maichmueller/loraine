@@ -8,6 +8,7 @@ class ReputationSystem;
 class KeywordSystem;
 class HealthStatSystem;
 class ManaStatSystem;
+class SummonSystem;
 class PowerStatSystem;
 class InputSystem;
 class StrikeSystem;

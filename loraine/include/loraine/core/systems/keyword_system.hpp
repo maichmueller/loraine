@@ -17,13 +17,6 @@ class KeywordSystem: public ILogicSystem {
       _simply_add< keyword >(card);
    }
 
-   template <>
-   void on_add< Keyword::DEEP >([[maybe_unused]] entt::registry& registry, entt::entity card)
-   {
-      _simply_add< Keyword::DEEP >(card);
-      m_registry->emplace< tag::subscriber< events::EventID::DEEP > >(card);
-   }
-
    template < Keyword keyword >
    void on_remove([[maybe_unused]] entt::registry& registry, entt::entity card)
    {
@@ -42,5 +35,13 @@ class KeywordSystem: public ILogicSystem {
       m_registry->get< KeywordMap >(card).remove(keyword);
    }
 };
+
+
+template <>
+void KeywordSystem::on_add< Keyword::DEEP >([[maybe_unused]] entt::registry& registry, entt::entity card)
+{
+   _simply_add< Keyword::DEEP >(card);
+   m_registry->emplace< tag::subscriber< events::EventID::DEEP > >(card);
+}
 
 #endif  // LORAINE_KEYWORD_SYSTEM_HPP

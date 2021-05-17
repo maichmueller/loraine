@@ -12,9 +12,9 @@
 
 void GameMode::run_game()
 {
-   while(true) {
-      if(auto terminality = m_state.logic()->step(); terminality != Status::ONGOING) {
-         return;
-      }
-   }
+//   while(true) {
+//      if(auto terminality = m_state.logic()->step(); terminality != Status::ONGOING) {
+//         return;
+//      }
+//   }
 }

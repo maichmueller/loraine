@@ -1,5 +1,5 @@
 
-#include "loraine/core/systems/input_system.h"
+#include "loraine/core/systems/input_system.hpp"
 
 #include "loraine/core/gamestate.h"
 #include "loraine/core/logic.h"
@@ -35,7 +35,7 @@ input::Action InputHandlerBase::request_action(const GameState& state) const
       if(n_invalid_choices > state.config().INVALID_ACTIONS_LIMIT) {
          // TODO: Add punishment reward option to agent for RL agents for choosing invalid moves too
          //  often?
-         //  Let player lose instead!
+         //  Let player lose instead?
          throw std::logic_error("Too many illegal actions chosen.");
       }
    }
@@ -64,6 +64,8 @@ input::Action TargetInputHandler::request_action(const GameState& state) const
       }
    }
 }
+
+
 void InitiativeInputHandler::handle(input::Action& action, GameState& state)
 {
    auto& registry = state.registry();
@@ -100,11 +102,7 @@ void InitiativeInputHandler::handle(input::Action& action, GameState& state)
          m_input_system->transition< AttackInputHandler >();
       }
       case input::ID::PLACE_SPELL: {
-         //         auto& action_detail = action.detail< input::PlaceSpellAction >();
-         //         auto& bsystem = state.get< BoardSystem >();
-         //         auto spell = bsystem->at< Zone::HAND >(action_detail.hand_index);
-         //         bsystem->move_to< Zone::SPELLSTACK >(spell, bsystem->size< Zone::SPELLSTACK
-         //         >());
+
          base::handle(action.detail< input::PlaceSpellAction >(), state);
       }
       case input::ID::PLAY_FIELDCARD: {

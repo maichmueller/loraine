@@ -94,6 +94,7 @@ class GameState {
    uptr< HealthStatSystem > m_sys_health;
    uptr< PowerStatSystem > m_sys_power;
    uptr< ManaStatSystem > m_sys_mana;
+   uptr< SummonSystem > m_sys_play;
 
    random::rng_type m_rng;
 
@@ -131,6 +132,11 @@ template <>
 auto& GameState::get< EffectSystem >()
 {
    return *m_sys_effect;
+}
+template <>
+auto& GameState::get< SummonSystem >()
+{
+   return *m_sys_play;
 }
 
 #endif  // LORAINE_GAMESTATE_H

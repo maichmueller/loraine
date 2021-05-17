@@ -8,7 +8,7 @@
 
 enum struct Team { BLUE = 0, RED };
 
-Team opponent(Team t) { return Team(1 - as_int(t));}
+Team opponent(Team t) { return Team(1 - utils::as_int(t));}
 
 constexpr const size_t n_teams = static_cast< size_t >(Team::RED) + 1;
 
