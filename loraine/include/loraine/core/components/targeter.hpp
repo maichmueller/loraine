@@ -3,7 +3,7 @@
 #define LORAINE_TARGETER_HPP
 
 #include "loraine/core/gamedefs.h"
-
+#include <entt/entt.hpp>
 
 class Targeter {
   public:

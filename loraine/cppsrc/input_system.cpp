@@ -65,7 +65,6 @@ input::Action TargetInputHandler::request_action(const GameState& state) const
    }
 }
 
-
 void InitiativeInputHandler::handle(input::Action& action, GameState& state)
 {
    auto& registry = state.registry();
@@ -102,10 +101,22 @@ void InitiativeInputHandler::handle(input::Action& action, GameState& state)
          m_input_system->transition< AttackInputHandler >();
       }
       case input::ID::PLACE_SPELL: {
-
          base::handle(action.detail< input::PlaceSpellAction >(), state);
       }
+      case input::ID::RETRIEVE_SPELL: {
+         base::handle(action.detail< input::RetrieveSpellAction >(), state);
+      }
       case input::ID::PLAY_FIELDCARD: {
+         auto& action_detail = action.detail< input::PlayFieldcardAction >();
+         auto& board_system = state.get< BoardSystem >();
+         auto& play_system = state.get< PlaySystem >();
+         auto& kw_system = state.get< KeywordSystem >();
+         auto fieldcard = board_system.at< Zone::HAND >(action_detail.hand_index);
+         if(auto targets = TargetInputHandler::select_manual_targeters< events::EventID::PLAY >(
+               state, fieldcard);
+            not targets.empty()) {
+            base::m_input_system->template transition< TargetInputHandler >(
+               state.registry().get< Targeter >(fieldcard), targets);
       }
 
       default: {

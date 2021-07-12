@@ -61,7 +61,7 @@ class EffectSystem: public ILogicSystem {
    template < events::EventID event_id >
    [[nodiscard]] bool is_targeting(const Effect< event_id >& effect) const
    {
-      return effect.first.style == Style::TARGETING;
+      return effect.first.style == EffectStyle::TARGETING;
    }
    template < events::EventID event_id >
    [[nodiscard]] bool has_unconsumed_effects(entt::entity entity) const

@@ -93,14 +93,6 @@ set(LORAINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/loraine")
 set(LORAINE_SRC_DIR "${LORAINE_DIR}/cppsrc")
 set(LORAINE_INCLUDE_DIR ${LORAINE_DIR}/include)
 
-if(ENABLE_TESTING)
-    enable_testing()
-    message(
-            "Building Tests."
-    )
-    add_subdirectory(test)
-endif()
-
 message(STATUS "loraine project directory: ${LORAINE_DIR}")
 message(STATUS "loraine include directory: ${LORAINE_INCLUDE_DIR}")
 message(STATUS "loraine src directory: ${LORAINE_SRC_DIR}")
@@ -108,4 +100,12 @@ message(STATUS "loraine src directory: ${LORAINE_SRC_DIR}")
 add_library(loraine STATIC)
 add_subdirectory(loraine)
 
+
+if(ENABLE_TESTING)
+    enable_testing()
+    message(
+            "Building Tests."
+    )
+    add_subdirectory(test)
+endif()
 

@@ -24,6 +24,7 @@ enum class ID {
    CHOICE,
    DRAG_ENEMY,
    PLACE_SPELL,
+   RETRIEVE_SPELL,
    MULLIGAN,
    PLAY_FIELDCARD,
    RETREAT_UNIT,
@@ -60,17 +61,17 @@ struct ButtonPressAction: public ActionBase< ID::BUTTONPRESS > {
 struct PlayFieldcardAction: public ActionBase< ID::PLAY_FIELDCARD > {
    using base = ActionBase< ID::PLAY_FIELDCARD >;
 
-   PlayFieldcardAction(Team team, entt::entity card) noexcept
-       : ActionBase(team), card(card), target_index(std::nullopt)
+   PlayFieldcardAction(Team team, size_t hand_index) noexcept
+       : ActionBase(team), hand_index(hand_index), target_index(std::nullopt)
    {
    }
-   PlayFieldcardAction(Team team, entt::entity card, size_t target_index) noexcept
-       : ActionBase(team), card(card), target_index(target_index)
+   PlayFieldcardAction(Team team, size_t hand_index, size_t target_index) noexcept
+       : ActionBase(team), hand_index(hand_index), target_index(target_index)
    {
    }
 
    // the index of the fieldcard in hand to play
-   entt::entity card;
+   size_t hand_index;
    // the index in the camp to place the fieldcard (should be set automatically, unless full)
    std::optional< size_t > target_index;
 };
@@ -100,14 +101,25 @@ struct PlaceSpellAction: public ActionBase< ID::PLACE_SPELL > {
   public:
    using base = ActionBase< ID::PLACE_SPELL >;
 
-   PlaceSpellAction(Team team, size_t hand_index, bool to_stack) noexcept
-       : ActionBase(team), hand_index(hand_index), to_stack(to_stack)
+   PlaceSpellAction(Team team, size_t hand_index) noexcept
+      : ActionBase(team), hand_index(hand_index)
    {
    }
 
    // the index of the spell in hand to place
    size_t hand_index;
-   bool to_stack;
+};
+
+struct RetrieveSpellAction: public ActionBase< ID::RETRIEVE_SPELL > {
+  public:
+   using base = ActionBase< ID::PLACE_SPELL >;
+
+   RetrieveSpellAction(Team team, size_t index) noexcept
+      : ActionBase(team), stack_index(index)
+   {
+   }
+   // the index of the spell on the stack to retrieve
+   size_t stack_index;
 };
 
 struct AdvanceUnitAction: public ActionBase< ID::ADVANCE_UNIT > {
@@ -186,6 +198,7 @@ class Action {
       DragEnemyAction,
       MulliganAction,
       PlaceSpellAction,
+      RetrieveSpellAction,
       AdvanceUnitAction,
       PlayFieldcardAction,
       RetreatUnitAction,

@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "loraine/core/action.hpp"
+#include "loraine/core/components.hpp"
 #include "loraine/utils/types.h"
 #include "system.hpp"
 
@@ -112,16 +113,11 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
        : base(
           system,
           Derived::state_id,
-          std::set< input::ID >{input::ID::PLACE_SPELL, input::ID::BUTTONPRESS, AcceptedActions...})
-   {
-   }
-   template < typename... Args >
-   SpellInputHandler(InputSystem* system, Args... args)
-       : base(
-          system,
-          Derived::state_id,
-          std::forward< Args >(args)...,
-          std::set< input::ID >{input::ID::PLACE_SPELL, input::ID::BUTTONPRESS, AcceptedActions...})
+          std::set< input::ID >{
+             input::ID::PLACE_SPELL,
+             input::ID::RETRIEVE_SPELL,
+             input::ID::BUTTONPRESS,
+             AcceptedActions...})
    {
    }
 
@@ -129,6 +125,7 @@ class SpellInputHandler: public InputHandler< Derived, AcceptedActions... > {
    /// handlers for specific actions. Does not transition the state, so any sub class using these
    /// handlers will need to transition themselves. These do not need to be used, thus are optional!
    void handle(input::PlaceSpellAction& action, GameState& state);
+   void handle(input::RetrieveSpellAction& action, GameState& state);
    void handle(input::ButtonPressAction& action, GameState& state);
 };
 
@@ -213,9 +210,6 @@ class TargetInputHandler:
 
    constexpr static InputSystem::State state_id = InputSystem::State::TARGET;
 
-   template < events::EventID... ids >
-   static std::vector< Targeter* > select_manual_targeters(GameState& state, entt::entity card);
-
    input::Action request_action(const GameState& state) const override;
    void handle(input::Action& action, GameState& state) override;
    bool is_valid(const input::Action& action, const GameState& state) const override;
@@ -224,12 +218,6 @@ class TargetInputHandler:
 
   private:
    std::vector< Targeter > m_targeter;
-
-   template < events::EventID first_id, events::EventID... rest_ids >
-   static bool _select_manual_targeters_impl(
-      entt::registry& registry,
-      entt::entity card,
-      std::vector< Targeter* >& targeter_vec);
 };
 
 class ChoiceInputHandler: public InputHandler< ChoiceInputHandler, input::ID::CHOICE > {
@@ -298,36 +286,7 @@ InputSystem* InputSystem::transition(Args&&... args)
 #include "loraine/core/gamestate.h"
 #include "loraine/core/systems/board_system.hpp"
 #include "loraine/core/systems/play_system.hpp"
-
-template < events::EventID... ids >
-std::vector< Targeter* > TargetInputHandler::select_manual_targeters(
-   GameState& state,
-   entt::entity card)
-{
-   std::vector< Targeter* > targeter_vec;
-   auto& registry = state.registry();
-   if(registry.any_of< EffectVector< ids >... >(card)) {
-      _select_manual_targeters_impl< ids... >(state, card, targeter_vec);
-   }
-   return targeter_vec;
-}
-
-template < events::EventID first_id, events::EventID... rest_ids >
-bool TargetInputHandler::_select_manual_targeters_impl(
-   entt::registry& registry,
-   entt::entity card,
-   std::vector< Targeter* >& targeter_vec)
-{
-   if(registry.all_of< EffectVector< first_id > >(card)) {
-      for(const auto& effect : registry.get< EffectVector< first_id > >(card)) {
-         if(utils::has_value(effect.first.targeter)
-            && effect.first.targeter.value().mode == Targeter::Mode::MANUAL) {
-            targeter_vec.emplace_back(&effect.first.targeter.value());
-         }
-      }
-   }
-   _select_manual_targeters_impl< rest_ids... >(registry, card, targeter_vec);
-}
+#include "loraine/core/systems/target_system.hpp"
 
 template < typename Derived, input::ID... AcceptedActions >
 void SpellInputHandler< Derived, AcceptedActions... >::handle(
@@ -335,7 +294,10 @@ void SpellInputHandler< Derived, AcceptedActions... >::handle(
    GameState& state)
 {
    auto& board_system = state.get< BoardSystem >();
-   auto& play_system = state.get< SummonSystem >();
+   auto& play_system = state.get< PlaySystem >();
+   auto& kw_system = state.get< KeywordSystem >();
+   auto& target_system = state.get< TargetSystem >();
+   auto& registry = state.registry();
    auto spell = board_system.at< Zone::HAND >(action.hand_index);
 
    // TODO: The actual game does not fully move the card, until the targeting is done. If during the
@@ -346,10 +308,48 @@ void SpellInputHandler< Derived, AcceptedActions... >::handle(
 
    board_system.move_to< Zone::SPELLSTACK >(spell, board_system.size< Zone::SPELLSTACK >());
    play_system.to_play_queue(spell);
+   if(auto targets = target_system.manual_targeters< events::EventID::CAST >(state, spell);
+      not targets.empty()) {
+      base::m_input_system->template transition< TargetInputHandler >(
+         state.registry().get< Targeter >(spell), targets);
+   } else if(registry.get< KeywordMap >(spell).has_any_of(
+                std::array{Keyword::BURST, Keyword::FOCUS})) {
+      play_system.play(true);
+   }
+}
 
-   base::m_input_system->template transition< TargetInputHandler >(
-      state.registry().get< Targeter >(spell),
-      TargetInputHandler::select_manual_targeters< events::EventID::CAST >(state, spell));
+template < typename Derived, input::ID... AcceptedActions >
+void SpellInputHandler< Derived, AcceptedActions... >::handle(
+   input::RetrieveSpellAction& action,
+   GameState& state)
+{
+   auto& board_system = state.get< BoardSystem >();
+   auto& play_system = state.get< PlaySystem >();
+   auto& kw_system = state.get< KeywordSystem >();
+   auto& target_system = state.get< TargetSystem >();
+   auto& registry = state.registry();
+
+   auto card = board_system.at< Zone::SPELLSTACK >(action.stack_index);
+   board_system.move_to< Zone::HAND >(card);
+   if(registry.all_of< EffectVector< events::EventID::CAST > >(card)) {
+      algo::apply(
+         [&](auto& effect) {
+            target_system.reset_targets(effect);
+            effect.condition(state);
+         },
+         registry.get< EffectVector< events::EventID::CAST > >(card));
+   }
+}
+
+template < typename Derived, input::ID... AcceptedActions >
+void SpellInputHandler< Derived, AcceptedActions... >::handle(
+   input::ButtonPressAction& action,
+   GameState& state)
+{
+   auto& play_system = state.get< PlaySystem >();
+
+   // play all spells on the stack that have been placed
+   play_system.play(false);
 }
 
 #endif  // LORAINE_INPUT_SYSTEM_HPP

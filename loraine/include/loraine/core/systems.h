@@ -10,6 +10,7 @@
 #include "loraine/core/systems/stat_health_system.hpp"
 #include "loraine/core/systems/stat_mana_system.hpp"
 #include "loraine/core/systems/stat_power_system.hpp"
+#include "loraine/core/systems/target_system.hpp"
 #include "loraine/core/systems/system.hpp"
 
 #endif  // LORAINE_ALL_H

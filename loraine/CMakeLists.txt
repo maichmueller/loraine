@@ -26,11 +26,6 @@ target_include_directories(loraine
         ${LORAINE_INCLUDE_DIR}
         ${CONAN_INCLUDE_DIRS_ENTT}
         )
-target_include_directories(loraine
-        SYSTEM INTERFACE
-        ${LORAINE_INCLUDE_DIR}
-        ${CONAN_INCLUDE_DIRS_ENTT}
-        )
 
 set_target_properties(loraine PROPERTIES
         CXX_STANDARD 17
@@ -48,9 +43,7 @@ target_link_libraries(loraine PUBLIC project_options)
 add_executable(makeitraine ${LORAINE_DIR}/app/makeitraine.cpp)
 target_include_directories(makeitraine
         PRIVATE
-        ${LORAINE_INCLUDE_DIR}
-        ${CONAN_INCLUDE_DIRS_STDUUID}
-        ${CONAN_INCLUDE_DIRS_MS-GSL}
+        loraine
         )
 set_target_properties(makeitraine PROPERTIES
         CXX_STANDARD 17

@@ -8,15 +8,13 @@ class ReputationSystem;
 class KeywordSystem;
 class HealthStatSystem;
 class ManaStatSystem;
-class SummonSystem;
+class PlaySystem;
 class PowerStatSystem;
 class InputSystem;
-class StrikeSystem;
-class SlaySystem;
 class RoundStartSystem;
 class RoundEndSystem;
-//class HealthStatSystem;
-//class HealthStatSystem;
-//class HealthStatSystem;
+class StrikeSystem;
+class SlaySystem;
+class TargetSystem;
 
 #endif  // LORAINE_SYSTEMS_FWD_HPP

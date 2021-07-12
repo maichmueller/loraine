@@ -7,15 +7,15 @@
 
 #include "loraine/core/systems/system.hpp"
 
-class SummonSystem: public System {
+class PlaySystem: public System {
   public:
-   SummonSystem() = default;
+   PlaySystem() = default;
 
-   void play();
+   void play(bool latest_only);
    void summon();
 
-   bool to_play_queue(entt::entity card);
-   bool to_summon_queue(entt::entity card) { m_play_queue.emplace_back(card); }
+   void to_play_queue(entt::entity card) { m_play_queue.emplace_back(card); }
+   void to_summon_queue(entt::entity card) { m_summon_queue.emplace_back(card); }
 
   private:
    std::vector< entt::entity > m_play_queue;

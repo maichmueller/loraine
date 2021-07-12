@@ -16,12 +16,20 @@ class KeywordMap {
 
    [[nodiscard]] inline bool has(Keyword kword) const { return m_kw_arr.at(_to_int(kword)); }
 
-   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   template <
+      typename Container,
+      typename = std::enable_if_t< std::is_same_v< typename Container::value_type, Keyword > > >
    [[nodiscard]] inline bool has_any_of(Container kwords) const
    {
       return algo::any_of(kwords, [&](const auto& kw) { return has(kw); });
    }
-
+   template <
+      typename Container,
+      typename = std::enable_if_t< std::is_same_v< typename Container::value_type, Keyword > > >
+   [[nodiscard]] inline bool has_all_of(Container kwords) const
+   {
+      return algo::all_of(kwords, [&](const auto& kw) { return has(kw); });
+   }
    inline void add(Keyword kw) { m_kw_arr[_to_int(kw)] = true; }
    template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
    inline void add(Container kwords)
@@ -29,23 +37,23 @@ class KeywordMap {
       algo::transform(&KeywordMap::add, kwords);
    }
    inline void remove(Keyword kw) { m_kw_arr[_to_int(kw)] = false; }
-   template < typename Container, typename = std::enable_if_t< Container::value_type, Keyword > >
+   template <
+      typename Container,
+      typename = std::enable_if_t< std::is_same_v< typename Container::value_type, Keyword > > >
    inline void remove(Container kwords)
    {
       algo::transform(&KeywordMap::remove, kwords);
    }
 
   private:
-
    /// members
 
-   /// a bit-map of n_keywords length
+   /// a bit-map of n keywords
    std::array< bool, n_keywords > m_kw_arr;
 
    /// private methods
 
    inline size_t _to_int(Keyword kw) const { return static_cast< size_t >(kw); }
 };
-
 
 #endif  // LORAINE_KEYWORDMAP_HPP
